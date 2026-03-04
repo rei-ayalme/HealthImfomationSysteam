@@ -236,7 +236,7 @@ class HealthResourceAnalyzer:
                                     row[self.settings['COLUMN_MAPPING']['population']] * 10000) if row[self.settings[
                     'COLUMN_MAPPING']['population']] > 0 else 0,
 
-                'nurses_per_pop': (row.get(self.settings['COLUMN_mapping']['nurses'], 0) /
+                'nurses_per_pop': (row.get(self.settings['COLUMN_MAPPING']['nurses'], 0) /
                                    row[self.settings['COLUMN_MAPPING']['population']] * 10000) if row[self.settings[
                     'COLUMN_MAPPING']['population']] > 0 else 0,
 

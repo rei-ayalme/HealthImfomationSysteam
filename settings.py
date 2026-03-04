@@ -15,6 +15,31 @@ class WeightingMethod(Enum):
 class Settings:
     """医疗资源配置系统配置类"""
 
+    # 疾病分析配置
+    DISEASE_CODES = {
+        'Malaria': '08',
+        'Tuberculosis': '09',
+        'Measles': '10'
+    }
+
+    # 干预措施列表 - 可通过配置进行动态管理（算法可替换）
+    INTERVENTION_MEASURES = {
+        'default': [
+            {"name": "公共卫生教育", "type": "Primary Prevention", "priority": "High", "status": "Recommended"},
+            {"name": "预防疫苗接种", "type": "Primary Prevention", "priority": "High", "status": "Essential"},
+            {"name": "早期筛查", "type": "Secondary Prevention", "priority": "Medium", "status": "Recommended"},
+            {"name": "治疗方案优化", "type": "Tertiary Prevention", "priority": "High", "status": "Priority"}
+        ]
+    }
+
+    # SDE模型参数配置
+    SDE_MODEL_PARAMS = {
+        'dt': 5,  # 时间步长
+        't_max': 30,  # 最大时间
+        'num_samples': 10,
+        'diffusion_coefficient': 0.1
+    }
+
     # 数据文件路径
     RAW_DATA_FILE = "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx"
     CLEANED_DATA_FILE = "cleaned_health_data.xlsx"
@@ -187,10 +212,11 @@ class Settings:
     }
 
 
-# 全局配置实例
+
 SETTINGS = Settings()
 
 # 配置别名 - 维持向后兼容性
+PAGE_TITLE = "全国卫生资源配置优化平台"
 RAW_DATA_FILE = SETTINGS.RAW_DATA_FILE
 CLEANED_DATA_FILE = SETTINGS.CLEANED_DATA_FILE
 GBD_DATA_FILE = SETTINGS.GBD_DATA_FILE
@@ -208,7 +234,9 @@ ANALYSIS_PARAMS = SETTINGS.ANALYSIS_PARAMS
 TOLERANCE_LEVELS = SETTINGS.TOLERANCE_LEVELS
 DB_FIELD_MAPPINGS = SETTINGS.DB_FIELD_MAPPINGS
 OUTPUT_SETTINGS = SETTINGS.OUTPUT_SETTINGS
-
+DISEASE_CODES = SETTINGS.DISEASE_CODES
+SDE_MODEL_PARAMS = SETTINGS.SDE_MODEL_PARAMS
+INTERVENTION_MEASURES = SETTINGS.INTERVENTION_MEASURES
 
 if __name__ == "__main__":
     # 测试配置

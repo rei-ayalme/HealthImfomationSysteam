@@ -44,7 +44,7 @@ class HealthDataPreprocessor:
         self.standard_mapping = STANDARD_COLUMN_MAPPING
         self.logger = logging.getLogger(__name__)
 
-    def clean_health_data(input_file, output_file):
+    def clean_health_data(self,input_file, output_file):
         """
         使用统一接口清洗健康数据
         """
