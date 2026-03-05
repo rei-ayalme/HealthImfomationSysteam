@@ -1,9 +1,7 @@
 # health_analyzer.py - 医疗资源供需分析器
 import pandas as pd
 import numpy as np
-from scipy import stats
-from typing import Dict, List, Tuple, Optional
-import warnings
+from typing import Dict, List,  Optional
 
 
 class HealthResourceAnalyzer:
@@ -42,7 +40,7 @@ class HealthResourceAnalyzer:
 
         print(f"[HealthResourceAnalyzer] 数据加载完成 - 资源数据{len(resource_df)}行，人口数据{len(population_df)}行")
 
-    def calculate_standardized_density(self, resource_type: str) -> pd.Series:
+    def calculate_standardized_density(self, resource_type: str) -> pd.DataFrame:
         """
         计算标准化的医疗资源密度
 
@@ -57,11 +55,8 @@ class HealthResourceAnalyzer:
 
         # 获取配置中的基准密度
         target_density = self.settings['RESOURCE_DENSITY_BASELINE'].get(resource_type, 1.0)
-        target_density_area = self.settings.get('AREA_DENSITY_RATE', {}).get(resource_type, 0.001)
-
         # 合并数据
         merged_df = self._merge_data_with_validation()
-
         # 计算现有人口密度
         resource_col = self.settings['COLUMN_MAPPING'][resource_type]
         pop_col = self.settings['COLUMN_MAPPING']['population']
@@ -90,12 +85,6 @@ class HealthResourceAnalyzer:
                 f'{resource_type}_gap_percentage': gap_percentage
             })
 
-        return pd.DataFrame({
-            f'{resource_type}_density_per_capita': actual_density_per_capita,
-            f'{resource_type}_required_base': required_resources_base,
-            f'{resource_type}_gap_count': supply_gap,
-            f'{resource_type}_gap_percentage': gap_percentage
-        })
 
     def adjust_for_external_factors(self, resource_type: str, factors: Dict[str, float] = None) -> Dict:
         """
@@ -282,59 +271,61 @@ class HealthResourceAnalyzer:
 
     def _classify_priority(self, score: pd.Series) -> pd.Series:
         """根据综合得分分类优先级"""
-        conditions = [
-            score >= 80,
-            score >= 60,
-            score >= 40,
-            score >= 20,
-            score < 20
-        ]
         choices = ['极高', '高', '中', '低', '很低']
 
-        return pd.cut(score, bins=[0, 20, 40, 60, 80, 100],
-                      labels=choices, include_lowest=True)
+        return pd.cut(score,
+                      bins=[0, 20, 40, 60, 80, 100],
+                      labels=choices,
+                      include_lowest=True)
 
     def _calculate_efficiency_grade(self, df: pd.DataFrame) -> pd.Series:
         """计算总体效率等级"""
-        # 计算标准化效率得分
-        # 各项指标相对全国平均水平的比例
-        efficiency_scores = []
+        beds_mean = df['beds_per_pop'].mean()
+        docs_mean = df['doctors_per_pop'].mean()
+        nurs_mean = df['nurses_per_pop'].mean()
+        facs_mean = df['facilities_per_pop'].mean()
 
-        for idx, row in df.iterrows():
-            # 床位相对效率
-            beds_rel = row['beds_per_pop'] / df['beds_per_pop'].mean() if df['beds_per_pop'].mean() > 0 else 0
-            # 医生相对效率
-            docs_rel = row['doctors_per_pop'] / df['doctors_per_pop'].mean() if df['doctors_per_pop'].mean() > 0 else 0
-            # 护士相对效率
-            nurs_rel = row['nurses_per_pop'] / df['nurses_per_pop'].mean() if df['nurses_per_pop'].mean() > 0 else 0
-            # 设施相对效率
-            facs_rel = row['facilities_per_pop'] / df['facilities_per_pop'].mean() if df[
-                                                                                          'facilities_per_pop'].mean() > 0 else 0
+        beds_rel = df['beds_per_pop'] / beds_mean if beds_mean > 0 else 0
+        docs_rel = df['doctors_per_pop'] / docs_mean if docs_mean > 0 else 0
+        nurs_rel = df['nurses_per_pop'] / nurs_mean if nurs_mean > 0 else 0
+        facs_rel = df['facilities_per_pop'] / facs_mean if facs_mean > 0 else 0
 
-            # 综合效率得分
-            comp_score = (beds_rel + docs_rel + nurs_rel + facs_rel) / 4 * 100
-            efficiency_scores.append(comp_score)
+        # 计算综合效率得分
+        comp_score = (beds_rel + docs_rel + nurs_rel + facs_rel) / 4 * 100
 
-        # 转换为效率等级
-        score_series = pd.Series(efficiency_scores)
-        return pd.cut(score_series,
+        # 直接对 Series 转换为效率等级
+        return pd.cut(comp_score,
                       bins=[0, 25, 50, 75, 90, 100],
                       labels=['极差', '较差', '一般', '良好', '优秀'],
                       include_lowest=True)
 
 
 def demo_health_analyzer():
-    """
-    Demo函数：展示HealthResourceAnalyzer的基本用法
-    """
+
     print("=" * 60)
     print("HealthResourceAnalyzer Demo")
     print("=" * 60)
 
-    from settings import get_settings
+    from settings import SETTINGS
 
     # 获取配置
-    config = get_settings()
+    config = {
+        'COLUMN_MAPPING': {
+            'region': 'region_name',
+            'hospital_beds': 'hospital_beds_per_1000',
+            'doctors': 'physicians_per_1000',
+            'nurses': 'nurses_per_1000',
+            'medical_facilities': 'medical_facilities_per_1000',
+            'population': 'population',
+            'area': 'area'
+        },
+        'RESOURCE_DENSITY_BASELINE': SETTINGS.BASE_MEDICAL_RESOURCE_DENSITIES,
+        'RESOURCE_COST_BASELINE': {
+            'hospital_beds': 100000,
+            'doctors': 500000,
+            'nurses': 300000
+        }
+    }
 
     # 创建模拟数据
     regions = [f'区域_{i + 1}' for i in range(10)]

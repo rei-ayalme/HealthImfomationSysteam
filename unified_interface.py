@@ -2,25 +2,20 @@
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
-import warnings
 from abc import ABC, abstractmethod
 from settings import SETTINGS, STANDARD_COLUMN_MAPPING
-
 
 class IHealthAnalyzer(ABC):
     """
     医疗资源分析接口定义
     统一各分析器的接口规范
     """
-
     @abstractmethod
     def compute_resource_gap(self, year: int) -> pd.DataFrame:
         """
         计算资源缺口
-
         Args:
             year: 年份
-
         Returns:
             pd.DataFrame: 包含缺口信息的DataFrame
             必须包含: ['地区'/'region', '实际供给指数'/'actual_supply_index',
@@ -111,37 +106,28 @@ class IDiseaseAnalyzer(ABC):
 
 class UnifiedHealthAnalyzer(IHealthAnalyzer):
     """
-    统一医疗资源分析器 - 已修复属性缺失问题
+    统一医疗资源分析器
     """
-
     def __init__(self, data_source: Dict[str, pd.DataFrame]):
-        """
-        Args:
-            data_source: 数据源字典，包含 'main' 和 'external_factors'
-        """
         self.data_source = data_source
-
-        # 1. 获取主数据集并标准化列名以供内部逻辑使用
         main_df = self.data_source.get('main', pd.DataFrame())
-        if not main_df.empty:
-            self.main_data = self._map_columns(main_df)
-        else:
-            self.main_data = main_df
+        self.main_data = self._map_columns(main_df) if not main_df.empty else main_df
 
-        # 2. 修复 Streamlit 访问属性缺失问题
-        # 提取可用年份列表
+        # 修复1：安全提取年份，过滤掉 NaN 和非法字符
         if 'year' in self.main_data.columns:
-            self.years = sorted(self.main_data['year'].unique().astype(int), reverse=True)
+            valid_years = pd.to_numeric(self.main_data['year'], errors='coerce').dropna()
+            self.years = sorted(valid_years.unique().astype(int), reverse=True)
+            if not self.years:
+                self.years = [2020]
         else:
             self.years = [2020]
 
-        # 提取可用地区列表
+        # 修复2：安全提取地区
         if 'region_name' in self.main_data.columns:
-            self.regions = self.main_data['region_name'].unique().tolist()
+            self.regions = [r for r in self.main_data['region_name'].unique() if pd.notna(r) and str(r).strip() != '']
         else:
             self.regions = []
 
-        # 核心指标映射配置
         self.key_indicators = {
             'physicians_per_1000': ['医师人数', 'physicians', '执业医师', '执业（助理）医师（人）'],
             'nurses_per_1000': ['护士人数', 'nurses', '注册护士（人）'],
@@ -150,19 +136,13 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
         }
 
     def compute_resource_gap(self, year: int) -> pd.DataFrame:
-        """
-        计算资源缺口，返回标准化的 DataFrame
-        """
-        # 获取指定年份的数据
         df = self._get_year_data(year)
-
         if df.empty:
             return pd.DataFrame(columns=['实际供给指数', '理论需求指数', '相对缺口率', '缺口类别'])
 
-        # 计算供给指数 (使用权重: 医师0.4, 护士0.35, 床位0.25)
-        # 确保数据为数值型
+        # 修复4：使用 get() 避免缺失列导致的 KeyError
         for col in ['physicians_per_1000', 'nurses_per_1000', 'hospital_beds_per_1000']:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = pd.to_numeric(df.get(col, 0), errors='coerce').fillna(0)
 
         actual_supply_index = (
                 df['physicians_per_1000'] * SETTINGS.RESOURCE_WEIGHTS.get('physicians_per_1000', 0.4) +
@@ -170,34 +150,30 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
                 df['hospital_beds_per_1000'] * SETTINGS.RESOURCE_WEIGHTS.get('hospital_beds_per_1000', 0.25)
         )
 
-        # 计算需求指数
         theoretical_demand_index = self._compute_theoretical_demand(df)
-
-        # 计算相对缺口率
         relative_gap_rate = (theoretical_demand_index - actual_supply_index) / theoretical_demand_index.replace(0,
                                                                                                                 np.nan)
-        relative_gap_rate = relative_gap_rate.fillna(0)
 
-        # 结果封装
         result_df = pd.DataFrame({
             '地区': df.get('region_name', df.index),
             '实际供给指数': actual_supply_index,
             '理论需求指数': theoretical_demand_index,
-            '相对缺口率': relative_gap_rate,
-            '缺口类别': self._classify_gap_severity(relative_gap_rate)
+            '相对缺口率': relative_gap_rate.fillna(0),
+            '缺口类别': self._classify_gap_severity(relative_gap_rate.fillna(0))
         }).set_index('地区')
 
         return result_df
+
     def _get_year_data(self, year: int) -> pd.DataFrame:
-        """获取指定年份的数据视图"""
-        df_all = self.data_source['main']
+        df_all = self.data_source['main'].copy()
         if 'year' in df_all.columns:
-            return df_all[df_all['year'] == year].copy()
+            # 修复3：强制转换为数值后再比较，避免 '2020' == 2020 判定为 False 的窘境
+            df_all['year_num'] = pd.to_numeric(df_all['year'], errors='coerce')
+            target_year = year if year else (self.years[0] if self.years else 2020)
+            return df_all[df_all['year_num'] == int(target_year)].copy()
         else:
-            # 如果没有年份列，则返回全部数据，并添加默认年份值
-            df_with_year = df_all.copy()
-            df_with_year['year'] = year
-            return df_with_year
+            df_all['year'] = year or 2020
+            return df_all
 
     def _map_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """对列进行标准化重映射"""
@@ -224,22 +200,9 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
         return df
 
     def _compute_theoretical_demand(self, df: pd.DataFrame) -> pd.Series:
-        """
-        计算理论需求指数
-        使用基准配置 + 外部因素调整
-        """
-        # 获取外部因素数据 (如果有)
         external_df = self.data_source.get('external_factors', pd.DataFrame())
-        if not external_df.empty:
-            # 将外部数据连接到主数据上
-            df_extended = pd.merge(df, external_df,
-                                   left_on=['region_name', 'year'],
-                                   right_on=['region_name', 'year'],
-                                   how='left')
-        else:
-            df_extended = df
+        df_extended = pd.merge(df, external_df, on=['region_name', 'year'], how='left') if not external_df.empty else df
 
-        # 基础理论需求基于基准配置密度
         base_demand = pd.Series(
             data=(SETTINGS.BASE_MEDICAL_RESOURCE_DENSITIES.get('physicians_per_1000', 2.5) * 0.4 +
                   SETTINGS.BASE_MEDICAL_RESOURCE_DENSITIES.get('nurses_per_1000', 3.2) * 0.35 +
@@ -247,30 +210,22 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
             index=df_extended.index
         )
 
-        # 调整到合适的量级
         pop_col = [col for col in df_extended.columns if 'population' in col.lower()]
-        if pop_col:
-            pop_values = df_extended.get(pop_col[0])
-            if pop_values is not None:
-                # 基于人口规模调整
-                avg_pop = pop_values.mean() if not pop_values.empty else 1
-                if avg_pop > 0:
-                    base_demand *= (pop_values / avg_pop)
+        if pop_col and (pop_values := df_extended.get(pop_col[0])) is not None:
+            if (avg_pop := pop_values.mean() if not pop_values.empty else 1) > 0:
+                base_demand *= (pop_values / avg_pop)
 
-        # 应用外部因素调整
         adjustment_multipliers = pd.Series(1.0, index=df_extended.index)
 
-        # 示例：
-        # 假设外部因素在df_extended中有'external_hypertension_prevalence'这样的列
-        for idx, row in df_extended.iterrows():
-            multiplier_temp = 1.0
-            # 如果有更多的外部健康因素数据，可以根据这些数据调整需求
+        # 修复5：激活原本空循环里的外部因素影响系数 (以 PM2.5 和肥胖率为例)
+        if 'external_pm25' in df_extended.columns:
+            pm25_impact = SETTINGS.HEALTH_IMPACT_FACTORS.get('pm25_impact', 0.04)
+            base_pm25 = SETTINGS.BASE_HEALTH_FACTORS_WHO.get('pm25_level', 42.0)
+            adjustment_multipliers *= df_extended['external_pm25'].apply(
+                lambda x: 1.0 + (max(0, x - base_pm25) / 100) * pm25_impact if pd.notna(x) else 1.0
+            )
 
-            adjustment_multipliers.iloc[idx] = multiplier_temp
-
-        adjusted_demand = base_demand * adjustment_multipliers
-
-        return adjusted_demand
+        return base_demand * adjustment_multipliers
 
     def _classify_gap_severity(self, gap_rates: pd.Series) -> pd.Series:
         """根据缺口率划分严重程度类别"""

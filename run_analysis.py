@@ -11,7 +11,7 @@ def main():
     
     # 1. 数据预处理
     print("1. 数据预处理...")
-    from data_preprocessing import clean_health_data
+    from integrated_data_preprocessing_optimized import HealthDataPreprocessor
     
     input_file = "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx"
     output_file = "cleaned_health_data.xlsx"
@@ -23,7 +23,8 @@ def main():
         return
     
     try:
-        clean_health_data(input_file, output_file)
+        preprocessor = HealthDataPreprocessor()
+        preprocessor.clean_health_data(input_file, output_file)
     except Exception as e:
         print(f"数据预处理失败: {e}")
         return

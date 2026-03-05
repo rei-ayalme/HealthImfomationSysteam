@@ -29,10 +29,15 @@ analyzer = st.session_state.analyzer
 da = st.session_state.disease_analyzer
 
 st.sidebar.header("📅 全局控制")
-# 确保年份选项存在
 available_years = sorted(getattr(analyzer, 'years', [2020]), reverse=True)
+if not available_years:
+    available_years = [2020]
+
+current_year = st.session_state.get('selected_year', available_years[0])
+default_idx = available_years.index(current_year) if current_year in available_years else 0
+
 st.session_state.selected_year = st.sidebar.selectbox(
-    "分析年份", available_years, index=0, key="global_year"
+    "分析年份", available_years, index=default_idx, key="global_year"
 )
 
 st.title("全国卫生资源配置优化分析平台")
@@ -209,26 +214,28 @@ with tab4:
 # 第五个标签页
 with tab5:
     st.subheader("📄 PDF报告 & 疾病谱系分析 & 📍 省级详情面板")
-    year = st.selectbox("报告年份", list(analyzer.years), key="rep_year_sel")
+    year = st.selectbox("报告年份", available_years, key="rep_year_sel")
     prov_input = st.text_input("指定省份（留空则全国）", key="prov_input")
 
     provinces = list(analyzer.regions) if hasattr(analyzer, 'regions') and analyzer.regions is not None else [
         '无可用省份']
     prov = st.selectbox("选择省份", provinces, key="prov_select")
 
+    gap_df = analyzer.compute_resource_gap(int(year))
+
     # 确保选择的省份存在于地区列表中
-    if hasattr(analyzer, 'regions') and prov in analyzer.regions:
-        prov_gap = analyzer.compute_resource_gap(st.session_state.selected_year).loc[prov]
+    if hasattr(analyzer, 'regions') and prov in analyzer.regions and prov in gap_df.index:
+        prov_gap = gap_df.loc[prov]
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("实际供给", f"{prov_gap['实际供给']:.0f}")
+            st.metric("实际供给", f"{prov_gap['实际供给指数']:.2f}")  # 修复了错误的列名
         with col2:
-            st.metric("理论需求", f"{prov_gap['理论需求']:.0f}")
+            st.metric("理论需求", f"{prov_gap['理论需求指数']:.2f}")
         with col3:
             st.metric("缺口率", f"{prov_gap['相对缺口率']:.1%}", delta=prov_gap['缺口类别'])
     else:
-        st.warning("当前分析器未包含有效的地区数据")
+        st.warning(f"暂无 {prov} 在 {year} 年的有效分析数据，可能因为该省份各项核心指标缺失。")
 
     # 历史趋势
     with st.spinner("正在获取趋势数据..."):

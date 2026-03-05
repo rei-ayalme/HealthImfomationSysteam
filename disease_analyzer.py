@@ -3,11 +3,8 @@
 import pandas as pd
 import numpy as np
 import requests
-import json
-from typing import Dict, List, Tuple, Optional
-import warnings
+from typing import Tuple, Optional
 from datetime import datetime
-from scipy import stats
 from settings import *
 from unified_interface import IDiseaseAnalyzer
 
@@ -232,15 +229,14 @@ class DiseasePredictor:
         # 匹配列名，创建输出框架
         rename_map = {
             self.settings.STANDARD_COLUMN_MAPPING.get('hypertension_awareness', ''):
-                self.settings.STANDARD_COLUMN_MAPPING[
-                    'hypertension_awareness'] if self.settings.STANDARD_COLUMN_MAPPING.get(
-                    'hypertension_awareness') in whomap else '',
-            self.settings.STANDARD_COLUMN_MAPPING['hypertension_prevalence']:
-                self.settings.STANDARD_COLUMN_MAPPING['hypertension_prevalence'],
-            self.settings.STANDARD_COLUMN_MAPPING['pm25']:
-                self.settings.STANDARD_COLUMN_MAPPING['pm25'],
-            self.settings.STANDARD_COLUMN_MAPPING['obesity_rate']:
-                self.settings.STANDARD_COLUMN_MAPPING['obesity_rate']
+                self.settings.STANDARD_COLUMN_MAPPING.get('hypertension_awareness', '')
+                if self.settings.STANDARD_COLUMN_MAPPING.get('hypertension_awareness') in available_cols else '',
+            self.settings.STANDARD_COLUMN_MAPPING.get('hypertension_prevalence', 'hypertension_prevalence'):
+                self.settings.STANDARD_COLUMN_MAPPING.get('hypertension_prevalence', 'hypertension_prevalence'),
+            self.settings.STANDARD_COLUMN_MAPPING.get('pm25', 'pm25'):
+                self.settings.STANDARD_COLUMN_MAPPING.get('pm25', 'pm25'),
+            self.settings.STANDARD_COLUMN_MAPPING.get('obesity_rate', 'obesity_rate'):
+                self.settings.STANDARD_COLUMN_MAPPING.get('obesity_rate', 'obesity_rate')
         }
 
         # 提取健康因素数据
@@ -482,10 +478,10 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
         for i in range(n_samples):
             path_values = [initial_burden]
             for t in range(1, len(time_points)):
-                dW = np.random.normal(0, 1)
+                dw = np.random.normal(0, 1)
                 prev_burden = path_values[-1]
                 drift_term = effective_drift * prev_burden
-                diffusive_term = diffusion * prev_burden * dW
+                diffusive_term = diffusion * prev_burden * dw
                 new_burden = max(0, prev_burden + drift_term + diffusive_term)
                 path_values.append(new_burden)
             paths[i, :] = path_values
