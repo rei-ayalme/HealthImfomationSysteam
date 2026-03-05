@@ -1,5 +1,4 @@
-# disease_analyzer.py - 更新版疾病分析器
-
+# disease_analyzer.py
 import pandas as pd
 import numpy as np
 import requests
@@ -27,10 +26,6 @@ except ImportError:
 
 
 class DiseasePredictor:
-    """
-    疾病数据分析与预测器（已更新WHO接口）
-    整合多种预测方法和WHO全球健康观察数据
-    """
 
     def __init__(self, settings_dict=None):
         """
