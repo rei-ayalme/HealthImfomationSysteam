@@ -1,7 +1,5 @@
 # run_analysis.py
 import warnings
-import pandas as pd
-import numpy as np
 import os
 warnings.filterwarnings('ignore')
 

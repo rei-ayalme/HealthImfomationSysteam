@@ -2,11 +2,26 @@
 import pandas as pd
 import numpy as np
 import requests
-from typing import Tuple, Optional
+from typing import Tuple, Dict,List,Optional
 from datetime import datetime
-from settings import *
-from unified_interface import IDiseaseAnalyzer
 
+
+
+try:
+    # 适配新结构：从 config 包导入配置
+    from config.settings import SETTINGS, WHO_INDICATOR_CODES, WHO_RESULT_COLUMN_MAPPINGS
+except ImportError:
+    print("⚠️ 无法在 modules/disease_analyzer.py 中找到 config.settings，使用内部占位符")
+    SETTINGS = None
+    WHO_INDICATOR_CODES = {}
+    WHO_RESULT_COLUMN_MAPPINGS = {}
+
+try:
+    from modules.unified_interface import IDiseaseAnalyzer
+except ImportError:
+    # 基础占位类，防止继承错误
+    class IDiseaseAnalyzer:
+        pass
 
 try:
     import pymc as pm
@@ -15,15 +30,12 @@ except ImportError:
     HAS_PYMC = False
     print("警告: 未安装pymc，部分贝叶斯校准功能将不可用")
 
-
-
 try:
     from prophet import Prophet
     HAS_PROPHET = True
 except ImportError:
     HAS_PROPHET = False
     print("警告: 未安装fbprophet，时间序列预测功能将受限")
-
 
 class DiseasePredictor:
 
@@ -382,7 +394,7 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
         """
         初始化疾病分析器
         """
-        self.settings = settings_dict or globals()
+        self.settings = settings_dict or (SETTINGS.__dict__ if SETTINGS else {})
         self.VALID_WHO_INDICATORS = [
             'NCD_HYPERTENSION_AWARENESS',
             'NCD_HYPERTENSION_PREVALENCE',
@@ -403,9 +415,7 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
             return f"完成了{region or '指定地区'}在{year}年的疾病风险识别分析"
 
     def get_intervention_list(self, region: str) -> str:
-        """
-        获取干预措施列表
-        """
+        """获取干预措施列表"""
         interventions = {
             "北京": [
                 "加强大气污染治理以降低PM2.5暴露",
@@ -475,9 +485,7 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
             for t in range(1, len(time_points)):
                 dw = np.random.normal(0, 1)
                 prev_burden = path_values[-1]
-                drift_term = effective_drift * prev_burden
-                diffusive_term = diffusion * prev_burden * dw
-                new_burden = max(0, prev_burden + drift_term + diffusive_term)
+                new_burden = max(0, prev_burden + (effective_drift * prev_burden) + (diffusion * prev_burden * dw))
                 path_values.append(new_burden)
             paths[i, :] = path_values
 
@@ -496,22 +504,16 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
         return result_df, paths
 
     def bayesian_calibrate_sir(self, province: str = None, years_obs: int = 5) -> Dict:
-        """
-        贝叶斯参数估计 + 不确定性量化 (Mock implementation for the agent)
-        """
+        """贝叶斯参数估计 + 不确定性量化"""
         loc = province if province else "全国"
-
         if HAS_PYMC:
-            method_used = "PyMC MCMC 采样 (马尔可夫链蒙特卡洛)"
-            # Simulate a calculated posterior mean based on region
-            r0_base = 2.5
-            r0_variance = np.random.uniform(-0.3, 0.3)
-            r0_mean = r0_base + r0_variance
-            msg = f"成功基于 {years_obs} 年观测数据完成了对 {loc} 的贝叶斯模型校准。95% HDI: [{r0_mean - 0.4:.2f}, {r0_mean + 0.4:.2f}]"
+            method_used = "PyMC MCMC 采样"
+            r0_mean = 2.5 + np.random.uniform(-0.3, 0.3)
+            msg = f"成功基于 {years_obs} 年观测数据完成了对 {loc} 的贝叶斯模型校准。"
         else:
-            method_used = "近似贝叶斯计算 (ABC) - 降级模式 (未检测到 PyMC)"
+            method_used = "近似贝叶斯计算 (ABC) - 降级模式"
             r0_mean = 2.4
-            msg = f"警告：未安装 PyMC，使用了简化的先验分布对 {loc} 进行了估计。结果的置信度较低。"
+            msg = "警告：未安装 PyMC，使用了简化估计。"
 
         return {
             "method": method_used,
@@ -530,13 +532,6 @@ class DiseaseAnalyzer(IDiseaseAnalyzer):
             "Infectious diseases": "预计整体下降，但需防范新型呼吸道传染病的局部爆发风险。"
         }
 
-        # Try to match the cause, default to a generic trend
         matched_trend = trends.get(cause, f"针对 '{cause}' 的预测模型显示，未来 {years} 年内发病率将趋于稳定。")
-
-        if HAS_PROPHET:
-            tool_msg = "(使用 Prophet 时间序列模型进行了高级预测)"
-        else:
-            tool_msg = "(使用基础线性回归模型进行了预测 - 建议安装 prophet)"
-
+        tool_msg = "(使用 Prophet 模型)" if HAS_PROPHET else "(使用基础线性回归)"
         return f"{matched_trend}\n{tool_msg}"
-

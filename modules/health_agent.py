@@ -1,35 +1,80 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.tools import tool
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate
-from unified_interface import get_unified_analyzer  # 使用统一接口
-from disease_analyzer import DiseaseAnalyzer
-import pandas as pd
 import os
 from datetime import datetime
-from settings import CLEANED_DATA_FILE
+import pandas as pd
+import numpy as np
 import plotly.express as px
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+try:
+    from langchain_openai import ChatOpenAI
+    from langchain.agents import create_tool_calling_agent, AgentExecutor
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.tools import tool
+except ImportError as e:
+    print(f"⚠️ LangChain 核心组件导入失败: {e}")
+
+
+
+    def tool(func):
+        return func
+
+    class AgentExecutor:
+        def __init__(self, *args, **kwargs): pass
+        def invoke(self, *args, **kwargs):
+            return {"output": "Agent 引擎未就绪，请检查 langchain 安装或版本。"}
+
+    class ChatPromptTemplate:
+        @classmethod
+        def from_messages(cls, *args, **kwargs): return None
+
+    def create_tool_calling_agent(*args, **kwargs):
+        return None
+
+
+
+
+try:
+    from modules.unified_interface import get_unified_analyzer
+    from modules.disease_analyzer import DiseaseAnalyzer
+    from config.settings import CLEANED_DATA_FILE
+except ImportError as e:
+    print(f"⚠️ 内部业务模块导入失败: {e}")
+
+    # 定义 get_unified_analyzer 的占位函数
+    def get_unified_analyzer(*args, **kwargs):
+        return None
+
+    # 定义 DiseaseAnalyzer 的占位类
+    class DiseaseAnalyzer:
+        def get_attribution(self, *args, **kwargs): return "分析不可用"
+
+        def get_intervention_list(self, *args, **kwargs): return "建议不可用"
+
+
+    CLEANED_DATA_FILE = "data/processed/cleaned_health_data.xlsx"
+
 
 # --- ADDED MISSING IMPORT FOR WEB SEARCH ---
 try:
     from langchain_community.tools import DuckDuckGoSearchRun
-
     search_tool = DuckDuckGoSearchRun()
     SEARCH_AVAILABLE = True
 except ImportError:
     SEARCH_AVAILABLE = False
+    class DuckDuckGoSearchRun:
+        def run(self, *args, **kwargs):
+            return "网络搜索功能不可用，请安装 duckduckgo-search 库。"
+    search_tool = DuckDuckGoSearchRun()
     print("⚠️ duckduckgo-search 未安装，网络搜索功能不可用")
 
-os.environ.setdefault("OPENAI_API_KEY", "your-key-here")
-
-# 尽量导入，但允许部分功能不可用
-try:
-    from gtts import gTTS
-
-    TTS_AVAILABLE = True
-except ImportError:
-    TTS_AVAILABLE = False
-    print("⚠️ gTTS 未安装，语音功能将返回文本提示")
+def get_analyzer():
+    """获取数据分析器实例"""
+    if os.path.exists(CLEANED_DATA_FILE):
+        return get_unified_analyzer(CLEANED_DATA_FILE)
+    return None
 
 
 class MultilingualManager:
@@ -88,6 +133,7 @@ class MultilingualManager:
 
 
 def get_analyzer():
+    """获取数据分析器实例"""
     if os.path.exists(CLEANED_DATA_FILE):
         return get_unified_analyzer(CLEANED_DATA_FILE)
     return None
@@ -128,14 +174,8 @@ def analyze_resource_gap(year: int) -> str:
 
     try:
         gap_data = analyzer.compute_resource_gap(year)
-        avg_gap = gap_data['相对缺口率'].mean() if '相对缺口率' in gap_data.columns else 0
-
-        en_header = f"[{year} National Healthcare Resource Gap]"
-        zh_header = f"【{year}年全国资源缺口】"
-        table_str = gap_data[['实际供给指数', '理论需求指数', '相对缺口率', '缺口类别']].to_string()
-        avg_str = f"Average gap rate: {avg_gap:.1%}"
-
-        return f"{zh_header}\n{table_str}\n\n{en_header}\n{avg_str}"
+        avg_gap = gap_data['相对缺口率'].mean()
+        return f"【{year}年分析】全国平均缺口率: {avg_gap:.1%}"
     except Exception as e:
         return f"分析失败: {str(e)}"
 
@@ -319,16 +359,12 @@ Current suggestion is to use annual data for strategic planning."""
 def predict_future(years_ahead: int = 5, scenario: str = "基准") -> str:
     """未来医疗资源需求预测 - 多语言输出"""
     analyzer = get_analyzer()
+    if not analyzer: return "错误：未找到数据文件。"
     try:
         df = analyzer.predict_future(years_ahead, scenario)
-        zh_pred = f"""未来预测（{scenario}情景）:
-{df.head(10).to_string()}"""
-        en_pred = f"""Future Prediction ({scenario} Scenario):
-{df.head(10).to_string()}"""
-        return f"{zh_pred}\n\n{en_pred}"
+        return f"未来{years_ahead}年预测 ({scenario}情景):\n{df.head().to_string()}"
     except Exception as e:
-        return f"Prediction Error: {str(e)}\n预测出现错误：{str(e)}"
-
+        return f"预测失败: {str(e)}"
 
 @tool
 def get_province_report(province: str, year: int) -> str:
@@ -455,11 +491,8 @@ def detect_language_preference(user_input: str) -> str:
 
 
 class HealthResourceAgent:
-    def __init__(self):
-        # 统一使用 OpenAI 的模型（这里保持你原代码中的 gpt-4o-mini 设置）
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-
-        # 将我们整合好的工具列表传给Agent
+    def __init__(self, model_name="gpt-4o-mini"):#记得换模型
+        self.llm = ChatOpenAI(model=model_name, temperature=0)
         self.tools = ALL_TOOLS
 
         self.prompt = ChatPromptTemplate.from_messages([
@@ -476,7 +509,13 @@ class HealthResourceAgent:
         ])
 
         agent = create_tool_calling_agent(self.llm, self.tools, self.prompt)
-        self.executor = AgentExecutor(agent=agent, tools=self.tools, verbose=True)
+
+        self.executor = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            verbose=True,
+            handle_parsing_errors=True
+        )
 
     def ask(self, user_input: str, chat_history: list = None):
         return self.executor.invoke({

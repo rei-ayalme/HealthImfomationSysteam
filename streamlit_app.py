@@ -2,28 +2,33 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-from settings import PAGE_TITLE, CLEANED_DATA_FILE
-from unified_interface import get_unified_analyzer
-from disease_analyzer import DiseaseAnalyzer
-import os
 import numpy as np
-from health_agent import ask_agent
-import seaborn as sns
-import matplotlib.pyplot as plt
 import arviz as az
-import json
+import matplotlib.pyplot as plt
+import os
+from config.settings import PAGE_TITLE, CLEANED_DATA_FILE
+from modules.unified_interface import get_unified_analyzer
+from modules.disease_analyzer import DiseaseAnalyzer
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).parent))
 
-st.set_page_config(page_title="全国卫生资源配置优化平台", layout="wide")
+root_path = str(Path(__file__).parent)
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
+
+st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 
 # 初始化会话状态
 if 'initialized' not in st.session_state:
-    st.session_state.initialized = True
-    st.session_state.analyzer = get_unified_analyzer(CLEANED_DATA_FILE)
+    if os.path.exists(CLEANED_DATA_FILE):
+        st.session_state.analyzer = get_unified_analyzer(CLEANED_DATA_FILE)
+    else:
+        st.session_state.analyzer = None
     st.session_state.disease_analyzer = DiseaseAnalyzer()
-    st.session_state.selected_year = 2020  # 设置默认年份
-    st.session_state.chat_history = [
-        {"role": "assistant", "content": "你好！我是卫生资源配置智能助手。请问有什么可以帮你分析的？"}
-    ]
+    st.session_state.initialized = True
+
+st.title("🏥 卫生资源配置优化分析平台")
 
 analyzer = st.session_state.analyzer
 da = st.session_state.disease_analyzer
@@ -32,6 +37,24 @@ st.sidebar.header("📅 全局控制")
 available_years = sorted(getattr(analyzer, 'years', [2020]), reverse=True)
 if not available_years:
     available_years = [2020]
+
+with st.sidebar:
+    st.header("🤖 AI 智能分析")
+    if st.checkbox("开启 AI 助手"):
+        from modules.health_agent import ask_agent
+
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+
+        for msg in st.session_state.messages:
+            st.chat_message(msg["role"]).write(msg["content"])
+
+        if prompt := st.chat_input("询问关于资源配置的问题..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.chat_message("user").write(prompt)
+            answer = ask_agent(prompt, chat_history=st.session_state.messages[:-1])
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.chat_message("assistant").write(answer)
 
 current_year = st.session_state.get('selected_year', available_years[0])
 default_idx = available_years.index(current_year) if current_year in available_years else 0
@@ -52,16 +75,22 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 
 # 第一个标签页
 with tab1:
-    col1, col2, col3 = st.columns(3)
+    if analyzer is None:
+        st.error(f"❌ 未能加载数据分析器。请检查路径是否存在：`{CLEANED_DATA_FILE}`")
+        st.info("提示：请先运行数据预处理脚本生成清洗后的数据文件。")
+    else:
+        col1, col2, col3 = st.columns(3)
 
 
     @st.cache_data
     def compute_gap_data(_analyzer, year):
         return _analyzer.compute_resource_gap(year)
 
-
-    gap_data = compute_gap_data(analyzer, st.session_state.selected_year)
-    avg_gap_rate = gap_data['相对缺口率'].median()
+    try:
+        gap_data = compute_gap_data(analyzer, st.session_state.selected_year)
+        avg_gap_rate = gap_data['相对缺口率'].median()
+    except Exception as e:
+        st.error(f"分析数据时出错: {e}")
 
     with col1:
         st.metric("全国平均缺口率 (中位数)", f"{avg_gap_rate:.1%}")

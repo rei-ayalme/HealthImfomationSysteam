@@ -191,7 +191,7 @@ class HealthResourceAnalyzer:
         Returns:
             效率评估DataFrame
         """
-        if not all([self.resource_data, self.population_data]):
+        if self.resource_data is None or self.population_data is None:
             raise ValueError("数据未加载")
 
         merged_data = self._merge_data_with_validation()
@@ -209,8 +209,7 @@ class HealthResourceAnalyzer:
                 'region': region,
                 'region_code': row.get(self.settings['COLUMN_MAPPING'].get('code'), ''),
                 'total_population': row[self.settings['COLUMN_MAPPING']['population']],
-                'area_km2': row.get(self.settings['COLUMN_MAPPING'].get('area'), 0) if self.area_data else 0,
-
+                'area_km2': row.get(self.settings['COLUMN_MAPPING'].get('area'), 0) if self.area_data is not None else 0,
                 # 床位效率
                 'beds_per_pop': (row.get(self.settings['COLUMN_MAPPING']['hospital_beds'], 0) /
                                  row[self.settings['COLUMN_MAPPING']['population']] * 10000) if row[self.settings[

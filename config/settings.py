@@ -1,7 +1,6 @@
 # settings.py
-import pandas as pd
-import numpy as np
-from typing import Literal, Dict, List, Any
+import os
+from typing import Dict, List, Any
 from enum import Enum
 
 class WeightingMethod(Enum):
@@ -9,7 +8,7 @@ class WeightingMethod(Enum):
     EXPERT = "expert"
     INVERSE_VARIANCE = "inverse_variance"
     CUSTOM = "custom"
-    BENCHMARK_RELATIVE = "benchmark_relative"  # 补充缺失的枚举值
+    BENCHMARK_RELATIVE = "benchmark_relative"
 
 
 class Settings:
@@ -40,10 +39,11 @@ class Settings:
         'diffusion_coefficient': 0.1
     }
 
-    # 数据文件路径
-    RAW_DATA_FILE = "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx"
-    CLEANED_DATA_FILE = "cleaned_health_data.xlsx"
-    GBD_DATA_FILE = "IHME-GBD_2023_DATA-7dc96f7f-1.csv"
+    # --- 路径配置 (使用相对路径指向 data 文件夹) ---
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    RAW_DATA_FILE = os.path.join(BASE_DIR, "data", "raw", "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx")
+    CLEANED_DATA_FILE = os.path.join(BASE_DIR, "data", "processed", "cleaned_health_data.xlsx")
+    GBD_DATA_FILE = os.path.join(BASE_DIR, "data", "raw", "IHME-GBD_2023_DATA-7dc96f7f-1.csv")
 
     # 列名标准映射
     STANDARD_COLUMN_MAPPING = {
