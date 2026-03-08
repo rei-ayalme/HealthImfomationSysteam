@@ -1,7 +1,13 @@
 # run_analysis.py
 import warnings
 import os
+from pathlib import Path
+import sys
 warnings.filterwarnings('ignore')
+
+root = str(Path(__file__).parent.parent)
+if root not in sys.path:
+    sys.path.insert(0, root)
 
 def main():
     """主运行函数"""
@@ -9,8 +15,8 @@ def main():
     
     # 1. 数据预处理
     print("1. 数据预处理...")
-    from integrated_data_preprocessing_optimized import HealthDataPreprocessor
-    
+    from modules.integrated_data_preprocessing_optimized import HealthDataPreprocessor
+
     input_file = "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx"
     output_file = "cleaned_health_data.xlsx"
     
@@ -29,7 +35,7 @@ def main():
     
     # 2. 核心分析
     print("2. 核心分析...")
-    from unified_interface import get_unified_analyzer
+    from modules.unified_interface import get_unified_analyzer
     
     try:
         analyzer = get_unified_analyzer(output_file)  # 使用统一分析器

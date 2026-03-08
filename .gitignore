@@ -1,0 +1,33 @@
+# .gitignore
+# 环境配置
+.env
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 数据文件 (忽略原始和处理后的数据，确保数据隐私)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# 数据库与日志
+*.db
+logs/
+*.log
+
+# 虚拟环境
+.venv/
+env/
+venv/
+ENV/
+
+# 报告文件
+*.pdf
+*.xlsx
+*.mp3
+
+# Streamlit 配置
+.streamlit/

@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Optional
 import logging
 from sklearn.preprocessing import MinMaxScaler
 from unified_interface import UnifiedDataPreprocessor
-from settings import SETTINGS, STANDARD_COLUMN_MAPPING
+from config.settings import SETTINGS, STANDARD_COLUMN_MAPPING
 from datetime import datetime
 
 def identify_column_types(df_columns) -> Dict[str, str]:

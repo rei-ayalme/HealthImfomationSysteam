@@ -232,32 +232,6 @@ def export_data_to_excel(year: int, province: str = None) -> str:
         return f"✅ Excel Exported: {filename} (Records: {records_count})\n✅ 已导出：{filename}（记录数：{records_count}）"
 
 
-@tool
-def speak_key_findings(year: int, province: str = None) -> str:
-    """语音播报关键结论（生成 mp3 文件 - 支持双语文本）"""
-    analyzer = get_analyzer()
-    gap = analyzer.compute_resource_gap(year)
-
-    if province and province in gap.index:
-        row = gap.loc[province]
-        zh_text = f"{province} {year}年，资源缺口率 {row['相对缺口率']:.1%}，属于 {row['缺口类别']} 省份。"
-        en_text = f"For {province} in {year}, gap ratio is {row['相对缺口率']:.1%}, classified as {row['缺口类别']} province."
-    else:
-        avg = gap['相对缺口率'].mean()
-        shortage = len(gap[gap['缺口类别'] == '短缺'])
-        zh_text = f"{year}年全国平均缺口率 {avg:.1%}，共有 {shortage} 个省份处于短缺状态。建议优先向短缺省份调配资源。"
-        en_text = f"In {year}, national average gap ratio is {avg:.1%}, with {shortage} provinces in shortage. Suggest prioritize resource allocation to these provinces."
-
-    combined_text = f"{en_text}\n{zh_text}"
-
-    if TTS_AVAILABLE:
-        tts = gTTS(text=zh_text, lang='zh', slow=False)
-        audio_file = f"Findings_{year}.mp3"
-        tts.save(audio_file)
-        return f"🎤 Audio Generated: {audio_file}\n{combined_text}"
-    else:
-        return f"🎤 [Audio Mode] \n{combined_text}\n（Install gTTS to generate real audio）"
-
 
 @tool
 def analyze_spatial_spillover(province: str, year: int) -> str:
@@ -474,7 +448,6 @@ ALL_TOOLS = [
     deep_analyzer_api,
     generate_interactive_chart,
     export_data_to_excel,
-    speak_key_findings,
     analyze_spatial_spillover,
     get_high_frequency_data,
     bayesian_disease_analysis,
