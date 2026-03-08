@@ -13,6 +13,15 @@ class WeightingMethod(Enum):
 
 class Settings:
     """医疗资源配置系统配置类"""
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    DATA_DIR = os.path.join(BASE_DIR, "data")
+    RAW_DATA_PATH = os.path.join(DATA_DIR, "raw")
+    PROCESSED_DATA_PATH = os.path.join(DATA_DIR, "processed")
+
+    for path in [RAW_DATA_PATH, PROCESSED_DATA_PATH]:
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
 
     # 疾病分析配置
     DISEASE_CODES = {
@@ -41,8 +50,8 @@ class Settings:
 
     # --- 路径配置 (使用相对路径指向 data 文件夹) ---
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    RAW_DATA_FILE = os.path.join(BASE_DIR, "data", "raw", "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx")
-    CLEANED_DATA_FILE = os.path.join(BASE_DIR, "data", "processed", "cleaned_health_data.xlsx")
+    RAW_DATA_FILE = os.path.join(RAW_DATA_PATH, "中国卫生健康统计年鉴面板数据（2001-2020年）.xlsx")
+    CLEANED_DATA_FILE = os.path.join(PROCESSED_DATA_PATH, "cleaned_health_data.xlsx")
     GBD_DATA_FILE = os.path.join(BASE_DIR, "data", "raw", "IHME-GBD_2023_DATA-7dc96f7f-1.csv")
 
     # 列名标准映射

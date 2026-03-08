@@ -4,7 +4,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 import matplotlib.pyplot as plt
 import os
-from health_analyzer import HealthResourceAnalyzer
+from modules.health_analyzer import HealthResourceAnalyzer
 from disease_analyzer import DiseaseAnalyzer
 
 def generate_pdf_report(year: int, province: str = None):
