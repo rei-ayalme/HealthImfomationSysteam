@@ -5,6 +5,8 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from db.connection import Base
 
+Base = declarative_base()
+
 class HealthResource(Base):
     """卫生资源配置表"""
     __tablename__ = "health_resources"
@@ -66,6 +68,23 @@ class GlobalHealthMetric(Base):
     value = Column(Float)                        # 指标数值
     unit = Column(String(50))                    # 单位
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+class RawHealthData(Base):
+    __tablename__ = "raw_health_data"
+    id = Column(Integer, primary_key=True)
+    upload_time = Column(DateTime, default=datetime.utcnow)
+    file_name = Column(String)
+    raw_content = Column(Text)  # 存储原始 JSON 或序列化的内容
+
+class OWIDFetchLog(Base):
+    __tablename__ = "owid_fetch_log"
+    id = Column(Integer, primary_key=True, index=True)
+    indicator_id = Column(String(100), index=True)  # OWID指标ID
+    target_countries = Column(Text)  # 爬取的国家列表（JSON字符串）
+    fetch_time = Column(DateTime, default=datetime.now)  # 爬取时间
+    status = Column(Boolean, default=True)  # 爬取状态：True成功/False失败
+    data_count = Column(Integer, default=0)  # 本次爬取的新数据量
+    error_msg = Column(Text, nullable=True)  # 失败时的错误信息
 
 # 为了向后兼容之前的代码，可以保留别名
 WHOGlobalHealth = GlobalHealthMetric

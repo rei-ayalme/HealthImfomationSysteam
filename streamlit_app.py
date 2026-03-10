@@ -2,6 +2,11 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+from db.connection import init_db, SessionLocal, seed_db
+init_db()  # 创建表结构
+db = SessionLocal()
+seed_db(db) # 填充预设数据
+db.close()
 
 # 1. 路径注入：确保模块能从项目根目录被正确加载
 root_path = str(Path(__file__).parent)

@@ -220,6 +220,16 @@ class Settings:
         'default_date_format': '%Y-%m-%d'
     }
 
+    # OWID配置
+    OWID_HEALTH_INDICATORS = [
+        "physicians-per-1000-people",  # 医生密度
+        "share-of-deaths-from-non-communicable-diseases",  # 非传疾病死亡占比
+        "share-of-deaths-from-communicable-diseases",  # 传疾病死亡占比
+        "pm2-5-air-pollution-exposure",  # PM2.5暴露
+        "share-of-adults-who-smoke",  # 成人吸烟率
+        "health-expenditure-share-of-gdp",  # 卫生支出占GDP
+        "life-expectancy"  # 人均预期寿命
+    ]
 
 
 SETTINGS = Settings()

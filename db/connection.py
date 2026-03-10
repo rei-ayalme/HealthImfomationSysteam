@@ -21,7 +21,17 @@ def get_db():
     finally:
         db.close()
 
+def seed_db(db: Session):
+    # 检查表中是否已有基础数据
+    if db.query(HealthResource).count() == 0:
+        import pandas as pd
+        # 加载开发者准备的预清洗数据
+        initial_df = pd.read_csv("data/seed_health_data.csv")
+        # 将其保存到生产表 (health_resources)
+        save_processed_data_to_db(db, initial_df)
+        print("基础卫生资源数据已预置。")
+
 def init_db():
     """初始化数据库表"""
     import db.models
-    Base.metadata.create_all(bind=engine)0
+    Base.metadata.create_all(bind=engine)
