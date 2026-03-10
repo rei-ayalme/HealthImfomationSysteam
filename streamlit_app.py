@@ -63,7 +63,7 @@ with st.sidebar:
 
 # 5. AI 智能助手悬浮/侧边栏入口
 def add_ai_sidebar():
-    with st.sidebar.expander("🤖 AI 智能助手", expanded=False):
+    with st.sidebar.expander(" AI 智能助手", expanded=False):
         from modules.health_agent import ask_agent
         if "messages" not in st.session_state:
             st.session_state.messages = [{"role": "assistant", "content": "你好！我是卫生资源助手。建议您先上传数据。"}]

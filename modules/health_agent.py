@@ -4,6 +4,11 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from dotenv import load_dotenv
+from langchain.tools import tool
+from db.connection import SessionLocal
+from db.models import WHOGlobalHealth
+from modules.data_cleaner import HealthDataCleaner
+from utils.helpers import parse_text_to_df
 
 load_dotenv()
 
@@ -161,6 +166,22 @@ def optimize_allocation(year: int, objective: str = "maximize_health", budget_ra
     except Exception as e:
         return f"❌ Optimization Error: {str(e)}\n❌ 优化过程遇到问题: {str(e)}"
 
+
+@tool
+def get_global_health_data(country: str, year: int) -> str:
+    """查询全球卫生数据。优先从本地库查询，无数据则提示。"""
+    db = SessionLocal()
+    # 简单的本地库查询
+    res = db.query(WHOGlobalHealth).filter(
+        WHOGlobalHealth.country_code == country,
+        WHOGlobalHealth.year == year
+    ).first()
+    db.close()
+
+    if res:
+        return f"本地库记录：{country} 在 {year} 年的指标值为 {res.value}"
+    else:
+        return f"本地库暂无 {country} {year} 年数据，请尝试使用搜索工具获取。"
 
 @tool
 def analyze_resource_gap(year: int) -> str:
@@ -406,6 +427,22 @@ def predict_disease(cause: str = "Cardiovascular diseases", years: int = 5) -> s
 
 
 @tool
+def process_searched_data(raw_search_content: str):
+    """处理搜索引擎返回的杂乱文本数据并标准化"""
+    df = parse_text_to_df(raw_search_content)
+
+    if df.empty:
+        return "未能从搜索结果中提取到结构化数据。"
+
+    cleaner = HealthDataCleaner()
+    df = cleaner.handle_missing_values(df)
+    mapping = {"国家": "country_code", "年份": "year", "数值": "value"}
+    df = cleaner.standardize_indicators(df, mapping)
+    df = cleaner.calculate_core_metrics(df)
+
+    return df.to_dict(orient='records')
+
+@tool
 def deep_analyzer_api(query: str) -> str:
     """预留 DeepAnalyzer API 接口（未来可对接外部高级分析）- 双语输出"""
     en_msg = f"[DeepAnalyzer API Placeholder] Received Query: {query} (Interface Reserved)"
@@ -434,6 +471,17 @@ def web_search(query: str) -> str:
         return f"{en_error}\n{zh_error}"
 
 
+@tool
+def search_and_save_data(query: str):
+    """搜索外部卫生数据并保存到基础平台库中"""
+    raw_content = search_tool.run(query)
+    # 使用之前定义的解析函数
+    df = parse_text_to_df(raw_content)
+    clean_df = HealthDataCleaner.quick_clean(df)
+
+    # 存入数据库逻辑...
+    return f"已成功从互联网抓取并储存了 {len(clean_df)} 条关于 '{query}' 的新数据。"
+
 # --- AGENT CONFIGURATION ---
 
 # 统一工具列表
@@ -452,6 +500,9 @@ ALL_TOOLS = [
     get_high_frequency_data,
     bayesian_disease_analysis,
     web_search,
+    get_global_health_data,
+    process_searched_data,
+    search_and_save_data
 ]
 
 

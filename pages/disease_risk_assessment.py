@@ -2,7 +2,8 @@ import time
 import streamlit as st
 from modules.disease_analyzer import DiseaseAnalyzer
 
-st.title("🔬 疾病风险归因与 SDE 模拟")
+def show():
+    st.title("🔬 疾病风险归因与 SDE 模拟")
 
 da = st.session_state.get('disease_analyzer', DiseaseAnalyzer())
 prov = st.text_input("输入分析省份", "北京市")

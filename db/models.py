@@ -2,16 +2,19 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from db.connection import Base
 from datetime import datetime
-
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from db.connection import Base
 
 class HealthResource(Base):
     """卫生资源配置表"""
     __tablename__ = "health_resources"
 
-    id = Column(Integer, primary_key=True, index=True)
-    region_name = Column(String(50), index=True, comment="省份/地区名称")
-    year = Column(Integer, index=True, comment="年份")
-
+    id = Column(Integer, primary_key=True)
+    source = Column(String(20))  # 'WHO' 或 'Local'
+    region = Column(String(50))  # 省份或国家代码
+    indicator = Column(String(100))  # 指标名称
+    year = Column(Integer)
+    value = Column(Float)
     # 核心指标
     physicians_per_1000 = Column(Float, default=0.0, comment="每千人口执业(助理)医师数")
     nurses_per_1000 = Column(Float, default=0.0, comment="每千人口注册护士数")
@@ -26,6 +29,19 @@ class HealthResource(Base):
 
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
+class WHOGlobalHealth(Base):
+    """WHO 全球卫生指标表"""
+    __tablename__ = "who_global_health"
+
+    id = Column(Integer, primary_key=True, index=True)
+    country_code = Column(String(10), index=True)  # 如 CHN, USA
+    indicator_code = Column(String(50), index=True) # 如 MDG_000001
+    indicator_name = Column(String(200))
+    year = Column(Integer, index=True)
+    value = Column(Float)
+    unit = Column(String(50))
+
+GlobalHealthMetric = WHOGlobalHealth
 
 class DiseaseRisk(Base):
     """疾病风险分析表"""
@@ -37,3 +53,19 @@ class DiseaseRisk(Base):
     cause = Column(String(100), comment="疾病分类")
     risk_score = Column(Float, comment="风险得分")
     intervention_suggestions = Column(String(500), comment="干预建议摘要")
+
+class GlobalHealthMetric(Base):
+    """基础平台核心表：存储国内外卫生指标"""
+    __tablename__ = "health_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source = Column(String(20), index=True)      # 数据来源: 'WHO', 'Local', 'Search'
+    region = Column(String(100), index=True)     # 国家代码或省份名称
+    indicator = Column(String(200), index=True)  # 指标名称 (如: 预期寿命)
+    year = Column(Integer, index=True)           # 年份
+    value = Column(Float)                        # 指标数值
+    unit = Column(String(50))                    # 单位
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+# 为了向后兼容之前的代码，可以保留别名
+WHOGlobalHealth = GlobalHealthMetric

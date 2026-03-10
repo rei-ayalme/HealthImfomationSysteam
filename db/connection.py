@@ -24,4 +24,4 @@ def get_db():
 def init_db():
     """初始化数据库表"""
     import db.models
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)0

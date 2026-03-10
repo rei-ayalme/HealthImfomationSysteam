@@ -1,7 +1,8 @@
 import streamlit as st
 from modules.report_generator import generate_pdf_report
 
-st.title("📄 报告管理中心")
+def show():
+    st.title("📄 报告管理中心")
 
 year = st.number_input("报告年份", value=2020)
 province = st.text_input("指定省份 (可选)")
