@@ -9,6 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from db.connection import SessionLocal
 from db.models import GlobalHealthMetric
+from config.settings import OPENAI_CONFIG
 
 load_dotenv()
 

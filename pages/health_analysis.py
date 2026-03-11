@@ -150,16 +150,87 @@ def show():
     go.Scatter(x=df_world["year"], y=df_world["share-of-deaths-from-non-communicable-diseases"],
                name="非传染性疾病", stackgroup="one", color=OWID_COLORS["non-communicable"])
 
-])
-fig_stack.update_layout(
-    title="1990-2020全球死亡疾病谱系变迁（OWID全球数据）",
-    yaxis_title="死亡占比（%）",
-    plot_bgcolor="white",
-    xaxis=dict(showgrid=True, gridcolor="#f0f0f0"),
-    yaxis=dict(showgrid=True, gridcolor="#f0f0f0"),
-    hovermode="x unified"
+            ])
+            fig_stack.update_layout(
+                title="1990-2020全球死亡疾病谱系变迁（OWID全球数据）",
+                yaxis_title="死亡占比（%）",
+                plot_bgcolor="white",
+                xaxis=dict(showgrid=True, gridcolor="#f0f0f0"),
+                yaxis=dict(showgrid=True, gridcolor="#f0f0f0"),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig_stack, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("🧠 DeepSeek 卫生资源配置优化（基于OWID全球数据）")
+    st.markdown("**分析逻辑**：OWID提供卫生资源+疾病负担数据 → DeepSeek计算最优资源分配方案")
+    # 筛选条件
+    col1, col2 = st.columns(2)
+    with col1:
+        opt_countries = st.multiselect("选择优化国家", ["China", "India", "Nigeria", "Brazil"],
+                                       default=["China", "India"])
+    with col2:
+        opt_year = st.number_input("分析年份", min_value=2015, max_value=2020, value=2020)
+    # 资源+疾病指标
+    opt_indicators = ["physicians-per-1000-people", "share-of-deaths-from-non-communicable-diseases"]
+
+    # 一键优化分析
+    if st.button("🚀 运行DeepSeek资源配置优化", type="primary"):
+        with
+    st.spinner("🔄 正在调用DeepSeek做资源优化计算..."):
+    ds_opt_result = deepseek_analyze(
+        indicator_ids=opt_indicators,
+        countries=opt_countries,
+        start_year=opt_year,
+        end_year=opt_year,  # 单年份优化
+        task_type="resource_allocation",
+        output_format="dict"
+    )
+    if ds_opt_result["status"] == "success":
+        st.success("✅ DeepSeek资源配置优化完成！")
+    # 结果入库（复用DeepSeekAnalysisResult表）
+    db = SessionLocal()
+    db.add(DeepSeekAnalysisResult(
+
+
+task_type = "resource_allocation",
+indicator_ids = ",".join(opt_indicators),
+countries = ",".join(opt_countries),
+time_range = f"{opt_year}-{opt_year}",
+analysis_result = ds_opt_result["result"],
+metadata = ds_opt_result["metadata"]
+))
+db.commit()
+db.close()
+
+# 可视化优化结果：现有资源 vs 最优资源
+st.subheader("📊 卫生资源最优配置方案（DeepSeek）")
+# 假设DeepSeek返回：{"China": {"current": 2.5, "optimal": 3.2}, "India": {...}}
+df_opt = pd.DataFrame([
+{"country": c, "type": "现有资源", "value": v["current"]}
+for c, v in ds_opt_result["result"]["resource_optimization"].items()
+    ] + [
+{"country": c, "type": "最优资源", "value": v["optimal"]}
+for c, v in ds_opt_result["result"]["resource_optimization"].items()
+    ])
+# OWID风格双柱状对比图
+fig_opt = px.bar(
+    df_opt,
+    x="country",
+    y="value",
+    color="type",
+    barmode="group",
+    title=f"{opt_year}年医生密度最优配置对比（每千人）",
+    color_discrete_map={"现有资源": "#fca311", "最优资源": "#2a9d8f"},
+    hover_data={"value": ":,.2f"}
 )
-st.plotly_chart(fig_stack, use_container_width=True)
+fig_opt.update_layout(plot_bgcolor="white", yaxis_title="医生密度（每千人）")
+st.plotly_chart(fig_opt, use_container_width=True)
+
+# 展示优化建议
+st.info(f"💡 DeepSeek优化建议：{ds_opt_result['result']['optimization_suggestion']}")
+else:
+st.error(f"❌ 优化失败：{ds_opt_result['msg']}")
 
 # 原有WHO数据对比：保留，可作为补充
 st.markdown("---")

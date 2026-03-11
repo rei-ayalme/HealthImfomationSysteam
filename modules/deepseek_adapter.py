@@ -4,7 +4,13 @@ from db.connection import SessionLocal
 from db.models import WHOGlobalHealth
 
 
-def owid_2_deepseek_input(indicator_ids: list, countries: list, start_year: int, end_year: int) -> dict:
+def owid_2_deepseek_input(
+        indicator_ids: list,
+        countries: list,
+        start_year: int,
+        end_year: int,
+        output_format: str = "dict"  # deepseek接受的格式：dict/df/tensor
+) -> dict:
     """
     将OWID数据库数据转换为DeepSeek_Analyzer可接受的输入格式
     :param indicator_ids: OWID指标ID列表
@@ -22,11 +28,15 @@ def owid_2_deepseek_input(indicator_ids: list, countries: list, start_year: int,
         )
         df = pd.DataFrame([{
             "country": item.country_name,
+            "country_code": item.country_code,
             "year": item.year,
             "indicator": item.indicator_name,
             "value": item.value
         } for item in query.all()])
+        db.close()
 
+        df_owid = df_owid.dropna(subset=["value"])
+        df_owid = df_owid.drop_duplicates(subset=["country", "year", "indicator"])
         if df.empty:
             return {"status": "error", "msg": "无可用OWID数据"}
 

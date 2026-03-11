@@ -2,6 +2,9 @@
 import os
 from typing import Dict, List, Any
 from enum import Enum
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class WeightingMethod(Enum):
     EQUAL = "equal"
@@ -136,6 +139,19 @@ class Settings:
         'smoking_impact': 0.2,
         'life_expectancy_adjustment': -0.02
     }
+
+    SEARCH_ENGINE_CONFIG["serpapi"]["api_key"] = os.getenv("SERPAPI_KEY") or SEARCH_ENGINE_CONFIG["serpapi"]["api_key"]
+
+    #模型参数配置
+    DEEPSEEK_CONFIG = {
+        "call_type": "local",  # local(本地库)/api(远程接口)，按需修改
+        "api_url": "http://127.0.0.1:8000/deepseek/analyze",  # API调用时的地址
+        "api_key": "your_deepseek_api_key",  # API调用的鉴权密钥
+        "timeout": 60,  # 接口超时时间（秒）
+        "retry_times": 3,  # 接口重试次数
+        "model_params": {"batch_size": 32, "epochs": 10}  # 本地库调用的模型参数
+    }
+
     #智能体设置
     LANGUAGES = {
         'zh': {

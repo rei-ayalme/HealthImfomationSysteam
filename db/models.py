@@ -2,7 +2,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from db.connection import Base
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime,Text,JSON
 from db.connection import Base
 
 Base = declarative_base()
@@ -85,6 +85,17 @@ class OWIDFetchLog(Base):
     status = Column(Boolean, default=True)  # 爬取状态：True成功/False失败
     data_count = Column(Integer, default=0)  # 本次爬取的新数据量
     error_msg = Column(Text, nullable=True)  # 失败时的错误信息
+
+class DeepSeekAnalysisResult(Base):
+    __tablename__ = "deepseek_analysis_result"
+    id = Column(Integer, primary_key=True, index=True)
+    task_type = Column(String(50), index=True)  # 分析任务类型：disease_risk/resource_allocation等
+    indicator_ids = Column(Text)  # 分析的OWID指标ID（逗号分隔）
+    countries = Column(Text)  # 分析的国家（逗号分隔）
+    time_range = Column(String(20))  # 分析时间范围（如2010-2020）
+    analysis_result = Column(JSON)  # 分析结果（JSON格式，存结构化数据）
+    metadata = Column(JSON)  # 元信息
+    create_time = Column(DateTime, default=datetime.now, index=True)
 
 # 为了向后兼容之前的代码，可以保留别名
 WHOGlobalHealth = GlobalHealthMetric

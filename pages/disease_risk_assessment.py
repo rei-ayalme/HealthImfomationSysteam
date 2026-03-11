@@ -5,14 +5,16 @@ import plotly.express as px
 from modules.disease_analyzer import DiseaseAnalyzer
 from modules.deepseek_client import deepseek_analysis_wrapper
 from pages.health_analysis import get_owid_db_data, OWID_COLORS
+from db.connection import SessionLocal
+from db.models import DeepSeekAnalysisResult
 
 def show():
     st.title("🔬 疾病风险归因与 SDE 模拟")
 
     da = st.session_state.get('disease_analyzer', DiseaseAnalyzer())
     prov = st.text_input("输入分析省份", "北京市")
-    st.subheader("📊 OWID 全球风险因素归因分析（参考基准）")
 
+    st.subheader("📊 OWID 全球风险因素归因分析（参考基准）")
     risk_indicator = st.selectbox("选择风险因素", ["pm2-5-air-pollution-exposure", "share-of-adults-who-smoke"],
                                   format_func=lambda x: {"pm2-5-air-pollution-exposure": "PM2.5暴露水平",
                                                          "share-of-adults-who-smoke": "成人吸烟率"}[x])
@@ -23,6 +25,7 @@ def show():
                                       "share-of-deaths-from-communicable-diseases": "传疾病死亡占比%"}[x])
 
     st.subheader("🧠 DeepSeek 智能分析（基于OWID数据）")
+    st.markdown("**分析逻辑**：OWID提供风险因素+疾病数据 → DeepSeek计算各风险因素对疾病的贡献度")
     col1, col2, col3 = st.columns(3)
     with col1:
         selected_countries = st.multiselect("选择国家", ["China", "United States", "India"], default=["China"])
@@ -31,13 +34,16 @@ def show():
     with col3:
         end_year = st.number_input("结束年份", min_value=2001, max_value=2020, value=2020)
 
-    # 选择分析指标（疾病风险+风险因素）
-    indicator_ids = ["share-of-deaths-from-non-communicable-diseases", "pm2-5-air-pollution-exposure"]
+    # 选择分析指标（疾病风险+风险因素）[可拓展疾病指标]
+    indicator_ids = [
+        "share-of-deaths-from-non-communicable-diseases",
+        "pm2-5-air-pollution-exposure"
+    ]
 
     if st.button("🚀 运行DeepSeek分析"):
         with st.spinner("🔄 调用DeepSeek_Analyzer进行疾病风险归因分析..."):
             # 调用DeepSeek
-            result = deepseek_analysis_wrapper(
+            ds_result = deepseek_analysis_wrapper(
                 indicator_ids=indicator_ids,
                 countries=selected_countries,
                 start_year=start_year,
@@ -46,18 +52,45 @@ def show():
             )
 
             # 展示结果
-            if result["status"] == "success":
+            if ds_result["status"] == "success":
                 st.success("✅ DeepSeek分析完成！")
+                # 提取结果和元信息
+                result_data = ds_result["result"]
+                metadata = ds_result["metadata"]
+                indicator_map = metadata["indicator_map"]
+
+                # --- 结果入库（持久化） ---
+                db = SessionLocal()
+                db.add(DeepSeekAnalysisResult(
+                    task_type="disease_risk",
+                    indicator_ids=",".join(indicator_ids),
+                    countries=",".join(selected_countries),
+                    time_range=f"{start_year}-{end_year}",
+                    analysis_result=result_data,
+                    metadata=metadata
+                ))
+                db.commit()
+                db.close()
                 # 可视化分析结果（适配Plotly）
                 st.subheader("📊 DeepSeek分析结果可视化")
                 # 示例：提取风险贡献度数据
                 risk_contribution = result["result"].get("risk_contribution", {})
                 if risk_contribution:
                     df_risk = pd.DataFrame(risk_contribution).T.reset_index()
-                    df_risk.columns = ["country", "pm2.5贡献度", "吸烟率贡献度"]
-                    fig = px.bar(df_risk, x="country", y=["pm2.5贡献度", "吸烟率贡献度"],
-                                 title="不同国家疾病风险因素贡献度（DeepSeek分析）",
-                                 barmode="stack")
+                    df_risk.columns = [
+                    {"country": c, "risk_factor": k, "contribution": v}
+                    for c, factors in result_data["risk_contribution"].items()
+                    for k, v in factors.items()
+                ]
+                    fig = px.bar(
+                        df_risk,
+                        x="country",
+                        y="contribution",
+                        title="不同国家疾病风险因素贡献度",
+                        color_discrete_map=OWID_COLORS,
+                        hover_data={"contribution": ":,.2f"}
+                    )
+                    fig.update_layout(plot_bgcolor="white", legend_title="风险因素", yaxis_title="贡献度")
                     st.plotly_chart(fig, use_container_width=True)
                 # 展示原始结果
                 with st.expander("📝 查看详细分析结果"):
