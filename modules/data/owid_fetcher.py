@@ -27,7 +27,7 @@ def create_owid_unique_index():
 create_owid_unique_index()
 
 
-def get_owid_single_indicator(indicator_id: str, target_countries: list = None) -> pd.DataFrame:
+def get_owid_single_indicator(indicator_id: str, target_countries: list = None, last_fetch_time=None) -> pd.DataFrame:
     """复用OWID API代码，获取单个指标数据"""
     api_url = f"https://ourworldindata.org/grapher/data/v1/indicators/{indicator_id}.json"
     try:
@@ -51,6 +51,7 @@ def get_owid_single_indicator(indicator_id: str, target_countries: list = None) 
                     continue
                 year_int = int(year)
                 # 增量逻辑：若有上次爬取时间，只取近2年数据（OWID数据更新频率低）
+                # 这里现在可以合法使用 last_fetch_time 了，因为我们在函数参数里定义了它
                 if last_fetch_time and year_int < datetime.now().year - 2:
                     continue
                 all_data.append({

@@ -4,12 +4,15 @@ from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 import matplotlib.pyplot as plt
 import os
-from modules.health_analyzer import HealthResourceAnalyzer
-from disease_analyzer import DiseaseAnalyzer
+from modules.analysis.health import UnifiedHealthAnalyzer
+from modules.analysis.disease import DiseaseRiskAnalyzer
 
 def generate_pdf_report(year: int, province: str = None):
-    analyzer = HealthResourceAnalyzer("cleaned_health_data.xlsx")
-    disease_analyzer = DiseaseAnalyzer()
+    import pandas as pd
+    from config.settings import SETTINGS
+    data = pd.read_excel(SETTINGS.CLEANED_DATA_FILE)
+    analyzer = UnifiedHealthAnalyzer(data)
+    disease_analyzer = DiseaseRiskAnalyzer()
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)

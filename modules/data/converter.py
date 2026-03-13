@@ -3,34 +3,26 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional, Union
-from config.settings import DATA_CONFIG  # 新增数据配置
+from config.settings import DATA_CONFIG
 from pydantic import BaseModel
 
 
-# ====================== 配置（新增到config/settings.py） ======================
-# DATA_CONFIG = {
-#     "supported_formats": [".csv", ".xlsx", ".xls"],  # 支持的文件格式
-#     "default_encoding": ["utf-8", "gbk", "gb2312"],  # 自动尝试的编码
-#     "default_sep": [",", "\t", ";"],  # 自动尝试的分隔符
-#     "null_values": ["无数据", "NaN", "NA", "-", 0, -999],  # 识别为空值的标记
-#     "numeric_cols": ["value", "数值", "数量", "占比", "密度"],  # 需转为数值的列名关键词
-#     "date_cols": ["year", "年份", "日期", "时间"],  # 需转为日期的列名关键词
-#     "standard_output_cols": ["country", "year", "indicator", "value", "region"]  # 标准化列名
-# }
 
 # 定义转换结果模型（结构化返回）
 class DataConvertResult(BaseModel):
+    model_config = {"arbitrary_types_allowed": True}
+
     status: bool  # 转换状态
     data: Optional[pd.DataFrame] = None  # 标准化DataFrame
     standard_format: Optional[Dict] = None  # 算法适配的结构化Dict
     agent_prompt: Optional[str] = None  # 智能体适配的自然语言描述
     error_msg: Optional[str] = None  # 错误信息
-    metadata: Optional[Dict] = None  # 元信息（文件大小/行数/列数等）
+    metadata: Optional[Dict] = None  # 元信息
 
 
 def validate_file(file_path: str) -> Tuple[bool, str]:
     """
-    第一步：文件校验（格式/完整性/大小）
+    文件校验（格式/完整性/大小）
     """
     # 1. 检查文件存在
     if not os.path.exists(file_path):
@@ -57,10 +49,10 @@ def validate_file(file_path: str) -> Tuple[bool, str]:
 
 def read_file_unified(file_path: str) -> Tuple[pd.DataFrame, str]:
     """
-    第二步：统一读取（自动适配编码/分隔符/多Sheet）
+    统一读取（自动适配编码/分隔符/多Sheet）
     """
     file_ext = os.path.splitext(file_path)[1].lower()
-    df = None
+    df = pd.DataFrame()
     error_msg = ""
     try:
         # 读取Excel（自动识别有效Sheet）

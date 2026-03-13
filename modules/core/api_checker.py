@@ -33,17 +33,29 @@ def check_serpapi(test_query: str = "2025全球卫生资源配置报告") -> Sea
         "engine": "google",
         "num": config["result_num"]
     }
-    try:
-        for retry in range(config["retry_times"]):
-            response = requests.get(config["api_url"], params=params, timeout=config["timeout"])
-            if response.status_code == 200:
-                break
-            elif retry == config["retry_times"] - 1:
-                check_items.append({"item": "连通性测试", "status": False, "msg": f"HTTP状态码：{response.status_code}"})
-                return SearchAPICheckResult(status=False, engine="serpapi", check_items=check_items,
-                                            error_msg=f"请求失败，状态码{response.status_code}")
-        check_items.append({"item": "连通性测试", "status": True, "msg": "HTTP请求成功，状态码200"})
 
+    response = None
+    try:
+        retry_limit = max(1, config.get("retry_times", 1))
+
+        for retry in range(retry_limit):
+            try:
+                response = requests.get(config["api_url"], params=params, timeout=config["timeout"])
+                if response.status_code == 200:
+                    break
+            except requests.exceptions.RequestException as e:
+                if retry == retry_limit - 1:
+                    raise e  # 最后一次尝试失败则抛出异常
+                time.sleep(1)  # 重试前稍作等待
+
+            # 2. 检查 response 是否成功获取且状态码正确
+        if response is None or response.status_code != 200:
+            status_code = response.status_code if response is not None else "N/A"
+            check_items.append({"item": "连通性测试", "status": False, "msg": f"HTTP状态码：{status_code}"})
+            return SearchAPICheckResult(status=False, engine="serpapi", check_items=check_items,
+                                        error_msg=f"请求失败，状态码 {status_code}")
+
+        check_items.append({"item": "连通性测试", "status": True, "msg": "HTTP请求成功，状态码 200"})
         # 解析数据，验证有效性
         search_data = response.json()
         if "organic_results" in search_data and len(search_data["organic_results"]) > 0:

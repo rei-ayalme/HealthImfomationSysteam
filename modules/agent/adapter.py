@@ -1,7 +1,7 @@
 # modules/deepseek_adapter.py
 import pandas as pd
 from db.connection import SessionLocal
-from db.models import WHOGlobalHealth
+from db.models import GlobalHealthMetric
 
 
 def owid_2_deepseek_input(
@@ -9,8 +9,8 @@ def owid_2_deepseek_input(
         countries: list,
         start_year: int,
         end_year: int,
-        output_format: str = "dict"  # deepseek接受的格式：dict/df/tensor
-) -> dict:
+        output_format: str = "dict",
+        df_owid=None) -> dict:
     """
     将OWID数据库数据转换为DeepSeek_Analyzer可接受的输入格式
     :param indicator_ids: OWID指标ID列表
@@ -21,22 +21,26 @@ def owid_2_deepseek_input(
     db = SessionLocal()
     try:
         # 查询OWID数据
-        query = db.query(WHOGlobalHealth).filter(
-            WHOGlobalHealth.indicator_name.in_(indicator_ids),
-            WHOGlobalHealth.country_name.in_(countries),
-            WHOGlobalHealth.year.between(start_year, end_year)
+        query = db.query(GlobalHealthMetric).filter(
+            GlobalHealthMetric.indicator.in_(indicator_ids),
+            GlobalHealthMetric.region.in_(countries),
+            GlobalHealthMetric.year.between(start_year, end_year)
         )
-        df = pd.DataFrame([{
-            "country": item.country_name,
-            "country_code": item.country_code,
-            "year": item.year,
-            "indicator": item.indicator_name,
-            "value": item.value
-        } for item in query.all()])
-        db.close()
+        raw_data = query.all()
+        if not raw_data:
+            return {"status": "error", "msg": "无可用OWID数据"}
 
-        df_owid = df_owid.dropna(subset=["value"])
-        df_owid = df_owid.drop_duplicates(subset=["country", "year", "indicator"])
+        # 统一使用变量名 df
+        df = pd.DataFrame([{
+            "country": item.region,  # 确保与 filter 中的字段一致
+            "year": item.year,
+            "indicator": item.indicator,
+            "value": item.value
+        } for item in raw_data])
+
+        # 修复 df_owid 未定义的 NameError
+        df = df.dropna(subset=["value"])
+        df = df.drop_duplicates(subset=["country", "year", "indicator"])
         if df.empty:
             return {"status": "error", "msg": "无可用OWID数据"}
 

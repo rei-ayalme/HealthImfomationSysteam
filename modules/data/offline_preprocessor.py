@@ -1,6 +1,6 @@
 # modules/offline_preprocessor.py
 import pandas as pd
-from modules.data_cleaner import HealthDataCleaner
+from modules.data.cleaner import HealthDataCleaner
 from db.crud import save_processed_data_to_db
 from db.connection import SessionLocal
 

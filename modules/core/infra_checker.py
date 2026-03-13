@@ -1,7 +1,6 @@
 # modules/dpio_checker.py
 import os
 import subprocess
-import time
 from config.settings import DPIO_CONFIG
 from pydantic import BaseModel
 from typing import List, Dict, Optional

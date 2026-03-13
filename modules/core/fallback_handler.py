@@ -1,6 +1,8 @@
 # modules/fallback_handler.py
 import redis
 import json
+import logging
+import functools
 from datetime import timedelta
 from config.settings import REDIS_CONFIG  # Redis配置
 
@@ -12,6 +14,8 @@ redis_client = redis.Redis(
     db=REDIS_CONFIG["db"],
     decode_responses=True
 )
+# 初始化日志记录器
+logger = logging.getLogger(__name__)
 
 def set_fallback_data(key: str, data: dict, expire: int = 86400):
     """

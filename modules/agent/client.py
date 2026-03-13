@@ -2,7 +2,7 @@
 import requests
 import json
 from config.settings import DEEPSEEK_CONFIG  # 新增DeepSeek配置
-from modules.deepseek_adapter import owid_2_deepseek
+from modules.agent.agent import owid_2_deepseek_input
 
 # 配置示例（config/settings.py）：
 # DEEPSEEK_CONFIG = {
@@ -115,7 +115,7 @@ def deepseek_analyze(
     end_year: int,
     task_type: str = "disease_risk",
     output_format: str = "dict"
-) -> dict
+) -> dict:
     """
     封装：OWID数据适配 + DeepSeek调用 + 结果返回
     """
@@ -126,9 +126,9 @@ def deepseek_analyze(
 
     # 2. 调用DeepSeek
     if DEEPSEEK_CONFIG["call_type"] == "local":
-        return call_deepseek_local(owid_data, task_type)
+        return call_deepseek_local(owid_input, task_type)
     else:
-        return call_deepseek_api(owid_data, task_type)
+        return call_deepseek_api(owid_input, task_type)
 
     # 3. 结果处理（存入数据库，可选）
     if deepseek_result["status"] == "success":

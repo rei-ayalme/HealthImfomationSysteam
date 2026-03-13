@@ -2,13 +2,13 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-# 使用最稳定地导入路径
 from langchain.agents import create_openai_functions_agent
 from langchain.agents.agent import AgentExecutor
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from db.connection import SessionLocal
 from db.models import GlobalHealthMetric
+from modules.agent.adapter import owid_2_deepseek_input
 from config.settings import OPENAI_CONFIG
 
 load_dotenv()

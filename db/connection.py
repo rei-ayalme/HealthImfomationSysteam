@@ -1,7 +1,8 @@
 # db/connection.py
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker,Session
+from config.settings import SETTINGS
 import os
 
 # 默认使用项目根目录下的 SQLite 数据库

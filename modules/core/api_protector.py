@@ -3,7 +3,7 @@ import time
 import functools
 import logging
 from collections import defaultdict
-from config.settings import API_LIMIT_CONFIG  # 限流配置
+from config.settings import API_CONFIG  # 限流配置
 
 # 配置示例（config/settings.py）：
 # API_LIMIT_CONFIG = {
@@ -39,9 +39,9 @@ def api_protector(api_name: str, api_key: str = None):
             now = time.time()
             # 清理过期请求记录
             request_counter[api_name] = [t for t in request_counter[api_name] if
-                                         t > now - API_LIMIT_CONFIG["time_window"]]
-            if len(request_counter[api_name]) >= API_LIMIT_CONFIG["rate_limit"]:
-                logger.warning(f"[{api_name}] 限流触发：超出每分钟{API_LIMIT_CONFIG['rate_limit']}次调用")
+                                         t > now - API_CONFIG["time_window"]]
+            if len(request_counter[api_name]) >= API_CONFIG["rate_limit"]:
+                logger.warning(f"[{api_name}] 限流触发：超出每分钟{API_CONFIG['rate_limit']}次调用")
                 return {"status": "error", "msg": "接口调用过于频繁，请稍后再试"}
             # 记录本次请求时间
             request_counter[api_name].append(now)
