@@ -17,14 +17,14 @@ class HealthDataPreprocessor(IPreprocessor):
         self.cleaner = HealthDataCleaner()
         self.logger = logging.getLogger("health_system.preprocessor")
 
-        # 针对《中国卫生健康统计年鉴》定制的精准映射 (使用提取到的精确名称)
+
         self.col_map = {
-            'physicians': ['执业（助理）医师（人）', '执业医师（人）', '医师数'],
-            'nurses': ['注册护士（人）', '护士数'],
-            'hospital_beds': ['医疗卫生机构床位数（张）', '床位数'],
-            'population': ['总人口（万人）', '年末总人口'],
-            'region_name': ['地区', '省份'],
-            'year': ['年份', 'year']
+    'physicians': ['执业（助理）医师（人） - 执业（助理）医师（人）', '执业医师（人）', '执业（助理）医师（人）'],
+    'nurses': ['注册护士（人）'],
+    'hospital_beds': ['卫生设施 - 医疗卫生机构床位数（张）', '医疗卫生机构床位数（张）'],
+    'population': ['人口指标 - 总人口（万人）', '总人口（万人）'],
+    'region_name': ['地区'],
+    'year': ['年份']
         }
 
     def _identify_columns(self, df_columns: list) -> Dict[str, str]:

@@ -75,11 +75,13 @@ class OWIDFetchLog(Base):
 
 class DeepSeekAnalysisResult(Base):
     __tablename__ = "deepseek_analysis_result"
+
     id = Column(Integer, primary_key=True, index=True)
     task_type = Column(String(50), index=True)  # 分析任务类型：disease_risk/resource_allocation等
     indicator_ids = Column(Text)  # 分析的OWID指标ID（逗号分隔）
     countries = Column(Text)  # 分析的国家（逗号分隔）
     time_range = Column(String(20))  # 分析时间范围（如2010-2020）
+    analysis_result = Column(JSON, nullable=True, comment="分析结果数据")
     analysis_metadata = Column(JSON, nullable=True)  # 分析结果（JSON格式，存结构化数据）????
     create_time = Column(DateTime, default=datetime.now, index=True)
 
@@ -96,7 +98,10 @@ class AdvancedDiseaseTransition(Base):
     val = Column(Float, comment="疾病负担绝对值(如DALYs)")
     eti = Column(Float, comment="流行病学转型指数(ETI)")
     transition_stage = Column(String(50), comment="转型阶段(如: late_transition)")
-
+    latitude = Column(Float, nullable=True, comment="纬度(城市规划基准)")
+    longitude = Column(Float, nullable=True, comment="经度(城市规划基准)")
+    urban_zone_type = Column(String(50), nullable=True, comment="城市区划: 老城区/新开发区/边缘区")
+    elderly_ratio = Column(Float, nullable=True, comment="老龄化比例(弱势群体权重)")
 
 class AdvancedRiskCloud(Base):
     """问题2：风险因素归因与云模型分析表"""

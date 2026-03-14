@@ -1,8 +1,11 @@
 import os
 import sys
+import pandas as pd
 from pathlib import Path
+from modules.analysis.health import UnifiedHealthAnalyzer
 from dotenv import load_dotenv
 from db.connection import init_db, SessionLocal, seed_db
+
 init_db()  # 创建表结构
 db = SessionLocal()
 seed_db(db) # 填充预设数据
@@ -21,8 +24,8 @@ import streamlit as st
 load_dotenv()
 
 from config.settings import PAGE_TITLE, CLEANED_DATA_FILE
-from modules.unified_interface import get_unified_analyzer
-from modules.disease_analyzer import DiseaseAnalyzer
+from modules.core.interface import IDiseaseAnalyzer
+from modules.analysis.disease import DiseaseRiskAnalyzer
 from db.connection import init_db
 from utils.auth import check_password
 
@@ -33,14 +36,21 @@ st.set_page_config(page_title=PAGE_TITLE, layout="wide")
 if 'initialized' not in st.session_state:
     # 初始化数据库表结构
     init_db()
-
-    # 初始化分析器实例
     if os.path.exists(CLEANED_DATA_FILE):
-        st.session_state.analyzer = get_unified_analyzer(CLEANED_DATA_FILE)
+        try:
+            if CLEANED_DATA_FILE.endswith('.csv'):
+                df = pd.read_csv(CLEANED_DATA_FILE)
+            else:
+                df = pd.read_excel(CLEANED_DATA_FILE)
+
+            st.session_state.analyzer = UnifiedHealthAnalyzer(df)
+        except Exception as e:
+            st.error(f"加载数据失败: {e}")
+            st.session_state.analyzer = None
     else:
         st.session_state.analyzer = None
 
-    st.session_state.disease_analyzer = DiseaseAnalyzer()
+    st.session_state.disease_analyzer = DiseaseRiskAnalyzer()
     st.session_state.initialized = True
 
 # 3. 登录校验 (可选)
@@ -123,7 +133,7 @@ def add_ai_sidebar():
         """, unsafe_allow_html=True)  # 必须开启unsafe_allow_html
 
     # 原有AI聊天逻辑完全保留，无任何修改
-    from modules.health_agent import ask_agent
+    from modules.agent.agent import ask_agent
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "assistant", "content": "你好！我是卫生资源助手。建议您先上传数据。"}]
     for msg in st.session_state.messages:

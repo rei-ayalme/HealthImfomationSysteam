@@ -127,17 +127,21 @@ def load_health_resource_data() -> pd.DataFrame:
         db.close()
 
 
-def create_health_inx_chart(df: pd.DataFrame) -> px.bar:
-    """生成卫生资源对比px.bar图表"""
-    # 筛选2023年数据做可视化
+def create_health_inx_chart(df: pd.DataFrame):
+    """生成卫生资源对比图表（柱状图 + 饼图）"""
     time.sleep(1.5)  # 模拟加载延迟
-    df_inx = df[df["年份"] == 2023].groupby("指标")["数值"].sum().reset_index()
-    df_bar=df_inx
-    df_pie = df_inx
 
+    # 筛选2023年数据
+    df_2023 = df[df["年份"] == 2023]
+
+    # 修复1：柱状图需要按 "地区" 和 "指标" 共同分组，保留地区列
+    df_bar = df_2023.groupby(["地区", "指标"])["数值"].sum().reset_index()
+
+    # 饼图只需要看整体占比，按 "指标" 分组即可
+    df_pie = df_2023.groupby("指标")["数值"].sum().reset_index()
 
     # 构建Plotly柱状图
-    fig = px.bar(
+    bar_fig = px.bar(
         df_bar,
         x="地区",
         y="数值",
@@ -153,7 +157,19 @@ def create_health_inx_chart(df: pd.DataFrame) -> px.bar:
         hover_data={"数值": ":,.2f"}
     )
 
-    fig = px.pie(
+    # 优化柱状图样式
+    bar_fig.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        title_x=0.5,
+        title_font={"size": 18, "color": "#264653"},
+        xaxis_title="地区",
+        yaxis_title="数值（标准化）",
+        legend_title="资源指标"
+    )
+
+    # 修复2：使用新的变量名 pie_fig 防止覆盖 bar_fig
+    pie_fig = px.pie(
         df_pie,
         values="数值",
         names="指标",
@@ -167,17 +183,8 @@ def create_health_inx_chart(df: pd.DataFrame) -> px.bar:
         hole=0.3  # 环形图更美观
     )
 
-    # 优化图表样式
-    fig.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title_x=0.5,
-        title_font={"size": 18, "color": "#264653"},
-        xaxis_title="地区",
-        yaxis_title="数值（标准化）",
-        legend_title="资源指标"
-    )
-    return fig
+    # 同时返回两个图表
+    return bar_fig, pie_fig
 
 
 # ====================== 3. 页面核心逻辑（加载动画+可视化） ======================
@@ -205,10 +212,14 @@ def show():
     with st.spinner("🔄 正在加载柱状图数据..."):
         # 2. 加载数据并生成图表
         health_df = load_health_resource_data()
-        bar_chart = create_health_inx_chart(health_df)
-        pie_chart = create_health_inx_chart(health_df)
+        bar_chart, pie_chart = create_health_inx_chart(health_df)
     # 3. 渲染图表（自动触发淡入动画）
     st.plotly_chart(bar_chart, use_container_width=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(bar_chart, use_container_width=True, key="bar_chart_health")
+    with col2:
+        st.plotly_chart(pie_chart, use_container_width=True, key="pie_chart_health")
 
     st.markdown("---")
 
@@ -244,9 +255,6 @@ def show():
         </div>
     """, unsafe_allow_html=True)
 
-    # 3. 模拟数据加载延迟（实际项目删除）
-    with st.spinner("🔄 正在加载表格数据..."):
-        time.sleep(1.5)
 
     # 4. 替换骨架屏为真实DataFrame
     df_placeholder.dataframe(

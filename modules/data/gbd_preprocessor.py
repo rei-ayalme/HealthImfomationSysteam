@@ -38,6 +38,8 @@ class AdvancedGlobalHealthCleaner:
                 'sdi': ['sdi', 'SDI']
             },
             'who': {
+                'location_name': ['location_name', 'Location', 'country'],
+                'year': ['year', 'Year', 'time'],
                 'physicians_per_1000': ['Medical doctors (per 1000)', 'physicians'],
                 'hospital_beds_per_1000': ['Hospital beds (per 1000)', 'beds'],
                 'health_expenditure_per_capita': ['health expenditure per capita'],
@@ -67,7 +69,12 @@ class AdvancedGlobalHealthCleaner:
                 (df_clean['year'] <= self.config.get('max_year', 2025))
                 ]
 
-        return df_clean.dropna(subset=['year', 'val'], how='any').copy()
+        # 修复 KeyError: 动态检查列是否存在，只对存在的列执行去空操作
+        subset_cols = [c for c in ['year', 'val'] if c in df_clean.columns]
+        if subset_cols:
+            df_clean = df_clean.dropna(subset=subset_cols, how='any')
+
+        return df_clean.copy()
 
     def engineer_disease_transition(self, df: pd.DataFrame) -> pd.DataFrame:
         """问题1：疾病谱系转型特征 (ETI)"""
@@ -150,6 +157,23 @@ class AdvancedGlobalHealthCleaner:
         """问题2：风险因素归因与云模型"""
         df_feat = df.copy()
 
+        # 1. 补回：风险因素分类映射
+        risk_categories = {
+            'environmental': ['particulate matter', 'air pollution', 'temperature', 'Lead'],
+            'behavioral': ['Smoking', 'Alcohol', 'Drug', 'Diet', 'physical activity'],
+            'metabolic': ['blood pressure', 'glucose', 'BMI', 'cholesterol', 'Kidney']
+        }
+
+        def map_risk(rei_name):
+            if pd.isna(rei_name): return 'other'
+            for cat, risks in risk_categories.items():
+                if any(r.lower() in str(rei_name).lower() for r in risks): return cat
+            return 'other'
+
+        if 'rei_name' in df_feat.columns:
+            df_feat['risk_category'] = df_feat['rei_name'].apply(map_risk)
+
+        # 2. 云模型转换
         if 'exposure_category' in df_feat.columns:
             df_feat = self._linguistic_to_cloud(df_feat, 'exposure_category')
 

@@ -41,7 +41,7 @@ class HealthMathModels:
             b_eq = np.array([1.0])
 
             # 约束条件 2: \sum u_r * y_{rj} - \sum v_i * x_{ij} <= 0 (所有 DMU 的产出不能超过投入)
-            A_ub = np.hstack((X, -Y))
+            A_ub = np.hstack((-X, Y))
             b_ub = np.zeros(n_dmus)
 
             # 变量边界: 权重 v_i, u_r >= 0

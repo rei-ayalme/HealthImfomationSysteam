@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker,Session
 from config.settings import SETTINGS
 import os
-
+from db.models import Base, HealthResource, GlobalHealthMetric
 # 默认使用项目根目录下的 SQLite 数据库
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_URL = f"sqlite:///{os.path.join(BASE_DIR, 'health_system.db')}"
