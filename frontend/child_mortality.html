@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风险因素归因 - 全球健康数据分析平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #111;
+            background-color: #f7fafc;
+        }
+
+        a {
+            color: #0064c8;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #004a95;
+            text-decoration: underline;
+        }
+
+        header {
+            background-color: #1a365d;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .top-nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #e2e8f0;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 260px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            border-radius: 8px;
+            overflow: hidden;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+        }
+
+        .dropdown-content a {
+            color: #2d3748;
+            padding: 12px 20px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f7fafc;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .breadcrumb a {
+            color: #2b6cb0;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #718096;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .key-points {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #fed7d7, #fc8181);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .key-point h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 10px;
+        }
+
+        .key-point p {
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.7;
+        }
+
+        footer {
+            background: #1a365d;
+            margin-top: 60px;
+            padding: 60px 0 30px;
+            color: white;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 50px;
+        }
+
+        .footer-col h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #90cdf4;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin-bottom: 10px;
+        }
+
+        .footer-col a {
+            font-size: 14px;
+            color: #bee3f8;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 50px auto 0;
+            padding: 30px 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+            color: #90cdf4;
+        }
+
+        @media (max-width: 992px) {
+            .nav-links {
+                display: none;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .key-points {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="top-nav">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">GH</div><span>全球健康数据分析平台</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li class="dropdown">
+                    <a href="#" style="color: white; background: rgba(255,255,255,0.2);">健康主题</a>
+                    <div class="dropdown-content">
+                        <a href="global_health.html">疾病谱系变迁</a>
+                        <a href="life_expectancy.html">健康指标分析</a>
+                        <a href="child_mortality.html">风险因素归因</a>
+                        <a href="infectious_diseases.html">疾病负担预测</a>
+                        <a href="chronic_diseases.html">卫生资源配置</a>
+                        <a href="vaccine_coverage.html">健康生态系统</a>
+                    </div>
+                </li>
+                <li><a href="dataset.html">数据集</a></li>
+            </ul>
+        </div>
+    </header>
+    <div class="main-container">
+        <div class="breadcrumb"><a href="index.html">首页</a> / 健康主题 / <strong>风险因素归因</strong></div>
+        <div class="page-header">
+            <h1 class="page-title">⚠️ 风险因素归因</h1>
+            <p class="page-subtitle">分析不同风险因素对不同地区疾病负担的具体贡献度，利用归因分析模型划分风险因素贡献比例</p>
+        </div>
+        <div class="content-section">
+            <h2 class="section-title">1. 主要风险因素归因分析</h2>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">主要风险因素归因死亡占比</h3>
+                    <div class="chart-container"><canvas id="riskFactorChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">PM2.5暴露水平地区分布</h3>
+                    <div class="chart-container"><canvas id="pm25Chart"></canvas></div>
+                </div>
+            </div>
+            <h2 class="section-title">2. 主要风险因素</h2>
+            <div class="key-points">
+                <div class="key-point">
+                    <h4>风险因素一：高血压</h4>
+                    <p>全球13%的死亡归因于高血压，是首要心血管疾病风险因素。</p>
+                </div>
+                <div class="key-point">
+                    <h4>风险因素二：吸烟</h4>
+                    <p>吸烟导致全球10%的死亡，包括肺癌、心血管疾病等多种疾病。</p>
+                </div>
+                <div class="key-point">
+                    <h4>风险因素三：高血糖</h4>
+                    <p>高血糖归因死亡占6%，糖尿病相关疾病负担持续上升。</p>
+                </div>
+                <div class="key-point">
+                    <h4>风险因素四：空气污染</h4>
+                    <p>室外和室内空气污染合计归因于9%的全球死亡。</p>
+                </div>
+            </div>
+        </div>
+        <div class="content-section">
+            <h2 class="section-title">3. 风险因素与疾病关联</h2>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">吸烟与肺癌死亡率关系</h3>
+                    <div class="chart-container"><canvas id="smokingLungChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">PM2.5与心血管疾病</h3>
+                    <div class="chart-container"><canvas id="pm25CvdChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="content-section">
+            <h2 class="section-title">4. 优先干预措施</h2>
+            <div class="key-points">
+                <div class="key-point">
+                    <h4>措施一：烟草控制</h4>
+                    <p>提高烟草税、禁烟立法、健康警示，可在短期内显著减少吸烟相关死亡。</p>
+                </div>
+                <div class="key-point">
+                    <h4>措施二：空气质量改善</h4>
+                    <p>实施更严格的环境标准，减少工业排放和交通污染。</p>
+                </div>
+                <div class="key-point">
+                    <h4>措施三：健康饮食推广</h4>
+                    <p>减少盐和糖摄入，增加蔬菜水果消费，降低慢性病风险。</p>
+                </div>
+                <div class="key-point">
+                    <h4>措施四：体育活动促进</h4>
+                    <p>增加公共体育设施，推广全民健身运动。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>全球健康数据分析平台</h4>
+                <p style="font-size:14px;color:#bee3f8;line-height:1.7;">研究和数据，帮助我们应对全球最大的健康挑战。</p>
+            </div>
+            <div class="footer-col">
+                <h4>健康主题</h4>
+                <ul>
+                    <li><a href="global_health.html">疾病谱系变迁</a></li>
+                    <li><a href="life_expectancy.html">健康指标分析</a></li>
+                    <li><a href="child_mortality.html">风险因素归因</a></li>
+                    <li><a href="infectious_diseases.html">疾病负担预测</a></li>
+                    <li><a href="chronic_diseases.html">卫生资源配置</a></li>
+                    <li><a href="vaccine_coverage.html">健康生态系统</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>数据类型</h4>
+                <ul>
+                    <li><a href="dataset.html">数据表格</a></li>
+                    <li><a href="dataset.html">图表可视化</a></li>
+                    <li><a href="dataset.html">分析文章</a></li>
+                    <li><a href="dataset.html">预测模型</a></li>
+                    <li><a href="dataset.html">政策建议</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>法律</h4>
+                <ul>
+                    <li><a href="#">使用条款</a></li>
+                    <li><a href="#">隐私政策</a></li>
+                    <li><a href="#">版权信息</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 全球健康数据分析平台。</p>
+        </div>
+    </footer>
+    <script>
+        window.addEventListener('load', function () {
+            const riskFactorCtx = document.getElementById('riskFactorChart');
+            if (riskFactorCtx) new Chart(riskFactorCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['高血压', '吸烟', '空气污染', '高血糖', '肥胖', '饮酒', '其他'],
+                    datasets: [{ data: [13, 10, 9, 6, 5, 4, 53], backgroundColor: ['#c53030', '#ed8936', '#d69e2e', '#38a169', '#319795', '#2b6cb0', '#a0aec0'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const pm25Ctx = document.getElementById('pm25Chart');
+            if (pm25Ctx) new Chart(pm25Ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['南亚', '东亚', '东南亚', '中东', '非洲', '拉美', '欧美'],
+                    datasets: [{ label: 'PM2.5平均浓度(μg/m³)', data: [72, 58, 45, 52, 41, 32, 15], backgroundColor: 'rgba(197,48,48,0.7)' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const smokingLungCtx = document.getElementById('smokingLungChart');
+            if (smokingLungCtx) new Chart(smokingLungCtx, {
+                type: 'line',
+                data: {
+                    labels: ['<5%', '5-10%', '10-20%', '20-30%', '>30%'],
+                    datasets: [{ label: '肺癌死亡率(/10万)', data: [15, 22, 35, 52, 78], borderColor: '#c53030', backgroundColor: 'rgba(197,48,48,0.1)', tension: 0.4, fill: true, borderWidth: 3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const pm25CvdCtx = document.getElementById('pm25CvdChart');
+            if (pm25CvdCtx) new Chart(pm25CvdCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{ label: '国家', data: [{ x: 15, y: 80 }, { x: 25, y: 120 }, { x: 35, y: 150 }, { x: 45, y: 190 }, { x: 55, y: 230 }, { x: 65, y: 270 }], backgroundColor: '#ed8936' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'PM2.5(μg/m³)' } }, y: { title: { display: true, text: '心血管疾病死亡率(/10万)' } } } }
+            });
+        });
+    </script>
+</body>
+
+</html>

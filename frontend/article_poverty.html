@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贫困与健康 - 全球健康数据分析平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #111; background-color: #fff; }
+        a { color: #0064c8; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #004a95; text-decoration: underline; }
+
+        /* 顶部导航 */
+        header { background-color: #fff; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 1000; }
+        .top-nav { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+        .logo { font-size: 20px; font-weight: 700; color: #111; display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #0064c8, #00a1c9); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; }
+        .nav-links { display: flex; gap: 30px; list-style: none; align-items: center; }
+        .nav-links a { color: #555; font-weight: 500; font-size: 14px; }
+        .nav-links a:hover { color: #111; text-decoration: none; }
+
+        /* 面包屑 */
+        .breadcrumb { max-width: 1400px; margin: 0 auto; padding: 15px 20px; font-size: 13px; color: #666; }
+        .breadcrumb a { color: #666; }
+
+        /* 主容器 */
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; gap: 40px; }
+
+        /* 主内容区 */
+        .main-content { flex: 1; min-width: 0; max-width: 850px; }
+
+        /* 文章标题 */
+        .article-header { padding: 20px 0 40px; border-bottom: 1px solid #e5e5e5; margin-bottom: 40px; }
+        .article-meta { font-size: 13px; color: #666; margin-bottom: 15px; }
+        .article-title { font-size: 36px; font-weight: 700; margin-bottom: 20px; line-height: 1.2; }
+
+        /* 文章内容 */
+        .article-content { font-size: 17px; line-height: 1.8; color: #333; }
+        .article-content p { margin-bottom: 20px; }
+        .article-content h2 { font-size: 24px; font-weight: 700; margin: 40px 0 20px; }
+
+        /* 图表卡片 */
+        .chart-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 25px; margin: 30px 0; }
+        .chart-header { margin-bottom: 20px; }
+        .chart-title { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+        .chart-source { font-size: 13px; color: #888; }
+        .chart-wrapper { height: 400px; }
+
+        /* 页脚 */
+        footer { border-top: 1px solid #e5e5e5; margin-top: 60px; padding: 50px 0; }
+        .footer-content { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+        .footer-col h4 { font-size: 14px; font-weight: 600; margin-bottom: 15px; }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 8px; }
+        .footer-col a { font-size: 13px; color: #555; }
+        .footer-bottom { max-width: 1400px; margin: 40px auto 0; padding: 0 20px; border-top: 1px solid #e5e5e5; padding-top: 30px; font-size: 13px; color: #666; }
+
+        /* 响应式 */
+        @media (max-width: 768px) { .nav-links { display: none; } .article-title { font-size: 28px; } .footer-content { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="top-nav">
+            <a href="index.html" class="logo"><div class="logo-icon">GH</div><span>全球健康数据分析平台</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="global_health.html">主题</a></li>
+                <li><a href="article_smoking.html">文章</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="breadcrumb"><a href="index.html">首页</a> / 文章 / 贫困与健康</div>
+
+    <div class="main-container">
+        <main class="main-content">
+            <section class="article-header">
+                <div class="article-meta">文章 · 10 分钟阅读 · 2024年3月</div>
+                <h1 class="article-title">贫困与健康的关系</h1>
+            </section>
+
+            <section class="article-content">
+                <p>
+                    贫困与健康之间存在着紧密而复杂的关系。贫困不仅影响人们的生活条件，还深刻地影响着他们的健康结果。理解这种关系对于制定有效的政策干预至关重要。
+                </p>
+                <p>
+                    在千年之交，全球有22亿人生活在极端贫困中。在随后的二十年里，这个数字减少了一半以上。这一巨大的减少主要是由东亚和南亚的收入增长和减贫推动的。
+                </p>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">全球极端贫困人口趋势 (2000-2023)</h3>
+                        <p class="chart-source">数据来源: 世界银行</p>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="povertyChart"></canvas>
+                    </div>
+                </div>
+
+                <h2>打破贫困与健康不良的恶性循环</h2>
+                <p>
+                    贫困导致健康不良，而健康不良又加剧贫困，形成一个恶性循环。贫困人口往往面临更高的疾病风险、更差的营养状况、有限的医疗服务访问权以及更高的环境健康风险。
+                </p>
+                <p>
+                    同时，疾病和健康问题会导致医疗支出增加、劳动能力下降、教育机会减少，从而进一步加剧贫困。打破这个恶性循环需要多方面的干预措施，包括改善医疗服务、加强社会保障、促进教育和经济发展。
+                </p>
+                <h2>未来展望</h2>
+                <p>
+                    展望未来，基于世界银行和国际货币基金组织研究人员的最新预测，全球极端贫困的减少预计将结束。事实上，2040年的数字可能会高于今天。这是因为今天大多数极端贫困人口生活在经济停滞的国家。如果这些国家没有更强劲的经济增长，世界将在几十年内有近10亿人生活在极端贫困中。
+                </p>
+            </section>
+
+            <footer>
+                <div class="footer-content">
+                    <div class="footer-col">
+                        <h4>全球健康数据分析平台</h4>
+                        <p style="font-size: 13px; color: #555; line-height: 1.6;">研究和数据，帮助我们应对全球最大的健康挑战。</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>主题</h4>
+                        <ul>
+                            <li><a href="global_health.html">全球健康</a></li>
+                            <li><a href="life_expectancy.html">预期寿命</a></li>
+                            <li><a href="child_mortality.html">儿童死亡率</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>文章</h4>
+                        <ul>
+                            <li><a href="article_smoking.html">吸烟与健康</a></li>
+                            <li><a href="article_child_mortality.html">儿童死亡率</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>法律</h4>
+                        <ul><li><a href="#">使用条款</a></li><li><a href="#">隐私政策</a></li></ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2024 全球健康数据分析平台. 基于 Our World in Data 风格设计.</p>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const povertyCtx = document.getElementById('povertyChart');
+            if (povertyCtx) {
+                new Chart(povertyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2000', '2005', '2010', '2015', '2020', '2023'],
+                        datasets: [{
+                            label: '极端贫困人口 (十亿)',
+                            data: [2.2, 1.9, 1.6, 1.1, 0.95, 0.9],
+                            borderColor: '#0064c8',
+                            backgroundColor: 'rgba(0, 100, 200, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'top' } },
+                        scales: { y: { beginAtZero: true, max: 3 } }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康指标分析 - 全球健康数据分析平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #111;
+            background-color: #f7fafc;
+        }
+
+        a {
+            color: #0064c8;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #004a95;
+            text-decoration: underline;
+        }
+
+        header {
+            background-color: #1a365d;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .top-nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #e2e8f0;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 260px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            border-radius: 8px;
+            overflow: hidden;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+        }
+
+        .dropdown-content a {
+            color: #2d3748;
+            padding: 12px 20px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f7fafc;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .breadcrumb a {
+            color: #2b6cb0;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #718096;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .key-points {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .key-point {
+            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .key-point h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 10px;
+        }
+
+        .key-point p {
+            font-size: 14px;
+            color: #2d3748;
+            line-height: 1.7;
+        }
+
+        footer {
+            background: #1a365d;
+            margin-top: 60px;
+            padding: 60px 0 30px;
+            color: white;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 50px;
+        }
+
+        .footer-col h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #90cdf4;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin-bottom: 10px;
+        }
+
+        .footer-col a {
+            font-size: 14px;
+            color: #bee3f8;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 50px auto 0;
+            padding: 30px 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+            color: #90cdf4;
+        }
+
+        @media (max-width: 992px) {
+            .nav-links {
+                display: none;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .key-points {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="top-nav">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">GH</div>
+                <span>全球健康数据分析平台</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li class="dropdown">
+                    <a href="#" style="color: white; background: rgba(255,255,255,0.2);">健康主题</a>
+                    <div class="dropdown-content">
+                        <a href="global_health.html">疾病谱系变迁</a>
+                        <a href="life_expectancy.html">健康指标分析</a>
+                        <a href="child_mortality.html">风险因素归因</a>
+                        <a href="infectious_diseases.html">疾病负担预测</a>
+                        <a href="chronic_diseases.html">卫生资源配置</a>
+                        <a href="vaccine_coverage.html">健康生态系统</a>
+                    </div>
+                </li>
+                <li><a href="dataset.html">数据集</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="breadcrumb">
+            <a href="index.html">首页</a> / 健康主题 / <strong>健康指标分析</strong>
+        </div>
+
+        <div class="page-header">
+            <h1 class="page-title">📊 健康指标分析</h1>
+            <p class="page-subtitle">形成不同国家在关键健康指标上的分布，分析影响健康指标的因素，建立地区疾病谱系和健康指标的关联关系</p>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">1. 关键健康指标的国际分布</h2>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">全球预期寿命分布（2023）</h3>
+                    <div class="chart-container">
+                        <canvas id="lifeDistChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">婴儿死亡率国际比较</h3>
+                    <div class="chart-container">
+                        <canvas id="infantMortalityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title">2. 影响健康指标的关键因素</h2>
+            <div class="key-points">
+                <div class="key-point">
+                    <h4>因素一：经济发展水平</h4>
+                    <p>人均GDP与预期寿命呈显著正相关，高收入国家平均预期寿命比低收入国家高18岁。</p>
+                </div>
+                <div class="key-point">
+                    <h4>因素二：教育水平</h4>
+                    <p>女性受教育程度每提高一年，婴儿死亡率下降约7%，母亲教育是儿童健康的关键预测因素。</p>
+                </div>
+                <div class="key-point">
+                    <h4>因素三：卫生资源可及性</h4>
+                    <p>每千人医生数达到2.5人以上的国家，预期寿命普遍超过75岁。</p>
+                </div>
+                <div class="key-point">
+                    <h4>因素四：公共卫生政策</h4>
+                    <p>实施全民医保的国家，健康不平等指数平均降低30%。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">3. 健康指标与影响因素的关联分析</h2>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">人均GDP与预期寿命的关系</h3>
+                    <div class="chart-container">
+                        <canvas id="gdpLifeChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">教育水平与健康结果</h3>
+                    <div class="chart-container">
+                        <canvas id="eduHealthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">4. 健康指标变化趋势预测</h2>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">全球预期寿命预测（2023-2040）</h3>
+                    <div class="chart-container">
+                        <canvas id="lifePredictChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">健康不平等趋势预测</h3>
+                    <div class="chart-container">
+                        <canvas id="inequalityPredictChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">5. 优化健康指标的政策建议</h2>
+            <div class="key-points">
+                <div class="key-point">
+                    <h4>建议一：加大教育投入</h4>
+                    <p>特别是女性教育，这是改善健康指标的最具成本效益的干预措施之一。</p>
+                </div>
+                <div class="key-point">
+                    <h4>建议二：完善初级卫生保健</h4>
+                    <p>建立覆盖全民的基层医疗服务体系，提高基本医疗服务可及性。</p>
+                </div>
+                <div class="key-point">
+                    <h4>建议三：缩小收入差距</h4>
+                    <p>通过再分配政策减少贫富差距，这对改善整体健康水平有显著作用。</p>
+                </div>
+                <div class="key-point">
+                    <h4>建议四：加强国际合作</h4>
+                    <p>建立全球健康援助机制，帮助低收入国家改善健康基础设施。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4>全球健康数据分析平台</h4>
+                <p style="font-size: 14px; color: #bee3f8; line-height: 1.7;">
+                    研究和数据，帮助我们应对全球最大的健康挑战。我们致力于让全球健康数据变得可访问、可理解、可操作。
+                </p>
+            </div>
+            <div class="footer-col">
+                <h4>健康主题</h4>
+                <ul>
+                    <li><a href="global_health.html">疾病谱系变迁</a></li>
+                    <li><a href="life_expectancy.html">健康指标分析</a></li>
+                    <li><a href="child_mortality.html">风险因素归因</a></li>
+                    <li><a href="infectious_diseases.html">疾病负担预测</a></li>
+                    <li><a href="chronic_diseases.html">卫生资源配置</a></li>
+                    <li><a href="vaccine_coverage.html">健康生态系统</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>数据类型</h4>
+                <ul>
+                    <li><a href="dataset.html">数据表格</a></li>
+                    <li><a href="dataset.html">图表可视化</a></li>
+                    <li><a href="dataset.html">分析文章</a></li>
+                    <li><a href="dataset.html">预测模型</a></li>
+                    <li><a href="dataset.html">政策建议</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>法律</h4>
+                <ul>
+                    <li><a href="#">使用条款</a></li>
+                    <li><a href="#">隐私政策</a></li>
+                    <li><a href="#">版权信息</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 全球健康数据分析平台。基于 Our World in Data 风格设计.</p>
+        </div>
+    </footer>
+
+    <script>
+        window.addEventListener('load', function () {
+            const lifeDistCtx = document.getElementById('lifeDistChart');
+            if (lifeDistCtx) {
+                new Chart(lifeDistCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['50-60岁', '60-70岁', '70-75岁', '75-80岁', '80-85岁', '85岁以上'],
+                        datasets: [{
+                            label: '国家数量',
+                            data: [8, 25, 42, 58, 35, 12],
+                            backgroundColor: 'rgba(43, 108, 176, 0.7)'
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const infantMortalityCtx = document.getElementById('infantMortalityChart');
+            if (infantMortalityCtx) {
+                new Chart(infantMortalityCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['冰岛', '日本', '德国', '中国', '巴西', '印度', '尼日利亚'],
+                        datasets: [{
+                            label: '婴儿死亡率（/1000活产）',
+                            data: [1.2, 1.8, 3.1, 5.6, 12.3, 28.5, 58.2],
+                            backgroundColor: [
+                                'rgba(39, 103, 73, 0.7)',
+                                'rgba(39, 103, 73, 0.7)',
+                                'rgba(39, 103, 73, 0.7)',
+                                'rgba(43, 108, 176, 0.7)',
+                                'rgba(237, 137, 54, 0.7)',
+                                'rgba(237, 137, 54, 0.7)',
+                                'rgba(197, 48, 48, 0.7)'
+                            ]
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+
+            const gdpLifeCtx = document.getElementById('gdpLifeChart');
+            if (gdpLifeCtx) {
+                new Chart(gdpLifeCtx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: '国家',
+                            data: [
+                                { x: 1000, y: 55 }, { x: 3000, y: 62 }, { x: 5000, y: 68 },
+                                { x: 10000, y: 73 }, { x: 20000, y: 77 }, { x: 40000, y: 81 },
+                                { x: 60000, y: 83 }
+                            ],
+                            backgroundColor: '#2b6cb0'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { x: { title: { display: true, text: '人均GDP（美元）' } }, y: { title: { display: true, text: '预期寿命（岁）' } } }
+                    }
+                });
+            }
+
+            const eduHealthCtx = document.getElementById('eduHealthChart');
+            if (eduHealthCtx) {
+                new Chart(eduHealthCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['小学', '初中', '高中', '大专', '本科', '研究生'],
+                        datasets: [
+                            {
+                                label: '预期寿命（岁）',
+                                data: [65, 69, 73, 76, 79, 82],
+                                borderColor: '#2b6cb0', backgroundColor: 'rgba(43, 108, 176, 0.1)', tension: 0.4, fill: true, borderWidth: 3
+                            },
+                            {
+                                label: '健康素养得分',
+                                data: [40, 52, 65, 78, 88, 95],
+                                borderColor: '#276749', backgroundColor: 'rgba(39, 103, 73, 0.1)', tension: 0.4, fill: true, borderWidth: 3
+                            }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const lifePredictCtx = document.getElementById('lifePredictChart');
+            if (lifePredictCtx) {
+                new Chart(lifePredictCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023', '2025', '2030', '2035', '2040'],
+                        datasets: [
+                            {
+                                label: '高收入国家',
+                                data: [82, 83, 85, 86, 87],
+                                borderColor: '#276749', borderWidth: 3
+                            },
+                            {
+                                label: '中等收入国家',
+                                data: [74, 76, 79, 81, 83],
+                                borderColor: '#2b6cb0', borderWidth: 3
+                            },
+                            {
+                                label: '低收入国家',
+                                data: [62, 65, 69, 72, 75],
+                                borderColor: '#c53030', borderWidth: 3
+                            }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const inequalityPredictCtx = document.getElementById('inequalityPredictChart');
+            if (inequalityPredictCtx) {
+                new Chart(inequalityPredictCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2023', '2025', '2030', '2035', '2040'],
+                        datasets: [{
+                            label: '健康不平等指数（基准情景）',
+                            data: [45, 44, 42, 40, 38],
+                            borderColor: '#ed8936', borderWidth: 3
+                        }, {
+                            label: '健康不平等指数（积极干预）',
+                            data: [45, 42, 35, 30, 25],
+                            borderColor: '#276749', borderWidth: 3
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
