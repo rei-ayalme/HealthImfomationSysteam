@@ -8,10 +8,9 @@ __pycache__/
 *$py.class
 
 # 数据文件 (忽略原始和处理后的数据，确保数据隐私)
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+data/**/*
+!data/**/.gitkeep
+!data/
 
 # 数据库与日志
 *.db

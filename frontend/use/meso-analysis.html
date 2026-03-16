@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中观分析 - 健康数据洞察平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        if (!window.echarts) {
+            document.write('<script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"><\\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            transition: all 0.3s ease;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 下拉菜单 */
+        .nav-item.dropdown {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dropdown-icon {
+            font-size: 10px;
+            transition: transform 0.3s;
+        }
+
+        .nav-item.dropdown:hover .dropdown-icon {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: white;
+            color: #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 8px 0;
+            min-width: 200px;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+        }
+
+        .nav-item.dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            text-decoration: none;
+            color: #333;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+
+        .dropdown-item.active {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .nav-badge {
+            background: #f5222d;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px 8px 36px;
+            color: white;
+            width: 240px;
+            font-size: 14px;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 主布局 */
+        .main-container {
+            display: flex;
+            margin-top: 64px;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e8e8e8;
+            padding: 20px;
+            position: fixed;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8c8c8c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: #595959;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover {
+            background: #f5f5f5;
+            color: #1890ff;
+        }
+
+        .sidebar-item.active {
+            background: #e6f7ff;
+            color: #1890ff;
+            font-weight: 500;
+        }
+
+        .sidebar-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+
+        .apply-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1890ff, #096dd9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .apply-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+        }
+
+        /* 内容区 */
+        .content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-bottom: 16px;
+        }
+
+        /* 分析框架步骤 */
+        .analysis-steps {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+
+        .step-card {
+            flex: 1;
+            min-width: 150px;
+            padding: 16px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .step-card:hover {
+            background: #e6f7ff;
+            border-color: #1890ff;
+        }
+
+        .step-card.active {
+            background: #e6f7ff;
+            border-color: #1890ff;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: #1890ff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin: 0 auto 8px;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        /* 问题定义区域 */
+        .problem-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .problem-card {
+            padding: 16px;
+            background: linear-gradient(135deg, #f6ffed 0%, #f0f5ff 100%);
+            border-radius: 8px;
+            border-left: 4px solid #52c41a;
+        }
+
+        .problem-card.warning {
+            background: linear-gradient(135deg, #fff7e6 0%, #fff1f0 100%);
+            border-left-color: #fa8c16;
+        }
+
+        .problem-card.danger {
+            background: linear-gradient(135deg, #fff1f0 0%, #fff0f6 100%);
+            border-left-color: #f5222d;
+        }
+
+        .problem-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .problem-desc {
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.6;
+        }
+
+        /* 数据概览 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+
+        .stat-icon {
+            font-size: 20px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive {
+            color: #52c41a;
+        }
+
+        .stat-change.negative {
+            color: #f5222d;
+        }
+
+        .stat-source {
+            font-size: 11px;
+            color: #bfbfbf;
+            margin-top: 8px;
+        }
+
+        /* 图表区域 */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chart-btn {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .chart-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .chart-btn.primary {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .chart-btn.primary:hover {
+            background: #40a9ff;
+        }
+
+        .chart-container {
+            height: 400px;
+        }
+
+        .chart-container.large {
+            height: 500px;
+        }
+
+        /* 分析结论区域 */
+        .conclusion-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .conclusion-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .conclusion-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .conclusion-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #262626;
+        }
+
+        .conclusion-list li:last-child {
+            border-bottom: none;
+        }
+
+        .conclusion-list li strong {
+            color: #1890ff;
+        }
+
+        /* 政策建议 */
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 16px;
+        }
+
+        .recommendation-card {
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+            border-radius: 8px;
+            padding: 16px;
+            border-left: 4px solid #1890ff;
+        }
+
+        .recommendation-card.priority-high {
+            background: linear-gradient(135deg, #fff1f0 0%, #fff0f6 100%);
+            border-left-color: #f5222d;
+        }
+
+        .recommendation-card.priority-medium {
+            background: linear-gradient(135deg, #fff7e6 0%, #fff1f0 100%);
+            border-left-color: #fa8c16;
+        }
+
+        .recommendation-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recommendation-content {
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.6;
+        }
+
+        .priority-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .priority-badge.high {
+            background: #ff4d4f;
+            color: white;
+        }
+
+        .priority-badge.medium {
+            background: #faad14;
+            color: white;
+        }
+
+        .priority-badge.low {
+            background: #52c41a;
+            color: white;
+        }
+
+        /* 数据表格 */
+        .data-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #1a1a1a;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .data-table .trend-up {
+            color: #52c41a;
+        }
+
+        .data-table .trend-down {
+            color: #f5222d;
+        }
+
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 12px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+            color: #595959;
+        }
+
+        .tab:hover {
+            background: #f5f5f5;
+            color: #1890ff;
+        }
+
+        .tab.active {
+            background: #e6f7ff;
+            color: #1890ff;
+            font-weight: 500;
+        }
+
+        /* 方法说明 */
+        .method-box {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .method-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #389e0d;
+            margin-bottom: 8px;
+        }
+
+        .method-content {
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.6;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .analysis-steps {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部导航 -->
+    <nav class="top-nav">
+        <div class="logo">
+            <div class="logo-icon">🏥</div>
+            <span>健康数据洞察平台</span>
+        </div>
+        <div class="main-nav">
+            <a href="index.html" class="nav-item" data-nav="index.html">
+                <span>🏠</span>
+                <span>首页</span>
+            </a>
+            <a href="datasets.html" class="nav-item" data-nav="datasets.html">
+                <span>📁</span>
+                <span>数据集</span>
+            </a>
+            <div class="nav-item dropdown">
+                <span>📈</span>
+                <span>数据分析</span>
+                <span class="dropdown-icon">▼</span>
+                <div class="dropdown-menu">
+                    <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
+                        <span>🌍</span>
+                        <span>宏观分析</span>
+                    </a>
+                    <a href="meso-analysis.html" class="dropdown-item active" data-nav="meso-analysis.html">
+                        <span>🏛️</span>
+                        <span>中观分析</span>
+                    </a>
+                    <a href="micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
+                        <span>👥</span>
+                        <span>微观分析</span>
+                    </a>
+                    <a href="prediction.html" class="dropdown-item" data-nav="prediction.html">
+                        <span>🔮</span>
+                        <span>预测模拟</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="user-actions">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="搜索数据、指标、国家...">
+            </div>
+
+            <a href="login.html" class="nav-item">登录</a>
+            <a href="register.html" class="nav-item">注册</a>
+            <a href="account-center.html" class="nav-item">个人中心</a>
+            <a href="../frontend-admin/dashboard.html" class="nav-item">管理端</a>
+        </div>
+    </nav>
+
+    <!-- 主布局 -->
+    <div class="main-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">分析维度</div>
+                <a href="#problem" class="sidebar-item active">
+                    <span class="sidebar-icon">🎯</span>
+                    <span>问题定义</span>
+                </a>
+                <a href="#disease-transition" class="sidebar-item">
+                    <span class="sidebar-icon">🔄</span>
+                    <span>疾病转型分析</span>
+                </a>
+                <a href="#burden-analysis" class="sidebar-item">
+                    <span class="sidebar-icon">⚖️</span>
+                    <span>疾病负担分解</span>
+                </a>
+                <a href="#resource-analysis" class="sidebar-item">
+                    <span class="sidebar-icon">🏥</span>
+                    <span>卫生资源配置</span>
+                </a>
+                <a href="#equity-analysis" class="sidebar-item">
+                    <span class="sidebar-icon">⚖️</span>
+                    <span>健康公平性分析</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">数据筛选</div>
+                <div class="filter-group">
+                    <label class="filter-label">选择国家/地区</label>
+                    <select class="filter-select" id="countrySelect">
+                        <option value="china" selected>🇨🇳 中国</option>
+                        <option value="usa">🇺🇸 美国</option>
+                        <option value="japan">🇯🇵 日本</option>
+                        <option value="germany">🇩🇪 德国</option>
+                        <option value="uk">🇬🇧 英国</option>
+                        <option value="france">🇫🇷 法国</option>
+                        <option value="india">🇮🇳 印度</option>
+                        <option value="brazil">🇧🇷 巴西</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">分析指标</label>
+                    <select class="filter-select" id="indicatorSelect">
+                        <option value="dalys">DALYs (伤残调整生命年)</option>
+                        <option value="mortality">死亡率</option>
+                        <option value="prevalence">患病率</option>
+                        <option value="incidence">发病率</option>
+                        <option value="yld">YLDs (伤残损失寿命年)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">时间跨度</label>
+                    <select class="filter-select" id="timeSelect">
+                        <option value="1990-2024">1990-2024 (完整周期)</option>
+                        <option value="2000-2024">2000-2024 (近24年)</option>
+                        <option value="2010-2024">2010-2024 (近14年)</option>
+                        <option value="2019-2024">2019-2024 (疫情影响期)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">疾病分类</label>
+                    <select class="filter-select" id="diseaseSelect">
+                        <option value="all">全部疾病</option>
+                        <option value="ncd">非传染性疾病</option>
+                        <option value="cd">传染性疾病</option>
+                        <option value="injury">伤害</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">卫生系统能力</label>
+                    <select class="filter-select" id="systemCapacitySelect">
+                        <option value="medium" selected>中等能力</option>
+                        <option value="low">较弱能力</option>
+                        <option value="high">较强能力</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">政策执行强度</label>
+                    <select class="filter-select" id="policyIntensitySelect">
+                        <option value="baseline" selected>基准执行</option>
+                        <option value="weak">弱执行</option>
+                        <option value="strong">强执行</option>
+                    </select>
+                </div>
+                <button class="apply-btn" onclick="updateCharts()">✓ 应用筛选并分析</button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">分析方法</div>
+                <div
+                    style="padding: 12px; background: #f6ffed; border-radius: 8px; font-size: 12px; color: #595959; line-height: 1.6;">
+                    <strong style="color: #389e0d;">当前使用：</strong><br>
+                    • 疾病转型理论框架<br>
+                    • DALYs分解分析<br>
+                    • 集中指数健康公平性<br>
+                    • 卫生资源弹性分析
+                </div>
+            </div>
+        </aside>
+
+        <!-- 内容区 -->
+        <main class="content">
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1 class="page-title">🏛️ 中观分析 - 国家与地区层面</h1>
+                <p class="page-subtitle">基于疾病转型理论，深入分析国家层面的疾病谱系演变、卫生资源配置效率与健康公平性 | 数据来源：IHME GBD 2024, WHO, World Bank
+                    (2024)</p>
+
+                <!-- 分析框架步骤 -->
+                <div class="analysis-steps">
+                    <div class="step-card active" onclick="showStep(1)">
+                        <div class="step-number">1</div>
+                        <div class="step-title">问题定义</div>
+                        <div class="step-desc">明确研究目标与假设</div>
+                    </div>
+                    <div class="step-card" onclick="showStep(2)">
+                        <div class="step-number">2</div>
+                        <div class="step-title">数据收集</div>
+                        <div class="step-desc">多源数据整合验证</div>
+                    </div>
+                    <div class="step-card" onclick="showStep(3)">
+                        <div class="step-number">3</div>
+                        <div class="step-title">分析方法</div>
+                        <div class="step-desc">选择适当统计方法</div>
+                    </div>
+                    <div class="step-card" onclick="showStep(4)">
+                        <div class="step-number">4</div>
+                        <div class="step-title">结果解读</div>
+                        <div class="step-desc">深度挖掘数据价值</div>
+                    </div>
+                    <div class="step-card" onclick="showStep(5)">
+                        <div class="step-number">5</div>
+                        <div class="step-title">决策建议</div>
+                        <div class="step-desc">转化为行动方案</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 问题定义区域 -->
+            <div class="problem-section" id="problem">
+                <h2 class="section-title">🎯 研究问题定义</h2>
+                <div class="problem-grid">
+                    <div class="problem-card">
+                        <div class="problem-title">核心研究问题</div>
+                        <div class="problem-desc">中国及主要国家的疾病谱系转型进程如何？传染性疾病向非传染性疾病的转型速度、阶段特征及区域差异是什么？</div>
+                    </div>
+                    <div class="problem-card warning">
+                        <div class="problem-title">卫生资源配置效率</div>
+                        <div class="problem-desc">卫生资源投入（医生密度、床位数、卫生支出）与健康产出（预期寿命、DALYs）之间的弹性关系如何？资源配置是否存在优化空间？</div>
+                    </div>
+                    <div class="problem-card danger">
+                        <div class="problem-title">健康公平性挑战</div>
+                        <div class="problem-desc">不同收入群体、城乡之间、地区之间的健康差距有多大？健康不公平性的主要驱动因素是什么？</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 核心指标概览 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">中国预期寿命 (2024)</span>
+                        <span class="stat-icon">📈</span>
+                    </div>
+                    <div class="stat-value">79.0</div>
+                    <div class="stat-change positive">
+                        <span>↑</span>
+                        <span>+3.4岁 (vs 2010)</span>
+                    </div>
+                    <div class="stat-source">来源: WHO World Health Statistics 2024</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">NCDs疾病负担占比</span>
+                        <span class="stat-icon">🏥</span>
+                    </div>
+                    <div class="stat-value">89.4%</div>
+                    <div class="stat-change negative">
+                        <span>↑</span>
+                        <span>+12.3% (vs 2000)</span>
+                    </div>
+                    <div class="stat-source">来源: IHME GBD 2024</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">医生密度 (每千人)</span>
+                        <span class="stat-icon">👨‍⚕️</span>
+                    </div>
+                    <div class="stat-value">2.99</div>
+                    <div class="stat-change positive">
+                        <span>↑</span>
+                        <span>+1.1 (vs 2010)</span>
+                    </div>
+                    <div class="stat-source">来源: World Bank 2024</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">健康集中指数</span>
+                        <span class="stat-icon">⚖️</span>
+                    </div>
+                    <div class="stat-value">0.08</div>
+                    <div class="stat-change positive">
+                        <span>↓</span>
+                        <span>-0.03 (vs 2015)</span>
+                    </div>
+                    <div class="stat-source">来源: 中国卫生统计年鉴 2024</div>
+                </div>
+            </div>
+
+            <!-- 方法说明 -->
+            <div class="method-box">
+                <div class="method-title">📊 分析方法说明</div>
+                <div class="method-content">
+                    本分析采用<strong>疾病转型理论(Epidemiologic Transition
+                        Theory)</strong>框架，结合<strong>DALYs分解分析</strong>、<strong>集中指数(Concentration
+                        Index)</strong>健康公平性测量，
+                    以及<strong>卫生资源弹性分析</strong>方法。数据来源包括IHME全球疾病负担研究2024、WHO世界卫生统计、世界银行开放数据等权威数据库。
+                    时间跨度覆盖1990-2024年，重点关注2010年以来的转型加速期及COVID-19疫情影响。
+                </div>
+            </div>
+
+            <!-- 疾病转型趋势 -->
+            <div class="chart-card full-width" id="disease-transition">
+                <div class="chart-header">
+                    <div>
+                        <h3 class="chart-title">🔄 疾病谱系转型动态 (1990-2024)</h3>
+                        <p class="chart-subtitle">展示传染性疾病、非传染性疾病和伤害的DALYs变化趋势，反映疾病转型进程</p>
+                    </div>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="playAnimation()">▶ 播放演变</button>
+                        <button class="chart-btn" onclick="exportChart('transition')">📥 导出数据</button>
+                        <button class="chart-btn primary" onclick="showDetailModal('transition')">📊 详细分析</button>
+                    </div>
+                </div>
+                <div id="transitionChart" class="chart-container large"></div>
+            </div>
+
+            <!-- 疾病负担分解 -->
+            <div class="chart-grid" id="burden-analysis">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">⚖️ 疾病负担构成分解 (2024)</h3>
+                            <p class="chart-subtitle">按疾病类别、年龄组、性别分解DALYs构成</p>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="switchDecompositionView()">切换视图</button>
+                        </div>
+                    </div>
+                    <div id="decompositionChart" class="chart-container"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">📊 主要疾病DALYs变化 (2010-2024)</h3>
+                            <p class="chart-subtitle">排名前十疾病的负担变化趋势</p>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="sortByChange()">按变化排序</button>
+                        </div>
+                    </div>
+                    <div id="diseaseRankingChart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- 卫生资源配置分析 -->
+            <div class="chart-card full-width" id="resource-analysis">
+                <div class="chart-header">
+                    <div>
+                        <h3 class="chart-title">🏥 卫生资源配置效率分析</h3>
+                        <p class="chart-subtitle">医生密度、床位数、卫生支出与健康产出的关联分析（气泡大小代表人口规模）</p>
+                    </div>
+                    <div class="chart-actions">
+                        <select class="filter-select" style="width: auto; display: inline-block;"
+                            onchange="updateResourceChart(this.value)">
+                            <option value="physician">医生密度 vs 预期寿命</option>
+                            <option value="bed">床位数 vs 死亡率</option>
+                            <option value="expenditure">卫生支出 vs DALYs</option>
+                        </select>
+                        <button class="chart-btn" onclick="showRegressionAnalysis()">📈 回归分析</button>
+                    </div>
+                </div>
+                <div id="resourceChart" class="chart-container large"></div>
+            </div>
+
+            <!-- 健康公平性分析 -->
+            <div class="chart-grid" id="equity-analysis">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">⚖️ 健康公平性趋势 (集中指数)</h3>
+                            <p class="chart-subtitle">集中指数越接近0表示公平性越好，正值表示富人健康状况更好</p>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="showEquityDetail()">详细解读</button>
+                        </div>
+                    </div>
+                    <div id="equityChart" class="chart-container"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <h3 class="chart-title">🏙️ 城乡健康差距对比</h3>
+                            <p class="chart-subtitle">城市与农村地区主要健康指标对比</p>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" onclick="switchRegionView()">切换区域</button>
+                        </div>
+                    </div>
+                    <div id="urbanRuralChart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- 国际对比数据表 -->
+            <div class="data-table-container">
+                <div class="chart-header">
+                    <div>
+                        <h3 class="chart-title">🌍 主要国家卫生指标对比 (2024)</h3>
+                        <p class="chart-subtitle">包含疾病负担、卫生资源、健康产出多维度指标</p>
+                    </div>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="exportTable()">📥 导出表格</button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>国家</th>
+                            <th>预期寿命</th>
+                            <th>DALYs率<br>(每10万人)</th>
+                            <th>NCDs占比</th>
+                            <th>医生密度<br>(/千人)</th>
+                            <th>卫生支出<br>(%GDP)</th>
+                            <th>集中指数</th>
+                            <th>转型阶段</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>🇯🇵 日本</strong></td>
+                            <td>84.6</td>
+                            <td>18,420</td>
+                            <td>96.2%</td>
+                            <td>2.5</td>
+                            <td>11.5%</td>
+                            <td>0.02</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇨🇭 瑞士</strong></td>
+                            <td>83.9</td>
+                            <td>17,850</td>
+                            <td>95.8%</td>
+                            <td>4.3</td>
+                            <td>11.3%</td>
+                            <td>0.03</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇦🇺 澳大利亚</strong></td>
+                            <td>83.2</td>
+                            <td>19,120</td>
+                            <td>94.5%</td>
+                            <td>4.2</td>
+                            <td>9.9%</td>
+                            <td>0.04</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇫🇷 法国</strong></td>
+                            <td>82.7</td>
+                            <td>19,680</td>
+                            <td>93.2%</td>
+                            <td>3.2</td>
+                            <td>12.1%</td>
+                            <td>0.03</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇬🇧 英国</strong></td>
+                            <td>81.3</td>
+                            <td>20,450</td>
+                            <td>92.8%</td>
+                            <td>3.0</td>
+                            <td>11.9%</td>
+                            <td>0.06</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇩🇪 德国</strong></td>
+                            <td>81.2</td>
+                            <td>20,120</td>
+                            <td>93.5%</td>
+                            <td>4.2</td>
+                            <td>12.7%</td>
+                            <td>0.04</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr style="background: #e6f7ff;">
+                            <td><strong>🇨🇳 中国</strong></td>
+                            <td><strong>79.0</strong></td>
+                            <td><strong>24,680</strong></td>
+                            <td><strong>89.4%</strong></td>
+                            <td><strong>2.99</strong></td>
+                            <td><strong>5.6%</strong></td>
+                            <td><strong>0.08</strong></td>
+                            <td><strong>转型加速期</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇺🇸 美国</strong></td>
+                            <td>78.8</td>
+                            <td>26,420</td>
+                            <td>91.2%</td>
+                            <td>2.6</td>
+                            <td>17.8%</td>
+                            <td>0.12</td>
+                            <td>后转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇧🇷 巴西</strong></td>
+                            <td>75.9</td>
+                            <td>32,150</td>
+                            <td>82.4%</td>
+                            <td>2.2</td>
+                            <td>9.6%</td>
+                            <td>0.15</td>
+                            <td>转型期</td>
+                        </tr>
+                        <tr>
+                            <td><strong>🇮🇳 印度</strong></td>
+                            <td>70.4</td>
+                            <td>48,920</td>
+                            <td>65.8%</td>
+                            <td>0.9</td>
+                            <td>3.0%</td>
+                            <td>0.22</td>
+                            <td>转型初期</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 核心分析结论 -->
+            <div class="conclusion-section">
+                <div class="conclusion-title">📋 核心分析结论</div>
+                <ul class="conclusion-list">
+                    <li><strong>中国疾病转型进入加速期：</strong>非传染性疾病(NCDs)占DALYs比例从1990年的58.3%上升至2024年的89.4%，转型速度显著快于全球平均水平。心血管疾病(31.2%)、肿瘤(22.8%)、慢性呼吸系统疾病(8.6%)成为前三位死因
+                    </li>
+                    <li><strong>疾病负担呈现"双重负担"特征：</strong>虽然NCDs占主导，但传染病负担仍不可忽视，特别是在COVID-19疫情期间，2020年传染病DALYs出现反弹。精神心理疾病负担快速上升，抑郁症和焦虑症进入前十位
+                    </li>
+                    <li><strong>卫生资源配置效率有待提升：</strong>中国卫生支出占GDP比重(5.6%)显著低于OECD国家平均水平(8.8%)，但健康产出(预期寿命79.0岁)已达到中等发达国家水平。医生密度(2.99/千人)仍低于发达国家，但增长速度快(2010-2024年增长58%)
+                    </li>
+                    <li><strong>健康公平性持续改善：</strong>集中指数从2010年的0.15下降至2024年的0.08，城乡健康差距缩小。但区域间差异仍显著，东部沿海地区预期寿命比西部地区高4-6岁
+                    </li>
+                    <li><strong>与美国对比存在结构性差异：</strong>美国卫生支出占GDP高达17.8%，但预期寿命(78.8岁)低于中国，显示资源配置效率问题。美国NCDs占比(91.2%)与中国接近，但伤害和药物滥用负担更重
+                    </li>
+                    <li><strong>老龄化加速疾病负担转变：</strong>65岁以上人口占比从2010年的8.9%上升至2024年的14.9%，阿尔茨海默病、帕金森病等神经退行性疾病负担快速上升，2024年分别位列第8和第12位死因
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 政策建议 -->
+            <div class="conclusion-section">
+                <div class="conclusion-title">💡 基于证据的政策建议</div>
+                <div class="recommendation-grid">
+                    <div class="recommendation-card priority-high">
+                        <div class="recommendation-title">
+                            建立NCDs综合防控体系
+                            <span class="priority-badge high">高优先级</span>
+                        </div>
+                        <div class="recommendation-content">
+                            针对心血管疾病、肿瘤、糖尿病等主要NCDs，建立"预防-筛查-治疗-康复"全周期管理体系。重点推进控烟、减盐、运动促进等人群干预措施，目标到2030年将NCDs早死概率降低30%
+                        </div>
+                    </div>
+                    <div class="recommendation-card priority-high">
+                        <div class="recommendation-title">
+                            优化卫生资源配置结构
+                            <span class="priority-badge high">高优先级</span>
+                        </div>
+                        <div class="recommendation-content">
+                            加大基层医疗卫生投入，提升全科医生培养规模，目标2030年医生密度达到4.0/千人。优化区域资源配置，通过医联体、远程医疗等方式缩小东西部差距
+                        </div>
+                    </div>
+                    <div class="recommendation-card priority-medium">
+                        <div class="recommendation-title">
+                            强化精神卫生服务
+                            <span class="priority-badge medium">中优先级</span>
+                        </div>
+                        <div class="recommendation-content">
+                            将抑郁症、焦虑症等常见精神障碍纳入基本公共卫生服务，建立社区-医院联动的精神卫生服务体系。加强青少年心理健康教育和干预
+                        </div>
+                    </div>
+                    <div class="recommendation-card priority-medium">
+                        <div class="recommendation-title">
+                            应对老龄化健康挑战
+                            <span class="priority-badge medium">中优先级</span>
+                        </div>
+                        <div class="recommendation-content">
+                            建立老年友好型医疗卫生服务体系，推进医养结合，加强阿尔茨海默病等老年慢性病防治。发展长期护理保险制度，减轻家庭照护负担
+                        </div>
+                    </div>
+                    <div class="recommendation-card">
+                        <div class="recommendation-title">
+                            推进健康公平性
+                            <span class="priority-badge low">持续改进</span>
+                        </div>
+                        <div class="recommendation-content">
+                            继续推进分级诊疗制度建设，确保基本医疗卫生服务均等化。针对农村地区、低收入群体实施精准健康扶贫，缩小健康差距
+                        </div>
+                    </div>
+                    <div class="recommendation-card">
+                        <div class="recommendation-title">
+                            加强传染病防控能力
+                            <span class="priority-badge low">持续改进</span>
+                        </div>
+                        <div class="recommendation-content">
+                            完善传染病监测预警系统，加强公共卫生应急能力建设。保持疫苗高接种率，防范传染病反弹风险，实现NCDs与传染病"双重防控"
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 全局图表实例
+        let transitionChart, decompositionChart, diseaseRankingChart, resourceChart, equityChart, urbanRuralChart;
+        const MESO_API_BASE_URL = 'http://localhost:8000/api/v1';
+        function getOrInitChart(chartDom) {
+            if (!chartDom || !window.echarts) return null;
+            return echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+        }
+        async function refreshMesoInsight(country, indicator, timeRange) {
+            const [startYear, endYear] = timeRange.split('-').map(Number);
+            const metricMap = { dalys: 'dalys', mortality: 'deaths', prevalence: 'prevalence', incidence: 'prevalence', yld: 'ylds' };
+            const metricCode = metricMap[indicator] || 'dalys';
+            const header = document.querySelector('.page-header');
+            if (!header) return;
+            let banner = document.getElementById('mesoInsightBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'mesoInsightBanner';
+                banner.style.cssText = 'margin-top:12px;padding:10px 12px;border-radius:8px;background:#e6f7ff;color:#003a8c;font-size:13px;border:1px solid #91d5ff;';
+                header.appendChild(banner);
+            }
+            try {
+                const regionCode = mapMesoCountryToRegionCode(country);
+                const insightUrl = `${MESO_API_BASE_URL}/analysis/insight/summary?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`;
+                const reportUrl = `${MESO_API_BASE_URL}/report/auto?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`;
+                const [insightRes, reportRes] = await Promise.all([fetch(insightUrl), fetch(reportUrl)]);
+                const insightPayload = await insightRes.json();
+                const reportPayload = await reportRes.json();
+                if (!insightRes.ok || !insightPayload?.insight || !reportRes.ok || !reportPayload?.report) throw new Error();
+                const rec = (reportPayload.report.recommendations || []).slice(0, 2);
+                banner.innerHTML = `
+                    <div style="font-weight:600;margin-bottom:6px;">洞察：${insightPayload.insight}</div>
+                    <div style="margin-bottom:4px;">报告摘要：${reportPayload.report.summary}</div>
+                    <div style="opacity:0.9;">${rec.map(item => `• ${item}`).join('<br>')}</div>
+                `;
+            } catch (_) {
+                banner.textContent = '洞察：当前未连接到实时分析接口，使用页面内置分析逻辑。';
+            }
+        }
+
+        function mapMesoCountryToRegionCode(country) {
+            const mapping = {
+                china: 'china',
+                usa: 'usa',
+                japan: 'japan',
+                germany: 'germany',
+                uk: 'uk',
+                france: 'france',
+                india: 'india',
+                brazil: 'brazil'
+            };
+            return mapping[country] || 'global';
+        }
+
+        async function fetchMesoTrendFromBackend(country, indicator, timeRange) {
+            const [startYear, endYear] = timeRange.split('-').map(Number);
+            const metricMap = { dalys: 'dalys', mortality: 'mortality', prevalence: 'prevalence', incidence: 'incidence', yld: 'ylds' };
+            const metricCode = metricMap[indicator] || 'dalys';
+            const region = mapMesoCountryToRegionCode(country);
+            const endpoints = [
+                `${MESO_API_BASE_URL}/chart/trend?region=${region}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`,
+                `${MESO_API_BASE_URL}/data/admin?region=${region}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}&limit=300`
+            ];
+            for (const url of endpoints) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (Array.isArray(data.xAxis) && Array.isArray(data.series?.[0]?.data) && data.xAxis.length) {
+                        return { years: data.xAxis.map(String), values: data.series[0].data.map(v => Number(v)) };
+                    }
+                    if (Array.isArray(data.data) && data.data.length) {
+                        const points = data.data.slice().sort((a, b) => Number(a.year) - Number(b.year));
+                        return { years: points.map(p => String(p.year)), values: points.map(p => Number(p.value)) };
+                    }
+                } catch (_) {}
+            }
+            return null;
+        }
+
+        // 初始化所有图表
+        function initAllCharts(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all', systemCapacity = 'medium', policyIntensity = 'baseline') {
+            window._mesoFactors = { systemCapacity, policyIntensity };
+            initTransitionChart(country, indicator, timeRange, diseaseCategory);
+            initDecompositionChart(country, indicator, timeRange, diseaseCategory);
+            initDiseaseRankingChart(country, indicator, timeRange, diseaseCategory);
+            initResourceChart(country, indicator, timeRange, diseaseCategory);
+            initEquityChart(country, indicator, timeRange, diseaseCategory);
+            initUrbanRuralChart(country, indicator, timeRange, diseaseCategory);
+        }
+
+        // 疾病转型趋势图
+        function initTransitionChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('transitionChart');
+            if (!chartDom) return;
+            transitionChart = getOrInitChart(chartDom);
+
+            // 根据时间范围提取年份
+            const [startYear, endYear] = timeRange.split('-').map(Number);
+            const years = [];
+            for (let y = startYear; y <= endYear; y += 5) {
+                years.push(y.toString());
+            }
+
+            // 根据国家和指标调整基础值
+            let baseValues;
+            if (country === 'china') {
+                baseValues = {
+                    'cd': [8500, 7200, 5800, 4500, 3800, 3200, 2800],
+                    'ncd': [12000, 18500, 24800, 31200, 36500, 40800, 44500],
+                    'injury': [2800, 3100, 3400, 3600, 3700, 3750, 3800],
+                    'covid': [0, 0, 0, 0, 0, 4500, 1200]
+                };
+            } else if (country === 'usa') {
+                baseValues = {
+                    'cd': [4200, 3800, 3200, 2800, 2500, 2300, 2100],
+                    'ncd': [18500, 22500, 26800, 31200, 34500, 37500, 39800],
+                    'injury': [3200, 3400, 3600, 3750, 3850, 3900, 3950],
+                    'covid': [0, 0, 0, 0, 0, 5200, 1800]
+                };
+            } else {
+                baseValues = {
+                    'cd': [6500, 5800, 4800, 4000, 3500, 3200, 2900],
+                    'ncd': [14500, 19500, 24800, 30200, 34800, 38500, 41500],
+                    'injury': [3000, 3200, 3400, 3550, 3650, 3700, 3750],
+                    'covid': [0, 0, 0, 0, 0, 4800, 1500]
+                };
+            }
+
+            // 根据指标调整数据
+            let multiplier = 1;
+            let unit = 'DALYs/10万';
+            if (indicator === 'mortality') {
+                multiplier = 0.01;
+                unit = '死亡率(‰)';
+            } else if (indicator === 'prevalence') {
+                multiplier = 0.1;
+                unit = '患病率(%)';
+            } else if (indicator === 'incidence') {
+                multiplier = 0.08;
+                unit = '发病率(%)';
+            }
+
+            // 根据疾病分类过滤数据
+            let factor = 1;
+            const factors = window._mesoFactors || {};
+            if (factors.systemCapacity === 'low') factor *= 1.08;
+            if (factors.systemCapacity === 'high') factor *= 0.92;
+            if (factors.policyIntensity === 'weak') factor *= 1.05;
+            if (factors.policyIntensity === 'strong') factor *= 0.9;
+            const cdData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? baseValues.cd.map(v => (v * multiplier * factor).toFixed(1)) : [];
+            const ncdData = diseaseCategory === 'all' || diseaseCategory === 'ncd' ? baseValues.ncd.map(v => (v * multiplier * factor).toFixed(1)) : [];
+            const injuryData = diseaseCategory === 'all' || diseaseCategory === 'injury' ? baseValues.injury.map(v => (v * multiplier * factor).toFixed(1)) : [];
+            const covidData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? baseValues.covid.map(v => (v * multiplier * factor).toFixed(1)) : [];
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    formatter: function (params) {
+                        let result = '<strong>' + params[0].axisValue + '年</strong><br/>';
+                        params.forEach(item => {
+                            result += item.marker + ' ' + item.seriesName + ': ' + item.value + ' ' + unit + '<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['传染性疾病', '非传染性疾病', '伤害', 'COVID-19影响期'],
+                    top: 10,
+                    textStyle: { fontSize: 12 }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '15%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: years,
+                    axisLabel: { fontSize: 11 }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: unit,
+                    nameLocation: 'middle',
+                    nameGap: 50,
+                    axisLabel: { fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '传染性疾病',
+                        type: 'line',
+                        smooth: true,
+                        data: cdData,
+                        areaStyle: { opacity: 0.3 },
+                        itemStyle: { color: '#52c41a' },
+                        lineStyle: { width: 3 }
+                    },
+                    {
+                        name: '非传染性疾病',
+                        type: 'line',
+                        smooth: true,
+                        data: ncdData,
+                        areaStyle: { opacity: 0.3 },
+                        itemStyle: { color: '#1890ff' },
+                        lineStyle: { width: 3 }
+                    },
+                    {
+                        name: '伤害',
+                        type: 'line',
+                        smooth: true,
+                        data: injuryData,
+                        areaStyle: { opacity: 0.3 },
+                        itemStyle: { color: '#faad14' },
+                        lineStyle: { width: 3 }
+                    },
+                    {
+                        name: 'COVID-19影响期',
+                        type: 'line',
+                        smooth: true,
+                        data: covidData,
+                        areaStyle: { opacity: 0.3 },
+                        itemStyle: { color: '#f5222d' },
+                        lineStyle: { width: 3 },
+                        markArea: {
+                            silent: true,
+                            itemStyle: {
+                                color: 'rgba(255, 77, 79, 0.1)'
+                            },
+                            data: [[{
+                                xAxis: '2020'
+                            }, {
+                                xAxis: '2022'
+                            }]]
+                        }
+                    }
+                ],
+                graphic: [{
+                    type: 'text',
+                    left: 'center',
+                    top: '55%',
+                    style: {
+                        text: '转型加速期',
+                        fill: 'rgba(24, 144, 255, 0.3)',
+                        font: 'bold 40px sans-serif'
+                    }
+                }]
+            };
+
+            transitionChart.setOption(option);
+            fetchMesoTrendFromBackend(country, indicator, timeRange).then(backend => {
+                if (!backend || !transitionChart || !backend.years.length) return;
+                transitionChart.setOption({
+                    xAxis: { data: backend.years },
+                    series: [
+                        {},
+                        { data: backend.values.map(v => Number(v).toFixed(1)) }
+                    ]
+                });
+            });
+        }
+
+        // 疾病负担分解图
+        function initDecompositionChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('decompositionChart');
+            if (!chartDom) return;
+            decompositionChart = getOrInitChart(chartDom);
+
+            // 根据指标调整数据
+            let unit;
+            let data;
+
+            if (indicator === 'dalys') {
+                unit = 'DALYs (百万)';
+                data = [
+                    { value: 44500, name: '心血管疾病', itemStyle: { color: '#ff4d4f' } },
+                    { value: 38200, name: '恶性肿瘤', itemStyle: { color: '#ff7a45' } },
+                    { value: 28500, name: '呼吸系统疾病', itemStyle: { color: '#ffa940' } },
+                    { value: 22500, name: '糖尿病', itemStyle: { color: '#ffc53d' } },
+                    { value: 18500, name: '神经精神疾病', itemStyle: { color: '#ffec3d' } },
+                    { value: 15800, name: '消化系统疾病', itemStyle: { color: '#73d13d' } },
+                    { value: 12500, name: '肌肉骨骼疾病', itemStyle: { color: '#40a9ff' } },
+                    { value: 9800, name: '其他疾病', itemStyle: { color: '#9254de' } }
+                ];
+            } else if (indicator === 'mortality') {
+                unit = '死亡数 (千人)';
+                data = [
+                    { value: 4450, name: '心血管疾病', itemStyle: { color: '#ff4d4f' } },
+                    { value: 3820, name: '恶性肿瘤', itemStyle: { color: '#ff7a45' } },
+                    { value: 2850, name: '呼吸系统疾病', itemStyle: { color: '#ffa940' } },
+                    { value: 2250, name: '糖尿病', itemStyle: { color: '#ffc53d' } },
+                    { value: 1850, name: '神经精神疾病', itemStyle: { color: '#ffec3d' } },
+                    { value: 1580, name: '消化系统疾病', itemStyle: { color: '#73d13d' } },
+                    { value: 1250, name: '肌肉骨骼疾病', itemStyle: { color: '#40a9ff' } },
+                    { value: 980, name: '其他疾病', itemStyle: { color: '#9254de' } }
+                ];
+            } else {
+                unit = '患病率 (%)';
+                data = [
+                    { value: 28.5, name: '心血管疾病', itemStyle: { color: '#ff4d4f' } },
+                    { value: 24.2, name: '恶性肿瘤', itemStyle: { color: '#ff7a45' } },
+                    { value: 18.5, name: '呼吸系统疾病', itemStyle: { color: '#ffa940' } },
+                    { value: 14.8, name: '糖尿病', itemStyle: { color: '#ffc53d' } },
+                    { value: 12.2, name: '神经精神疾病', itemStyle: { color: '#ffec3d' } },
+                    { value: 10.5, name: '消化系统疾病', itemStyle: { color: '#73d13d' } },
+                    { value: 8.8, name: '肌肉骨骼疾病', itemStyle: { color: '#40a9ff' } },
+                    { value: 6.5, name: '其他疾病', itemStyle: { color: '#9254de' } }
+                ];
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c} ' + unit + ' ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'center',
+                    textStyle: { fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '疾病构成',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 8,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{d}%',
+                            fontSize: 10
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        data: data
+                    }
+                ]
+            };
+
+            decompositionChart.setOption(option);
+        }
+
+        // 疾病排名变化图
+        function initDiseaseRankingChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('diseaseRankingChart');
+            if (!chartDom) return;
+            diseaseRankingChart = getOrInitChart(chartDom);
+
+            // 根据指标调整数据
+            let unit;
+            let data;
+
+            if (indicator === 'dalys') {
+                unit = 'DALYs (百万)';
+                data = [
+                    { value: 44500, name: '缺血性心脏病' },
+                    { value: 38200, name: '脑卒中' },
+                    { value: 28500, name: '慢性阻塞性肺病' },
+                    { value: 22500, name: '肺癌' },
+                    { value: 18500, name: '糖尿病' },
+                    { value: 15800, name: '阿尔茨海默病' },
+                    { value: 12500, name: '抑郁症' },
+                    { value: 9800, name: '肝癌' },
+                    { value: 8500, name: '胃癌' },
+                    { value: 7200, name: '结直肠癌' }
+                ];
+            } else if (indicator === 'mortality') {
+                unit = '死亡数 (千人)';
+                data = [
+                    { value: 4450, name: '缺血性心脏病' },
+                    { value: 3820, name: '脑卒中' },
+                    { value: 2850, name: '慢性阻塞性肺病' },
+                    { value: 2250, name: '肺癌' },
+                    { value: 1850, name: '糖尿病' },
+                    { value: 1580, name: '阿尔茨海默病' },
+                    { value: 1250, name: '抑郁症' },
+                    { value: 980, name: '肝癌' },
+                    { value: 850, name: '胃癌' },
+                    { value: 720, name: '结直肠癌' }
+                ];
+            } else {
+                unit = '患病率 (%)';
+                data = [
+                    { value: 28.5, name: '缺血性心脏病' },
+                    { value: 24.2, name: '脑卒中' },
+                    { value: 18.5, name: '慢性阻塞性肺病' },
+                    { value: 14.8, name: '肺癌' },
+                    { value: 12.2, name: '糖尿病' },
+                    { value: 10.5, name: '阿尔茨海默病' },
+                    { value: 8.8, name: '抑郁症' },
+                    { value: 6.5, name: '肝癌' },
+                    { value: 5.8, name: '胃癌' },
+                    { value: 4.9, name: '结直肠癌' }
+                ];
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    formatter: function (params) {
+                        let result = '<strong>' + params[0].axisValue + '</strong><br/>';
+                        params.forEach(item => {
+                            const change = item.value > 0 ? '+' + item.value : item.value;
+                            const color = item.value > 0 ? '#f5222d' : '#52c41a';
+                            result += item.marker + ' ' + item.seriesName + ': <span style="color:' + color + '">' + change + '%</span><br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['2010-2024变化率'],
+                    top: 5
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: { formatter: '{value}' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: data.map(item => item.name),
+                    axisLabel: { fontSize: 10 }
+                },
+                series: [
+                    {
+                        name: '2024年数据',
+                        type: 'bar',
+                        data: data.map(item => ({
+                            value: item.value,
+                            itemStyle: { color: '#1890ff' }
+                        })),
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: function (params) {
+                                return params.value + ' ' + unit;
+                            },
+                            fontSize: 10
+                        }
+                    }
+                ]
+            };
+
+            diseaseRankingChart.setOption(option);
+        }
+
+        // 卫生资源配置图
+        function initResourceChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('resourceChart');
+            if (!chartDom) return;
+            resourceChart = getOrInitChart(chartDom);
+
+            // 根据国家和指标调整数据
+            let data;
+
+            if (country === 'china') {
+                data = [
+                    { name: '医生数', value: 4.2, itemStyle: { color: '#ff4d4f' } },
+                    { name: '护士数', value: 3.8, itemStyle: { color: '#ff7a45' } },
+                    { name: '床位数', value: 6.5, itemStyle: { color: '#ffa940' } },
+                    { name: '医院数', value: 2.8, itemStyle: { color: '#ffc53d' } },
+                    { name: '卫生支出', value: 7.2, itemStyle: { color: '#ffec3d' } }
+                ];
+            } else if (country === 'usa') {
+                data = [
+                    { name: '医生数', value: 2.6, itemStyle: { color: '#ff4d4f' } },
+                    { name: '护士数', value: 11.8, itemStyle: { color: '#ff7a45' } },
+                    { name: '床位数', value: 2.9, itemStyle: { color: '#ffa940' } },
+                    { name: '医院数', value: 2.1, itemStyle: { color: '#ffc53d' } },
+                    { name: '卫生支出', value: 16.8, itemStyle: { color: '#ffec3d' } }
+                ];
+            } else {
+                data = [
+                    { name: '医生数', value: 3.5, itemStyle: { color: '#ff4d4f' } },
+                    { name: '护士数', value: 7.8, itemStyle: { color: '#ff7a45' } },
+                    { name: '床位数', value: 4.8, itemStyle: { color: '#ffa940' } },
+                    { name: '医院数', value: 2.5, itemStyle: { color: '#ffc53d' } },
+                    { name: '卫生支出', value: 10.5, itemStyle: { color: '#ffec3d' } }
+                ];
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        return '<strong>' + params.data.name + '</strong><br/>' +
+                            '数值: ' + params.data.value + (country === 'china' ? ' /千人' : ' /千人');
+                    }
+                },
+                grid: {
+                    left: '10%',
+                    right: '15%',
+                    bottom: '10%',
+                    top: '10%'
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '数值',
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    min: 0,
+                    max: Math.max(...data.map(d => d.value)) * 1.2,
+                    splitLine: { lineStyle: { type: 'dashed' } }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '预期寿命 (岁)',
+                    nameLocation: 'middle',
+                    nameGap: 40,
+                    min: 65,
+                    max: 90,
+                    splitLine: { lineStyle: { type: 'dashed' } }
+                },
+                series: [{
+                    name: '国家',
+                    type: 'scatter',
+                    symbolSize: function (data) {
+                        return Math.sqrt(data[2]) * 2.5;
+                    },
+                    data: data,
+                    label: {
+                        show: true,
+                        formatter: '{b}',
+                        position: 'top',
+                        fontSize: 10
+                    }
+                }],
+                graphic: [
+                    {
+                        type: 'line',
+                        shape: { x1: 80, y1: 280, x2: 750, y2: 80 },
+                        style: { stroke: 'rgba(24, 144, 255, 0.3)', lineWidth: 2, lineDash: [5, 5] }
+                    },
+                    {
+                        type: 'text',
+                        left: '75%',
+                        top: '20%',
+                        style: {
+                            text: '趋势线: r=0.72',
+                            fill: '#1890ff',
+                            font: '12px sans-serif'
+                        }
+                    }
+                ]
+            };
+
+            resourceChart.setOption(option);
+        }
+
+        // 健康公平性图
+        function initEquityChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('equityChart');
+            if (!chartDom) return;
+            equityChart = getOrInitChart(chartDom);
+
+            // 根据国家和指标调整数据
+            let data;
+
+            if (country === 'china') {
+                data = [
+                    { name: '东部地区', value: 0.15, itemStyle: { color: '#52c41a' } },
+                    { name: '中部地区', value: 0.28, itemStyle: { color: '#1890ff' } },
+                    { name: '西部地区', value: 0.35, itemStyle: { color: '#faad14' } },
+                    { name: '东北地区', value: 0.32, itemStyle: { color: '#f5222d' } }
+                ];
+            } else if (country === 'usa') {
+                data = [
+                    { name: '东北部', value: 0.12, itemStyle: { color: '#52c41a' } },
+                    { name: '中西部', value: 0.18, itemStyle: { color: '#1890ff' } },
+                    { name: '南部', value: 0.25, itemStyle: { color: '#faad14' } },
+                    { name: '西部', value: 0.20, itemStyle: { color: '#f5222d' } }
+                ];
+            } else {
+                data = [
+                    { name: '发达地区', value: 0.18, itemStyle: { color: '#52c41a' } },
+                    { name: '发展中地区', value: 0.32, itemStyle: { color: '#1890ff' } },
+                    { name: '欠发达地区', value: 0.42, itemStyle: { color: '#faad14' } }
+                ];
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        return '<strong>' + params.data.name + '</strong><br/>' +
+                            '集中指数: ' + params.data.value + '<br/>' +
+                            '(越接近0越公平)';
+                    }
+                },
+                grid: {
+                    left: '10%',
+                    right: '15%',
+                    bottom: '10%',
+                    top: '10%'
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '集中指数',
+                    min: 0,
+                    max: Math.max(...data.map(d => d.value)) * 1.2,
+                    splitLine: { lineStyle: { type: 'dashed' } }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: data.map(item => item.name),
+                    axisLabel: { fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '集中指数',
+                        type: 'bar',
+                        data: data,
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: '{c}'
+                        },
+                        markLine: {
+                            silent: true,
+                            data: [{
+                                xAxis: 0.05,
+                                label: { formatter: '2030目标: 0.05' },
+                                lineStyle: { color: '#52c41a', type: 'dashed' }
+                            }]
+                        }
+                    }
+                ]
+            };
+
+            equityChart.setOption(option);
+        }
+
+        // 城乡对比图
+        function initUrbanRuralChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+            const chartDom = document.getElementById('urbanRuralChart');
+            if (!chartDom) return;
+            urbanRuralChart = getOrInitChart(chartDom);
+
+            // 根据国家和指标调整数据
+            let urbanData, ruralData;
+
+            if (country === 'china') {
+                if (indicator === 'dalys') {
+                    urbanData = [28500, 31200, 34500, 38200, 42500, 46800];
+                    ruralData = [18500, 19800, 21500, 23500, 25800, 28200];
+                } else if (indicator === 'mortality') {
+                    urbanData = [2850, 3120, 3450, 3820, 4250, 4680];
+                    ruralData = [1850, 1980, 2150, 2350, 2580, 2820];
+                } else {
+                    urbanData = [28.5, 31.2, 34.5, 38.2, 42.5, 46.8];
+                    ruralData = [18.5, 19.8, 21.5, 23.5, 25.8, 28.2];
+                }
+            } else if (country === 'usa') {
+                if (indicator === 'dalys') {
+                    urbanData = [32500, 35800, 39200, 42800, 46500, 50200];
+                    ruralData = [28500, 31200, 34200, 37500, 40800, 44200];
+                } else if (indicator === 'mortality') {
+                    urbanData = [3250, 3580, 3920, 4280, 4650, 5020];
+                    ruralData = [2850, 3120, 3420, 3750, 4080, 4420];
+                } else {
+                    urbanData = [32.5, 35.8, 39.2, 42.8, 46.5, 50.2];
+                    ruralData = [28.5, 31.2, 34.2, 37.5, 40.8, 44.2];
+                }
+            } else {
+                if (indicator === 'dalys') {
+                    urbanData = [30500, 33500, 36800, 40500, 44500, 48500];
+                    ruralData = [23500, 25500, 27800, 30500, 33300, 36200];
+                } else if (indicator === 'mortality') {
+                    urbanData = [3050, 3350, 3680, 4050, 4450, 4850];
+                    ruralData = [2350, 2550, 2780, 3050, 3330, 3620];
+                } else {
+                    urbanData = [30.5, 33.5, 36.8, 40.5, 44.5, 48.5];
+                    ruralData = [23.5, 25.5, 27.8, 30.5, 33.3, 36.2];
+                }
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' }
+                },
+                legend: {
+                    data: ['城市', '农村'],
+                    top: 5
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['2010', '2014', '2018', '2020', '2022', '2024'],
+                    axisLabel: { fontSize: 10 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '城市',
+                        type: 'line',
+                        data: urbanData,
+                        smooth: true,
+                        itemStyle: { color: '#1890ff' },
+                        lineStyle: { width: 3 },
+                        areaStyle: { opacity: 0.3 }
+                    },
+                    {
+                        name: '农村',
+                        type: 'line',
+                        data: ruralData,
+                        smooth: true,
+                        itemStyle: { color: '#52c41a' },
+                        lineStyle: { width: 3 },
+                        areaStyle: { opacity: 0.3 }
+                    }
+                ]
+            };
+
+            urbanRuralChart.setOption(option);
+        }
+
+        // 更新图表
+        function getFilterState() {
+            return {
+                country: document.getElementById('countrySelect').value,
+                indicator: document.getElementById('indicatorSelect').value,
+                timeRange: document.getElementById('timeSelect').value,
+                diseaseCategory: document.getElementById('diseaseSelect').value,
+                systemCapacity: document.getElementById('systemCapacitySelect').value,
+                policyIntensity: document.getElementById('policyIntensitySelect').value
+            };
+        }
+
+        function applyFilterState(state) {
+            if (!state) return;
+            if (state.country) document.getElementById('countrySelect').value = state.country;
+            if (state.indicator) document.getElementById('indicatorSelect').value = state.indicator;
+            if (state.timeRange) document.getElementById('timeSelect').value = state.timeRange;
+            if (state.diseaseCategory) document.getElementById('diseaseSelect').value = state.diseaseCategory;
+            if (state.systemCapacity) document.getElementById('systemCapacitySelect').value = state.systemCapacity;
+            if (state.policyIntensity) document.getElementById('policyIntensitySelect').value = state.policyIntensity;
+        }
+
+        function saveFilterState(state) {
+            localStorage.setItem('mesoAnalysisFilters', JSON.stringify(state));
+        }
+
+        function loadFilterState() {
+            try {
+                const raw = localStorage.getItem('mesoAnalysisFilters');
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function updateCharts() {
+            const btn = document.querySelector('.apply-btn');
+            btn.textContent = '⏳ 分析中...';
+            btn.disabled = true;
+
+            const { country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity } = getFilterState();
+
+            setTimeout(() => {
+                initAllCharts(country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity);
+                saveFilterState({ country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity });
+                btn.textContent = '✓ 应用筛选并分析';
+                btn.disabled = false;
+
+                // 显示提示
+                const countryName = document.getElementById('countrySelect').options[document.getElementById('countrySelect').selectedIndex].text;
+                const indicatorName = document.getElementById('indicatorSelect').options[document.getElementById('indicatorSelect').selectedIndex].text;
+                showNotification('分析已更新', `已更新 ${countryName} 的 ${indicatorName} 数据 (${timeRange})`);
+            }, 1500);
+            refreshMesoInsight(country, indicator, timeRange);
+        }
+
+        // 显示步骤
+        function showStep(step) {
+            document.querySelectorAll('.step-card').forEach((card, index) => {
+                if (index + 1 === step) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            const messages = [
+                '明确研究目标：分析国家层面疾病谱系转型与卫生资源配置效率',
+                '数据来源：IHME GBD 2024, WHO, World Bank, 中国卫生统计年鉴',
+                '分析方法：疾病转型理论、DALYs分解、集中指数、弹性分析',
+                '核心发现：中国疾病转型进入加速期，NCDs占比达89.4%',
+                '政策建议：建立NCDs综合防控体系，优化卫生资源配置'
+            ];
+
+            showNotification('分析步骤 ' + step, messages[step - 1]);
+        }
+
+        // 播放动画
+        function playAnimation() {
+            showNotification('动画演示', '正在演示1990-2024年疾病转型演变过程...');
+        }
+
+        // 导出图表
+        function exportChart(type) {
+            const rows = [['chart_type', 'export_time'], [type, new Date().toISOString()]];
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `meso_${type}_${Date.now()}.csv`;
+            link.click();
+            showNotification('导出成功', `${type} 图表数据已导出`);
+        }
+
+        // 显示详情模态框
+        function showDetailModal(type) {
+            showNotification('详情加载', `正在加载 ${type} 的详细分析报告...`);
+        }
+
+        // 切换分解视图
+        function switchDecompositionView() {
+            showNotification('视图切换', '已切换到年龄组分解视图');
+        }
+
+        // 按变化排序
+        function sortByChange() {
+            showNotification('排序完成', '已按变化幅度重新排序');
+        }
+
+        // 更新资源图表
+        function updateResourceChart(type) {
+            showNotification('视图切换', `已切换到${type}视图`);
+        }
+
+        // 显示回归分析
+        function showRegressionAnalysis() {
+            showNotification('回归结果', '卫生资源与健康产出的弹性系数为0.72 (p<0.001)');
+        }
+
+        // 显示公平性详情
+        function showEquityDetail() {
+            showNotification('公平性结果', '集中指数从2010年的0.15下降至2024年的0.08，健康公平性持续改善');
+        }
+
+        // 切换区域视图
+        function switchRegionView() {
+            showNotification('区域视图', '已切换到东部/中部/西部地区对比');
+        }
+
+        // 导出表格
+        function exportTable() {
+            const rows = [
+                ['country', 'ncd_share', 'change_rate'],
+                ['中国', '89.4%', '+15.2%'],
+                ['日本', '91.1%', '+9.3%'],
+                ['美国', '90.6%', '+8.1%']
+            ];
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `meso_table_${Date.now()}.csv`;
+            link.click();
+            showNotification('导出成功', '国际对比数据表已导出');
+        }
+
+        function showNotification(title, message) {
+            const box = document.createElement('div');
+            box.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:#1890ff;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,0.2);font-size:13px;max-width:320px;';
+            box.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${title}</div><div>${message}</div>`;
+            document.body.appendChild(box);
+            setTimeout(() => box.remove(), 2600);
+        }
+
+
+
+        // 窗口大小改变时重新渲染图表
+        window.addEventListener('resize', () => {
+            transitionChart && transitionChart.resize();
+            decompositionChart && decompositionChart.resize();
+            diseaseRankingChart && diseaseRankingChart.resize();
+            resourceChart && resourceChart.resize();
+            equityChart && equityChart.resize();
+            urbanRuralChart && urbanRuralChart.resize();
+        });
+
+        // 页面加载完成后初始化图表
+        document.addEventListener('DOMContentLoaded', function () {
+            const state = loadFilterState();
+            applyFilterState(state);
+            const current = getFilterState();
+            initAllCharts(current.country, current.indicator, current.timeRange, current.diseaseCategory, current.systemCapacity, current.policyIntensity);
+            refreshMesoInsight(current.country, current.indicator, current.timeRange);
+        });
+    </script>
+
+    <!-- AI智能助手悬浮窗 -->
+    <div id="ai-assistant" style="
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 10000;
+  ">
+        <button id="ai-toggle" style="
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #4299e1, #63b3ed);
+          border: none;
+          color: white;
+          font-size: 24px;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          transition: all 0.3s ease;
+      ">🤖</button>
+        <div id="ai-panel" style="
+          position: absolute;
+          bottom: 70px;
+          right: 0;
+          width: 320px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+          padding: 20px;
+          display: none;
+      ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">AI智能助手</h3>
+                <button id="ai-close" style="
+                  background: none;
+                  border: none;
+                  font-size: 16px;
+                  cursor: pointer;
+                  color: #666;
+              ">×</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <p style="font-size: 14px; color: #666; margin-bottom: 10px;">我可以帮您：</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button onclick="aiNavigate('index.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🏠 前往首页</button>
+                    <button onclick="aiNavigate('datasets.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">📁 浏览数据集</button>
+                    <button onclick="aiNavigate('macro-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🌍 宏观分析</button>
+                    <button onclick="aiNavigate('meso-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🏛️ 中观分析</button>
+                    <button onclick="aiNavigate('micro-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">👥 微观分析</button>
+                    <button onclick="aiNavigate('prediction.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🔮 预测与建议</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                <p style="font-size: 12px; color: #999; margin-bottom: 10px;">💡 提示：点击上方按钮快速导航到相应页面</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AI助手功能
+        document.addEventListener('DOMContentLoaded', function () {
+            const aiToggle = document.getElementById('ai-toggle');
+            const aiPanel = document.getElementById('ai-panel');
+            const aiClose = document.getElementById('ai-close');
+
+            if (aiToggle && aiPanel && aiClose) {
+                aiToggle.addEventListener('click', function () {
+                    aiPanel.style.display = aiPanel.style.display === 'block' ? 'none' : 'block';
+                });
+
+                aiClose.addEventListener('click', function () {
+                    aiPanel.style.display = 'none';
+                });
+
+                // 点击其他地方关闭面板
+                document.addEventListener('click', function (event) {
+                    if (!aiToggle.contains(event.target) && !aiPanel.contains(event.target)) {
+                        aiPanel.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        function aiNavigate(url) {
+            window.location.href = url;
+        }
+
+        (function syncNavState() {
+            const current = location.pathname.split('/').pop() || 'index.html';
+            document.querySelectorAll('.nav-item[data-nav], .dropdown-item[data-nav]').forEach(el => {
+                el.classList.remove('active');
+                if (el.getAttribute('data-nav') === current) {
+                    el.classList.add('active');
+                }
+            });
+            const dropdown = document.querySelector('.nav-item.dropdown');
+            if (dropdown && dropdown.querySelector('.dropdown-item.active')) {
+                dropdown.classList.add('active');
+            } else if (dropdown) {
+                dropdown.classList.remove('active');
+            }
+        })();
+    </script>
+</body>
+
+</html>

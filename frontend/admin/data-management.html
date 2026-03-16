@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康数据洞察平台 - 数据管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1a365d;
+            color: white;
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .nav-menu {
+            margin-top: 24px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-left-color: #4299e1;
+        }
+
+        .nav-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-text {
+            font-size: 14px;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: #f56565;
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            padding: 8px 12px 8px 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 20px;
+            font-size: 14px;
+            width: 200px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #4299e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .data-content {
+            padding: 24px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .header-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .btn-primary:hover {
+            background: #40a9ff;
+            border-color: #40a9ff;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .data-tabs {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .tab-item {
+            padding: 16px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-item.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+
+        .tab-content {
+            padding: 24px;
+        }
+
+        .data-filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        .status-error {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .page-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 24px;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                overflow: hidden;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .data-filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🏥</div>
+                    <div class="logo-text">健康数据平台</div>
+                </div>
+            </div>
+
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">仪表盘</span>
+                </a>
+                <a href="data-management.html" class="nav-item active">
+                    <span class="nav-icon">💾</span>
+                    <span class="nav-text">数据管理</span>
+                    <span class="nav-badge">12</span>
+                </a>
+                <a href="user-management.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户管理</span>
+                </a>
+                <a href="system-settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统设置</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">报表管理</span>
+                </a>
+                <a href="logs.html" class="nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">系统日志</span>
+                </a>
+                <a href="help.html" class="nav-item">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-text">帮助中心</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="toggle-btn">☰</button>
+                    <h1 class="page-title">数据管理</h1>
+                </div>
+                <div class="top-bar-right">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="搜索数据...">
+                    </div>
+                    <div class="user-menu">
+                        <div class="user-info">
+                            <div class="user-name">管理员</div>
+                            <div class="user-role">系统管理员</div>
+                        </div>
+                        <div class="user-avatar">A</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-content">
+                <div class="content-header">
+                    <div class="header-left">
+                        <h2 class="header-title">数据管理</h2>
+                        <p class="header-description">管理平台所有健康相关数据</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="openImportModal()">
+                            <span>📥</span>
+                            <span>导入数据</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddModal()">
+                            <span>➕</span>
+                            <span>新增数据</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="data-tabs">
+                    <div class="tab-nav">
+                        <div class="tab-item active" onclick="switchTab('health-metrics')">健康指标</div>
+                        <div class="tab-item" onclick="switchTab('disease-data')">疾病数据</div>
+                        <div class="tab-item" onclick="switchTab('population')">人口统计</div>
+                        <div class="tab-item" onclick="switchTab('health-resources')">医疗资源</div>
+                    </div>
+
+                    <div class="tab-content" id="health-metrics-tab">
+                        <div class="data-filters">
+                            <div class="filter-group">
+                                <label class="filter-label">数据类型</label>
+                                <select class="filter-select">
+                                    <option value="">全部类型</option>
+                                    <option value="blood-pressure">血压</option>
+                                    <option value="blood-sugar">血糖</option>
+                                    <option value="cholesterol">胆固醇</option>
+                                    <option value="body-mass">体重指数</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">地区</label>
+                                <select class="filter-select">
+                                    <option value="">全部地区</option>
+                                    <option value="beijing">北京</option>
+                                    <option value="shanghai">上海</option>
+                                    <option value="guangzhou">广州</option>
+                                    <option value="shenzhen">深圳</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">时间范围</label>
+                                <select class="filter-select">
+                                    <option value="">全部时间</option>
+                                    <option value="1-month">近1个月</option>
+                                    <option value="3-months">近3个月</option>
+                                    <option value="6-months">近6个月</option>
+                                    <option value="1-year">近1年</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">状态</label>
+                                <select class="filter-select">
+                                    <option value="">全部状态</option>
+                                    <option value="active">活跃</option>
+                                    <option value="pending">待审核</option>
+                                    <option value="error">错误</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="data-table">
+                            <div class="table-header">
+                                <h3 class="table-title">健康指标数据</h3>
+                                <div class="table-actions">
+                                    <button class="btn btn-secondary">
+                                        <span>📥</span>
+                                        <span>导出</span>
+                                    </button>
+                                    <button class="btn btn-secondary">
+                                        <span>🔄</span>
+                                        <span>刷新</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>指标名称</th>
+                                        <th>数据类型</th>
+                                        <th>地区</th>
+                                        <th>数值</th>
+                                        <th>单位</th>
+                                        <th>时间</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>平均血压</td>
+                                        <td>血压</td>
+                                        <td>北京</td>
+                                        <td>120/80</td>
+                                        <td>mmHg</td>
+                                        <td>2026-03-15</td>
+                                        <td><span class="status-badge status-active">活跃</span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" onclick="editData(1)">编辑</button>
+                                                <button class="action-btn" onclick="deleteData(1)">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>平均血糖</td>
+                                        <td>血糖</td>
+                                        <td>上海</td>
+                                        <td>5.6</td>
+                                        <td>mmol/L</td>
+                                        <td>2026-03-14</td>
+                                        <td><span class="status-badge status-active">活跃</span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" onclick="editData(2)">编辑</button>
+                                                <button class="action-btn" onclick="deleteData(2)">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>平均胆固醇</td>
+                                        <td>胆固醇</td>
+                                        <td>广州</td>
+                                        <td>4.8</td>
+                                        <td>mmol/L</td>
+                                        <td>2026-03-13</td>
+                                        <td><span class="status-badge status-pending">待审核</span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" onclick="editData(3)">编辑</button>
+                                                <button class="action-btn" onclick="deleteData(3)">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>平均体重指数</td>
+                                        <td>体重指数</td>
+                                        <td>深圳</td>
+                                        <td>23.5</td>
+                                        <td>BMI</td>
+                                        <td>2026-03-12</td>
+                                        <td><span class="status-badge status-error">错误</span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" onclick="editData(4)">编辑</button>
+                                                <button class="action-btn" onclick="deleteData(4)">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>5</td>
+                                        <td>平均心率</td>
+                                        <td>心率</td>
+                                        <td>北京</td>
+                                        <td>75</td>
+                                        <td>bpm</td>
+                                        <td>2026-03-11</td>
+                                        <td><span class="status-badge status-active">活跃</span></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" onclick="editData(5)">编辑</button>
+                                                <button class="action-btn" onclick="deleteData(5)">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="pagination">
+                                <div class="pagination-info">显示 1-5 条，共 24 条</div>
+                                <div class="pagination-controls">
+                                    <button class="page-btn">上一页</button>
+                                    <button class="page-btn active">1</button>
+                                    <button class="page-btn">2</button>
+                                    <button class="page-btn">3</button>
+                                    <button class="page-btn">4</button>
+                                    <button class="page-btn">5</button>
+                                    <button class="page-btn">下一页</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增数据模态框 -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">新增健康指标数据</h3>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form id="addForm">
+                <div class="form-group">
+                    <label class="form-label">指标名称</label>
+                    <input type="text" class="form-input" placeholder="请输入指标名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数据类型</label>
+                    <select class="form-input">
+                        <option value="blood-pressure">血压</option>
+                        <option value="blood-sugar">血糖</option>
+                        <option value="cholesterol">胆固醇</option>
+                        <option value="body-mass">体重指数</option>
+                        <option value="heart-rate">心率</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">地区</label>
+                    <select class="form-input">
+                        <option value="beijing">北京</option>
+                        <option value="shanghai">上海</option>
+                        <option value="guangzhou">广州</option>
+                        <option value="shenzhen">深圳</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">数值</label>
+                    <input type="text" class="form-input" placeholder="请输入数值">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">单位</label>
+                    <input type="text" class="form-input" placeholder="请输入单位">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">时间</label>
+                    <input type="date" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-textarea" placeholder="请输入备注信息"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 导入数据模态框 -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">导入数据</h3>
+                <button class="close-btn" onclick="closeImportModal()">&times;</button>
+            </div>
+            <form id="importForm">
+                <div class="form-group">
+                    <label class="form-label">数据类型</label>
+                    <select class="form-input">
+                        <option value="health-metrics">健康指标</option>
+                        <option value="disease-data">疾病数据</option>
+                        <option value="population">人口统计</option>
+                        <option value="health-resources">医疗资源</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">上传文件</label>
+                    <input type="file" class="form-input" accept=".csv,.xlsx">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">文件格式说明</label>
+                    <textarea class="form-textarea" readonly>
+请确保文件格式正确：
+1. CSV格式：第一行为表头
+2. XLSX格式：包含正确的工作表
+3. 数据字段：指标名称,数据类型,地区,数值,单位,时间
+                    </textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+        // 切换标签
+        function switchTab(tabId) {
+            // 移除所有标签的active状态
+            document.querySelectorAll('.tab-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // 添加当前标签的active状态
+            event.target.classList.add('active');
+
+            // 这里可以添加标签内容切换逻辑
+        }
+
+        // 打开新增数据模态框
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        // 关闭新增数据模态框
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        // 打开导入数据模态框
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'block';
+        }
+
+        // 关闭导入数据模态框
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+        }
+
+        // 编辑数据
+        function editData(id) {
+            alert('编辑数据 ID: ' + id);
+        }
+
+        // 删除数据
+        async function deleteData(id) {
+            if (confirm('确定要删除这条数据吗？')) {
+                try {
+                    // 这里需要根据实际情况构建删除请求
+                    // const response = await fetch(`${API_BASE_URL}/data/delete?region=...&year=...&metric=...`, {
+                    //     method: 'DELETE'
+                    // });
+                    // if (response.ok) {
+                    //     alert('数据删除成功');
+                    //     // 刷新数据列表
+                    //     loadDataList();
+                    // } else {
+                    //     alert('删除失败');
+                    // }
+                    alert('数据已删除 ID: ' + id);
+                } catch (error) {
+                    console.error('删除数据失败:', error);
+                    alert('删除失败，请重试');
+                }
+            }
+        }
+
+        // 加载数据列表
+        async function loadDataList() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/data/admin`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('数据列表获取成功:', data);
+                    // 这里可以更新表格数据
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+            }
+        }
+
+        // 表单提交 - 新增数据
+        document.getElementById('addForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            try {
+                // 获取表单数据
+                const formData = new FormData(e.target);
+                const data = {
+                    region: 'global', // 暂时固定为global，实际应该从表单获取
+                    year: parseInt(formData.get('year') || new Date().getFullYear()),
+                    metric: 'dalys', // 暂时固定为dalys，实际应该从表单获取
+                    value: parseFloat(formData.get('value')),
+                    source: formData.get('source') || '手动输入'
+                };
+
+                const response = await fetch(`${API_BASE_URL}/data/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('数据保存成功');
+                    closeAddModal();
+                    // 刷新数据列表
+                    loadDataList();
+                } else {
+                    const error = await response.json();
+                    alert('保存失败: ' + (error.detail || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存数据失败:', error);
+                alert('保存失败，请重试');
+            }
+        });
+
+        // 表单提交 - 导入数据
+        document.getElementById('importForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            alert('数据导入中，请稍候...');
+            setTimeout(() => {
+                alert('数据导入成功');
+                closeImportModal();
+                // 刷新数据列表
+                loadDataList();
+            }, 2000);
+        });
+
+        // 点击模态框外部关闭
+        window.onclick = function (event) {
+            const addModal = document.getElementById('addModal');
+            const importModal = document.getElementById('importModal');
+            if (event.target == addModal) {
+                addModal.style.display = 'none';
+            }
+            if (event.target == importModal) {
+                importModal.style.display = 'none';
+            }
+        }
+
+        // 页面加载时加载数据
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDataList();
+        });
+    </script>
+    <script>
+        (function syncAdminNavState() {
+            const current = location.pathname.split('/').pop();
+            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                if (href && href === current) link.classList.add('active');
+            });
+        })();
+    </script>
+</body>

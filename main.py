@@ -12,6 +12,9 @@ from db.connection import SessionLocal
 from db.models import GlobalHealthMetric
 app = FastAPI(title="健康数据分析平台 API")
 
+app.mount("/admin", StaticFiles(directory="frontend/admin", html=True), name="admin")
+app.mount("/user", StaticFiles(directory="frontend/user", html=True), name="user")
+app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 # 配置 CORS（允许跨域请求，前端调试时很有用）
 app.add_middleware(
     CORSMiddleware,
@@ -120,6 +123,16 @@ async def get_disease_simulation(years: int = 17):
         return {"status": "error", "msg": str(e)}
 
 
+
+@app.get("/api/admin/settings")
+async def get_sys_settings():
+    """供 system-settings.html 调用，获取当前系统配置"""
+    from config.settings import SETTINGS
+    return {
+        "medical_density": SETTINGS.BASE_MEDICAL_RESOURCE_DENSITIES,
+        "analysis_params": SETTINGS.ANALYSIS_PARAMS,
+        "gbd_config": SETTINGS.GBD_ANALYSIS_CONFIG
+    }
 # 你可以在这里继续添加更多的 API 接口
 # @app.post("/api/predict")
 # async def predict_disease_burden(data: dict):
@@ -138,7 +151,7 @@ app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 # 设置默认主页
 @app.get("/")
 async def root():
-    return FileResponse("frontend/index.html")
+    return FileResponse("frontend/user/index.html")
 
 if __name__ == "__main__":
     # 启动命令

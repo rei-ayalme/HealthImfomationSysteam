@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统日志 - 健康数据洞察平台管理端</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            display: none;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4299e1, #63b3ed);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 主布局 */
+        .main-container {
+            display: flex;
+            margin-top: 0;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 240px;
+            background: #1a365d;
+            border-right: none;
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.45);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 24px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin: 2px 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 24px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .sidebar-menu a.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border-left-color: #4299e1;
+        }
+
+        .menu-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 内容区 */
+        .content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+
+        .stat-icon {
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            color: #52c41a;
+            margin-top: 4px;
+        }
+
+        /* 筛选栏 */
+        .filter-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr) auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+
+        .filter-input,
+        .filter-select {
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #40a9ff;
+        }
+
+        .filter-btn.secondary {
+            background: white;
+            color: #595959;
+            border: 1px solid #d9d9d9;
+        }
+
+        .filter-btn.secondary:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        /* 日志表格 */
+        .logs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .logs-header {
+            padding: 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logs-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .logs-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .action-btn.primary {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .action-btn.primary:hover {
+            background: #40a9ff;
+        }
+
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .logs-table th {
+            background: #fafafa;
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .logs-table td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #595959;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .logs-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .log-level {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .log-level.info {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .log-level.warning {
+            background: #fffbe6;
+            color: #faad14;
+        }
+
+        .log-level.error {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+
+        .log-level.debug {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .log-message {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-message:hover {
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .page-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 日志详情模态框 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #8c8c8c;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: #f5f5f5;
+            color: #1a1a1a;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(80vh - 140px);
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 16px;
+        }
+
+        .detail-label {
+            width: 120px;
+            font-size: 13px;
+            color: #8c8c8c;
+            flex-shrink: 0;
+        }
+
+        .detail-value {
+            flex: 1;
+            font-size: 14px;
+            color: #1a1a1a;
+        }
+
+        .detail-stack {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部导航 -->
+    <nav class="top-nav"></nav>
+
+    <!-- 主布局 -->
+    <div class="main-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span>🏥</span>
+                    <span>健康数据平台</span>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">主菜单</div>
+                <ul class="sidebar-menu">
+                    <li><a href="dashboard.html"><span class="menu-icon">📊</span>数据概览</a></li>
+                    <li><a href="data-management.html"><span class="menu-icon">🗄️</span>数据管理</a></li>
+                    <li><a href="user-management.html"><span class="menu-icon">👥</span>用户管理</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">系统管理</div>
+                <ul class="sidebar-menu">
+                    <li><a href="system-settings.html"><span class="menu-icon">⚙️</span>系统设置</a></li>
+                    <li><a href="reports.html"><span class="menu-icon">📄</span>报告管理</a></li>
+                    <li><a href="logs.html" class="active"><span class="menu-icon">📝</span>系统日志</a></li>
+                    <li><a href="help.html"><span class="menu-icon">❓</span>帮助中心</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- 内容区 -->
+        <main class="content">
+            <div class="page-header">
+                <h1 class="page-title">📝 系统日志</h1>
+                <p class="page-subtitle">查看系统运行日志、错误记录和操作审计，支持实时监控和历史查询</p>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">今日日志总数</span>
+                        <span class="stat-icon">📋</span>
+                    </div>
+                    <div class="stat-value">12,458</div>
+                    <div class="stat-change">↑ 8.5% 较昨日</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">错误日志</span>
+                        <span class="stat-icon">⚠️</span>
+                    </div>
+                    <div class="stat-value">23</div>
+                    <div class="stat-change">↓ 12% 较昨日</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">警告日志</span>
+                        <span class="stat-icon">🔔</span>
+                    </div>
+                    <div class="stat-value">156</div>
+                    <div class="stat-change">↑ 5.2% 较昨日</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">系统正常运行时间</span>
+                        <span class="stat-icon">✅</span>
+                    </div>
+                    <div class="stat-value">99.98%</div>
+                    <div class="stat-change">过去30天</div>
+                </div>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">日志级别</label>
+                        <select class="filter-select" id="levelFilter">
+                            <option value="">全部级别</option>
+                            <option value="error">错误 (Error)</option>
+                            <option value="warning">警告 (Warning)</option>
+                            <option value="info">信息 (Info)</option>
+                            <option value="debug">调试 (Debug)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">模块/服务</label>
+                        <select class="filter-select" id="moduleFilter">
+                            <option value="">全部模块</option>
+                            <option value="api">API网关</option>
+                            <option value="database">数据库</option>
+                            <option value="auth">认证服务</option>
+                            <option value="ai">AI预测服务</option>
+                            <option value="crawler">数据爬虫</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">开始时间</label>
+                        <input type="datetime-local" class="filter-input" id="startTime">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">结束时间</label>
+                        <input type="datetime-local" class="filter-input" id="endTime">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">关键词搜索</label>
+                        <input type="text" class="filter-input" id="keywordFilter" placeholder="输入关键词...">
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-btn" onclick="searchLogs()">🔍 查询</button>
+                        <button class="filter-btn secondary" onclick="resetFilters()">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日志表格 -->
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h3 class="logs-title">日志列表</h3>
+                    <div class="logs-actions">
+                        <button class="action-btn" onclick="refreshLogs()">🔄 刷新</button>
+                        <button class="action-btn" onclick="exportLogs()">📥 导出</button>
+                        <button class="action-btn primary" onclick="clearLogs()">🗑️ 清理旧日志</button>
+                    </div>
+                </div>
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">级别</th>
+                            <th style="width: 180px;">时间</th>
+                            <th style="width: 120px;">模块</th>
+                            <th>消息内容</th>
+                            <th style="width: 100px;">用户/IP</th>
+                            <th style="width: 80px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- 日志数据将通过JS动态生成 -->
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <div class="pagination-info">
+                        显示第 1-20 条，共 12,458 条记录
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" disabled>上一页</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">4</button>
+                        <button class="page-btn">5</button>
+                        <span style="padding: 8px;">...</span>
+                        <button class="page-btn">623</button>
+                        <button class="page-btn">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 日志详情模态框 -->
+    <div class="modal-overlay" id="logDetailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">📋 日志详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 详情内容将通过JS动态填充 -->
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn" onclick="copyLogDetail()">📋 复制</button>
+                <button class="action-btn primary" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟日志数据
+        const logData = [
+            { id: 1, level: 'info', time: '2024-01-15 14:32:18', module: 'api', message: '用户登录成功 - user_id: 12345, username: admin', user: 'admin', ip: '192.168.1.100', stack: '' },
+            { id: 2, level: 'info', time: '2024-01-15 14:31:52', module: 'database', message: '数据库查询完成 - 查询耗时: 45ms, 返回记录数: 128', user: 'system', ip: '-', stack: '' },
+            { id: 3, level: 'warning', time: '2024-01-15 14:31:30', module: 'api', message: 'API请求频率超过阈值 - endpoint: /api/v1/predict, count: 150/min', user: 'api_user', ip: '10.0.0.55', stack: '' },
+            { id: 4, level: 'error', time: '2024-01-15 14:30:45', module: 'ai', message: 'AI预测服务异常 - 模型加载失败: model_v2.3.pkl', user: 'system', ip: '-', stack: 'FileNotFoundError: [Errno 2] No such file or directory: \'/models/model_v2.3.pkl\'\n    at load_model (/app/ai/service.py:45)\n    at predict (/app/ai/service.py:78)\n    at handle_request (/app/api/routes.py:156)' },
+            { id: 5, level: 'info', time: '2024-01-15 14:30:12', module: 'auth', message: 'Token验证通过 - user_id: 67890, exp: 1705312800', user: 'user_67890', ip: '192.168.1.105', stack: '' },
+            { id: 6, level: 'debug', time: '2024-01-15 14:29:58', module: 'crawler', message: '数据爬虫启动 - source: WHO, target: disease_stats', user: 'system', ip: '-', stack: '' },
+            { id: 7, level: 'info', time: '2024-01-15 14:29:30', module: 'database', message: '数据备份完成 - backup_size: 2.3GB, duration: 125s', user: 'system', ip: '-', stack: '' },
+            { id: 8, level: 'warning', time: '2024-01-15 14:28:15', module: 'database', message: '数据库连接池使用率超过80% - active: 82/100', user: 'system', ip: '-', stack: '' },
+            { id: 9, level: 'info', time: '2024-01-15 14:27:42', module: 'api', message: '健康检查通过 - status: healthy, uptime: 45d 12h 30m', user: 'monitor', ip: '127.0.0.1', stack: '' },
+            { id: 10, level: 'error', time: '2024-01-15 14:26:20', module: 'crawler', message: '数据爬取失败 - source: CDC, error: Connection timeout', user: 'system', ip: '-', stack: 'requests.exceptions.Timeout: HTTPSConnectionPool(host=\'cdc.gov\', port=443): Read timed out. (read timeout=30)\n    at fetch_data (/app/crawler/cdc.py:34)\n    at run (/app/crawler/main.py:89)' },
+            { id: 11, level: 'info', time: '2024-01-15 14:25:55', module: 'auth', message: '新用户注册 - user_id: 78901, email: user@example.com', user: 'user_78901', ip: '192.168.1.110', stack: '' },
+            { id: 12, level: 'debug', time: '2024-01-15 14:25:30', module: 'api', message: '请求参数 - method: POST, path: /api/v1/analysis, body: {...}', user: 'admin', ip: '192.168.1.100', stack: '' },
+            { id: 13, level: 'info', time: '2024-01-15 14:24:18', module: 'ai', message: '预测任务完成 - task_id: pred_20240115_001, duration: 2.3s', user: 'system', ip: '-', stack: '' },
+            { id: 14, level: 'warning', time: '2024-01-15 14:23:45', module: 'api', message: '响应时间超过阈值 - endpoint: /api/v1/report, time: 3.2s', user: 'user_54321', ip: '192.168.1.115', stack: '' },
+            { id: 15, level: 'info', time: '2024-01-15 14:22:30', module: 'database', message: '索引优化完成 - table: health_data, index: idx_date_region', user: 'system', ip: '-', stack: '' },
+            { id: 16, level: 'error', time: '2024-01-15 14:21:10', module: 'auth', message: '登录失败次数过多 - username: hacker, attempts: 10, locked: true', user: 'hacker', ip: '45.123.45.67', stack: '' },
+            { id: 17, level: 'info', time: '2024-01-15 14:20:45', module: 'api', message: '数据导出完成 - user_id: 12345, file: report_20240115.xlsx, size: 5.2MB', user: 'admin', ip: '192.168.1.100', stack: '' },
+            { id: 18, level: 'debug', time: '2024-01-15 14:19:30', module: 'ai', message: '模型推理 - input_shape: [1, 128], output_shape: [1, 10]', user: 'system', ip: '-', stack: '' },
+            { id: 19, level: 'info', time: '2024-01-15 14:18:22', module: 'crawler', message: '数据更新完成 - source: WorldBank, records: 2,456, duration: 45s', user: 'system', ip: '-', stack: '' },
+            { id: 20, level: 'warning', time: '2024-01-15 14:17:05', module: 'system', message: '磁盘空间不足 - path: /var/log, usage: 92%, threshold: 90%', user: 'system', ip: '-', stack: '' }
+        ];
+
+        // 渲染日志表格
+        function renderLogs() {
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = logData.map(log => `
+                <tr>
+                    <td><span class="log-level ${log.level}">${getLevelText(log.level)}</span></td>
+                    <td>${log.time}</td>
+                    <td>${getModuleText(log.module)}</td>
+                    <td class="log-message" title="${log.message}">${log.message}</td>
+                    <td>${log.user}<br><small style="color:#8c8c8c">${log.ip}</small></td>
+                    <td><button class="action-btn" onclick="viewLogDetail(${log.id})">查看</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // 获取级别文本
+        function getLevelText(level) {
+            const levels = {
+                'error': '错误',
+                'warning': '警告',
+                'info': '信息',
+                'debug': '调试'
+            };
+            return levels[level] || level;
+        }
+
+        // 获取模块文本
+        function getModuleText(module) {
+            const modules = {
+                'api': 'API网关',
+                'database': '数据库',
+                'auth': '认证服务',
+                'ai': 'AI预测服务',
+                'crawler': '数据爬虫',
+                'system': '系统服务'
+            };
+            return modules[module] || module;
+        }
+
+        // 查看日志详情
+        function viewLogDetail(id) {
+            const log = logData.find(l => l.id === id);
+            if (!log) return;
+
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-row">
+                    <div class="detail-label">日志ID</div>
+                    <div class="detail-value">#${log.id}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">日志级别</div>
+                    <div class="detail-value"><span class="log-level ${log.level}">${getLevelText(log.level)}</span></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">时间戳</div>
+                    <div class="detail-value">${log.time}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">模块/服务</div>
+                    <div class="detail-value">${getModuleText(log.module)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">用户</div>
+                    <div class="detail-value">${log.user}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">IP地址</div>
+                    <div class="detail-value">${log.ip}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">消息内容</div>
+                    <div class="detail-value">${log.message}</div>
+                </div>
+                ${log.stack ? `
+                <div class="detail-row">
+                    <div class="detail-label">堆栈跟踪</div>
+                    <div class="detail-value">
+                        <div class="detail-stack">${log.stack}</div>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+
+            document.getElementById('logDetailModal').classList.add('active');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('logDetailModal').classList.remove('active');
+        }
+
+        // 复制日志详情
+        function copyLogDetail() {
+            showNotification('日志详情已复制到剪贴板', 'success');
+        }
+
+        // 查询日志
+        function searchLogs() {
+            showNotification('正在查询日志...', 'info');
+            setTimeout(() => {
+                renderLogs();
+                showNotification('查询完成', 'success');
+            }, 500);
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            document.getElementById('levelFilter').value = '';
+            document.getElementById('moduleFilter').value = '';
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.getElementById('keywordFilter').value = '';
+            showNotification('筛选条件已重置', 'info');
+        }
+
+        // 刷新日志
+        function refreshLogs() {
+            showNotification('正在刷新日志...', 'info');
+            setTimeout(() => {
+                renderLogs();
+                showNotification('日志已刷新', 'success');
+            }, 1000);
+        }
+
+        // 导出日志
+        function exportLogs() {
+            showNotification('正在导出日志...', 'info');
+            setTimeout(() => {
+                showNotification('日志导出成功！', 'success');
+            }, 1500);
+        }
+
+        // 清理旧日志
+        function clearLogs() {
+            if (confirm('确定要清理30天前的日志吗？此操作不可恢复。')) {
+                showNotification('正在清理旧日志...', 'info');
+                setTimeout(() => {
+                    showNotification('旧日志清理完成', 'success');
+                }, 2000);
+            }
+        }
+
+        // 显示通知
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1890ff'};
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 页面加载完成后渲染日志
+        document.addEventListener('DOMContentLoaded', function () {
+            renderLogs();
+
+            // 设置默认时间
+            const now = new Date();
+            const yesterday = new Date(now - 24 * 60 * 60 * 1000);
+            document.getElementById('endTime').value = now.toISOString().slice(0, 16);
+            document.getElementById('startTime').value = yesterday.toISOString().slice(0, 16);
+        });
+
+        // 点击模态框外部关闭
+        document.getElementById('logDetailModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+    <script>
+        (function syncAdminNavState() {
+            const current = location.pathname.split('/').pop();
+            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                if (href && href === current) link.classList.add('active');
+            });
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康数据洞察平台</title>
+    <script src="/assets/js/echarts.min.js"></script>
+    <script>
+        if (!window.echarts) {
+            document.write('<script src="/assets/js/echarts.min.js"></script>);
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; }
+        .top-nav { background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); color: #fff; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .logo { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 600; }
+        .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #4299e1, #63b3ed); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .main-nav { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .nav-item { padding: 8px 16px; border-radius: 6px; text-decoration: none; color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .nav-item:hover { background: rgba(255,255,255,0.12); }
+        .nav-item.active { background: rgba(255,255,255,0.2); }
+        .nav-item.dropdown { position: relative; }
+        .dropdown-icon { font-size: 10px; transition: transform 0.3s; }
+        .nav-item.dropdown:hover .dropdown-icon { transform: rotate(180deg); }
+        .dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 170px; background: #fff; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); opacity: 0; visibility: hidden; transform: translateY(-6px); transition: all 0.25s; overflow: hidden; }
+        .nav-item.dropdown:hover .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .dropdown-item { display: block; text-decoration: none; color: #333; padding: 10px 12px; font-size: 13px; }
+        .dropdown-item:hover { background: #f5f5f5; }
+        .dropdown-item.active { background: #e6f7ff; color: #1677ff; }
+        .user-actions { display: flex; align-items: center; gap: 12px; }
+        .status-chip { padding: 6px 10px; border-radius: 12px; background: rgba(82,196,26,0.2); color: #b7eb8f; font-size: 12px; font-weight: 600; }
+        .search-box { position: relative; }
+        .search-box input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 8px 14px; color: #fff; width: 220px; font-size: 14px; }
+        .search-box input::placeholder { color: rgba(255,255,255,0.6); }
+        .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#69c0ff,#1677ff); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+        .main-container { display: flex; margin-top: 64px; min-height: calc(100vh - 64px); }
+        .sidebar { width: 280px; background: #fff; border-right: 1px solid #e8e8e8; padding: 20px; position: fixed; height: calc(100vh - 64px); overflow-y: auto; }
+        .filter-title { font-size: 12px; font-weight: 600; color: #8c8c8c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .filter-group { margin-bottom: 18px; }
+        .filter-label { display: block; font-size: 13px; color: #595959; margin-bottom: 6px; }
+        .filter-select { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; background: #fff; font-size: 14px; }
+        .filter-select:focus { outline: none; border-color: #1890ff; box-shadow: 0 0 0 3px rgba(24,144,255,0.12); }
+        .apply-btn { width: 100%; border: none; background: #1890ff; color: #fff; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+        .apply-btn:hover { background: #1677ff; }
+        .reset-btn { width: 100%; border: 1px solid #d9d9d9; background: #fff; color: #333; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .reset-btn:hover { border-color: #1890ff; color: #1677ff; }
+        .content { flex: 1; margin-left: 280px; padding: 24px; }
+        .page-title { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .kpi-card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .kpi-name { color: #8c8c8c; font-size: 13px; margin-bottom: 8px; }
+        .kpi-value { font-size: 30px; font-weight: 700; color: #1a1a1a; }
+        .kpi-change { margin-top: 8px; font-size: 13px; }
+        .kpi-up { color: #f5222d; }
+        .kpi-down { color: #52c41a; }
+        .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        .chart { width: 100%; height: 360px; }
+        .report { line-height: 1.8; color: #444; }
+        .news-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+        .news-item { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; }
+        .news-item h4 { font-size: 14px; margin-bottom: 6px; }
+        .news-item p { font-size: 13px; color: #666; }
+        @media (max-width: 1400px) { .main-nav { max-width: 760px; } }
+        @media (max-width: 1280px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .news-list { grid-template-columns: 1fr; } .user-actions .search-box { display: none; } }
+        @media (max-width: 992px) { .sidebar { display: none; } .content { margin-left: 0; } .chart-grid { grid-template-columns: 1fr; } .main-nav { gap: 4px; } .nav-item { padding: 6px 10px; font-size: 13px; } .status-chip { display: none; } }
+    </style>
+</head>
+<body>
+    <header class="top-nav">
+        <div class="logo">
+            <div class="logo-icon">🌍</div>
+            <span>健康数据洞察平台</span>
+        </div>
+        <nav class="main-nav">
+            <a class="nav-item active" href="index.html" data-nav="index.html">首页</a>
+            <a class="nav-item" href="datasets.html" data-nav="datasets.html">数据集</a>
+            <div class="nav-item dropdown">数据分析 <span class="dropdown-icon">▼</span>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="macro-analysis.html" data-nav="macro-analysis.html">宏观分析</a>
+                    <a class="dropdown-item" href="meso-analysis.html" data-nav="meso-analysis.html">中观分析</a>
+                    <a class="dropdown-item" href="micro-analysis.html" data-nav="micro-analysis.html">微观分析</a>
+                    <a class="dropdown-item" href="prediction.html" data-nav="prediction.html">预测模拟</a>
+                </div>
+            </div>
+        </nav>
+        <div class="user-actions">
+            <div class="status-chip">数据源在线</div>
+            <div class="search-box"><input placeholder="搜索国家、疾病、指标"></div>
+            <a class="nav-item" href="login.html">登录</a>
+            <a class="nav-item" href="register.html">注册</a>
+            <a class="nav-item" href="account-center.html">个人中心</a>
+            <a class="nav-item" href="../frontend-admin/dashboard.html">管理端</a>
+            <div class="avatar">GH</div>
+        </div>
+    </header>
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="filter-group">
+                <div class="filter-title">筛选条件</div>
+                <label class="filter-label">地区</label>
+                <select id="region" class="filter-select">
+                    <option value="global">全球</option>
+                    <option value="east_asia">东亚</option>
+                    <option value="southeast_asia">东南亚</option>
+                    <option value="europe">欧洲</option>
+                    <option value="north_america">北美</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">时间范围</label>
+                <select id="year" class="filter-select">
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2020">2020</option>
+                    <option value="2015">2015</option>
+                    <option value="2010">2010</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">时间粒度</label>
+                <select id="granularity" class="filter-select">
+                    <option value="year">年度</option>
+                    <option value="five">五年</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">核心指标</label>
+                <select id="metric" class="filter-select">
+                    <option value="dalys">DALYs</option>
+                    <option value="deaths">死亡人数</option>
+                    <option value="prevalence">患病率</option>
+                    <option value="ylls">YLLs</option>
+                    <option value="ylds">YLDs</option>
+                </select>
+            </div>
+            <button id="applyBtn" class="apply-btn">应用筛选</button>
+            <button id="resetBtn" class="reset-btn">重置筛选</button>
+        </aside>
+        <main class="content">
+            <h1 class="page-title">全球健康概览</h1>
+            <section class="kpi-grid" id="kpiGrid"></section>
+            <section class="chart-grid">
+                <div class="card">
+                    <div class="card-title">疾病负担趋势</div>
+                    <div id="trendChart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">区域结构占比</div>
+                    <div id="pieChart" class="chart"></div>
+                </div>
+            </section>
+            <section class="card">
+                <div class="card-title">智能分析摘要</div>
+                <div class="report" id="reportText"></div>
+            </section>
+            <section class="card" style="margin-top:16px;">
+                <div class="card-title">最新健康资讯</div>
+                <div class="news-list" id="newsList"></div>
+            </section>
+        </main>
+    </div>
+    <script>
+        const kpiGrid = document.getElementById('kpiGrid')
+        const reportText = document.getElementById('reportText')
+        const newsList = document.getElementById('newsList')
+        const searchInput = document.querySelector('.search-box input')
+        const trendChart = echarts.init(document.getElementById('trendChart'))
+        const pieChart = echarts.init(document.getElementById('pieChart'))
+        const kpiMap = {
+            dalys: [{n:'总DALYs',v:'2.85B',c:'+1.8%',up:true},{n:'预期寿命',v:'73.2',c:'+0.6%',up:true},{n:'死亡人数',v:'58.0M',c:'-1.2%',up:false},{n:'健康不平等指数',v:'0.42',c:'-2.8%',up:false}],
+            deaths: [{n:'死亡总数',v:'58.0M',c:'-1.2%',up:false},{n:'过早死亡',v:'20.4M',c:'-1.9%',up:false},{n:'可避免死亡',v:'12.8M',c:'-3.1%',up:false},{n:'老龄相关死亡',v:'25.5M',c:'+2.7%',up:true}],
+            prevalence: [{n:'总体患病率',v:'18.4%',c:'+0.9%',up:true},{n:'慢病患病率',v:'12.1%',c:'+1.2%',up:true},{n:'传染病患病率',v:'3.6%',c:'-2.3%',up:false},{n:'精神疾病患病率',v:'2.7%',c:'+0.4%',up:true}],
+            ylls: [{n:'YLLs总量',v:'1.64B',c:'-0.8%',up:false},{n:'心血管YLLs',v:'0.42B',c:'-0.6%',up:false},{n:'癌症YLLs',v:'0.31B',c:'+0.2%',up:true},{n:'呼吸系统YLLs',v:'0.19B',c:'-1.1%',up:false}],
+            ylds: [{n:'YLDs总量',v:'0.83B',c:'+1.5%',up:true},{n:'精神障碍YLDs',v:'0.18B',c:'+1.7%',up:true},{n:'骨骼肌肉YLDs',v:'0.14B',c:'+1.2%',up:true},{n:'糖尿病YLDs',v:'0.08B',c:'+2.3%',up:true}]
+        }
+        const reportPool = {
+            global: '全球疾病负担持续向慢病倾斜，非传染性疾病占比提升。建议优先投入基层慢病管理、老龄健康服务和早筛体系。',
+            east_asia: '东亚地区在预期寿命和慢病控制方面表现稳定，但城市化带来的代谢类风险上升明显，控糖控压需要进一步前移。',
+            southeast_asia: '东南亚地区在传染病防控方面持续改善，但医疗可及性差异仍较大。应优先提升基层医疗覆盖和公共卫生投入。',
+            europe: '欧洲地区整体健康水平较高，癌症和心血管筛查体系成熟。建议继续优化老龄化社会下长期照护体系。',
+            north_america: '北美地区慢病与心理健康负担并存，健康不平等问题突出。建议通过社区干预和支付改革缩小差距。'
+        }
+        const newsPool = [
+            {t:'WHO发布2025全球卫生融资建议',d:'强调初级卫生保健投入对长期疾病负担控制的关键作用。'},
+            {t:'多国联合推进慢病早筛项目',d:'心血管与肿瘤早筛覆盖率较去年提升12%。'},
+            {t:'全球空气污染健康风险报告更新',d:'部分地区PM2.5暴露仍对呼吸系统疾病形成持续压力。'}
+        ]
+        function renderKPI(metric) {
+            kpiGrid.innerHTML = ''
+            kpiMap[metric].forEach(item => {
+                const card = document.createElement('div')
+                card.className = 'kpi-card'
+                card.innerHTML = `<div class="kpi-name">${item.n}</div><div class="kpi-value">${item.v}</div><div class="kpi-change ${item.up ? 'kpi-up' : 'kpi-down'}">${item.c}</div>`
+                kpiGrid.appendChild(card)
+            })
+        }
+        function renderTrend(region, metric, year, granularity) {
+            const anchorYears = [1990,1995,2000,2005,2010,2015,2020,2024]
+            const map = {
+                dalys:[2.33,2.30,2.27,2.35,2.50,2.68,2.85,2.85],
+                deaths:[50,52,53,54,55,57,60,58],
+                prevalence:[11.2,11.8,12.4,13.3,14.8,16.1,17.5,18.4],
+                ylls:[1.74,1.73,1.71,1.70,1.69,1.67,1.66,1.64],
+                ylds:[0.59,0.61,0.64,0.68,0.72,0.76,0.80,0.83]
+            }
+            const factor = region === 'global' ? 1 : region === 'east_asia' ? 0.86 : region === 'southeast_asia' ? 0.74 : region === 'europe' ? 0.53 : 0.61
+            const yearly = []
+            for (let i = 0; i < anchorYears.length - 1; i++) {
+                const yStart = anchorYears[i]
+                const yEnd = anchorYears[i + 1]
+                const vStart = map[metric][i] * factor
+                const vEnd = map[metric][i + 1] * factor
+                const span = yEnd - yStart
+                for (let y = yStart; y < yEnd; y++) {
+                    const t = (y - yStart) / span
+                    yearly.push({ y: String(y), v: +(vStart + (vEnd - vStart) * t).toFixed(2) })
+                }
+            }
+            yearly.push({ y: String(anchorYears[anchorYears.length - 1]), v: +(map[metric][map[metric].length - 1] * factor).toFixed(2) })
+            const filtered = yearly.filter(item => Number(item.y) <= Number(year))
+            const sampled = granularity === 'five' ? filtered.filter(item => Number(item.y) % 5 === 0 || item.y === year) : filtered
+            const years = sampled.map(item => item.y)
+            const values = sampled.map(item => item.v)
+            trendChart.setOption({
+                tooltip:{trigger:'axis'},
+                grid:{left:'3%',right:'4%',bottom:'3%',containLabel:true},
+                xAxis:{type:'category',data:years},
+                yAxis:{type:'value'},
+                series:[{name:metric.toUpperCase(),type:'line',smooth:true,data:values,areaStyle:{color:'rgba(24,144,255,0.12)'},lineStyle:{color:'#1890ff'}}]
+            })
+        }
+        function renderPie(region) {
+            const map = {
+                global:[{n:'非传染性疾病',v:82.5},{n:'传染性疾病',v:16.8},{n:'伤害',v:11.6}],
+                east_asia:[{n:'非传染性疾病',v:78.2},{n:'传染性疾病',v:13.4},{n:'伤害',v:8.4}],
+                southeast_asia:[{n:'非传染性疾病',v:62.0},{n:'传染性疾病',v:28.3},{n:'伤害',v:9.7}],
+                europe:[{n:'非传染性疾病',v:86.1},{n:'传染性疾病',v:7.3},{n:'伤害',v:6.6}],
+                north_america:[{n:'非传染性疾病',v:84.7},{n:'传染性疾病',v:6.5},{n:'伤害',v:8.8}]
+            }
+            pieChart.setOption({
+                tooltip:{trigger:'item'},
+                legend:{bottom:0},
+                series:[{type:'pie',radius:['42%','72%'],data:map[region].map(i=>({name:i.n,value:i.v}))}]
+            })
+        }
+        function renderReport(region, year) { reportText.textContent = `${year}年视角：${reportPool[region] || reportPool.global}` }
+        function renderNews(keyword = '') {
+            const key = keyword.trim()
+            newsList.innerHTML = ''
+            newsPool.filter(item => !key || item.t.includes(key) || item.d.includes(key)).forEach(item => {
+                const box = document.createElement('div')
+                box.className = 'news-item'
+                box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p>`
+                newsList.appendChild(box)
+            })
+        }
+        function syncNavState() {
+            const current = location.pathname.split('/').pop() || 'index.html'
+            document.querySelectorAll('.nav-item[data-nav], .dropdown-item[data-nav]').forEach(el => {
+                el.classList.remove('active')
+                if (el.getAttribute('data-nav') === current) el.classList.add('active')
+            })
+        }
+        function apply() {
+            const region = document.getElementById('region').value
+            const metric = document.getElementById('metric').value
+            const year = document.getElementById('year').value
+            const granularity = document.getElementById('granularity').value
+            renderKPI(metric)
+            renderTrend(region, metric, year, granularity)
+            renderPie(region)
+            renderReport(region, year)
+        }
+        document.getElementById('applyBtn').addEventListener('click', apply)
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('region').value = 'global'
+            document.getElementById('year').value = '2024'
+            document.getElementById('granularity').value = 'year'
+            document.getElementById('metric').value = 'dalys'
+            apply()
+        })
+        searchInput.addEventListener('input', e => renderNews(e.target.value))
+        syncNavState()
+        renderNews()
+        apply()
+        window.addEventListener('resize', () => { trendChart.resize(); pieChart.resize() })
+    </script>
+</body>
+</html>

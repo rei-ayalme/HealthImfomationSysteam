@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康数据洞察平台 - 用户管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1a365d;
+            color: white;
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .nav-menu {
+            margin-top: 24px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            text-decoration: none;
+            color: rgba(255,255,255,0.8);
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border-left-color: #4299e1;
+        }
+
+        .nav-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-text {
+            font-size: 14px;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: #f56565;
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            padding: 8px 12px 8px 32px;
+            border: 1px solid #d9d9d9;
+            border-radius: 20px;
+            font-size: 14px;
+            width: 200px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #4299e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .user-content {
+            padding: 24px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .header-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .btn-primary:hover {
+            background: #40a9ff;
+            border-color: #40a9ff;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .user-filters {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .filter-select,
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .user-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .user-avatar-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #4299e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-info-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .user-fullname {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .role-admin {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .role-user {
+            background: #f0f5ff;
+            color: #1890ff;
+        }
+
+        .role-guest {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status-inactive {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+
+        .status-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .page-btn {
+            padding: 6px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .page-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 24px;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                overflow: hidden;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🏥</div>
+                    <div class="logo-text">健康数据平台</div>
+                </div>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">仪表盘</span>
+                </a>
+                <a href="data-management.html" class="nav-item">
+                    <span class="nav-icon">💾</span>
+                    <span class="nav-text">数据管理</span>
+                    <span class="nav-badge">12</span>
+                </a>
+                <a href="user-management.html" class="nav-item active">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户管理</span>
+                </a>
+                <a href="system-settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统设置</span>
+                </a>
+                <a href="reports.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">报表管理</span>
+                </a>
+                <a href="logs.html" class="nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">系统日志</span>
+                </a>
+                <a href="help.html" class="nav-item">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-text">帮助中心</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="toggle-btn">☰</button>
+                    <h1 class="page-title">用户管理</h1>
+                </div>
+                <div class="top-bar-right">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="搜索用户...">
+                    </div>
+                    <div class="user-menu">
+                        <div class="user-info">
+                            <div class="user-name">管理员</div>
+                            <div class="user-role">系统管理员</div>
+                        </div>
+                        <div class="user-avatar">A</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="user-content">
+                <div class="content-header">
+                    <div class="header-left">
+                        <h2 class="header-title">用户管理</h2>
+                        <p class="header-description">管理平台所有用户账号</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary">
+                            <span>📥</span>
+                            <span>批量导入</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddModal()">
+                            <span>➕</span>
+                            <span>新增用户</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="user-filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">用户角色</label>
+                            <select class="filter-select">
+                                <option value="">全部角色</option>
+                                <option value="admin">管理员</option>
+                                <option value="user">普通用户</option>
+                                <option value="guest">访客</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">用户状态</label>
+                            <select class="filter-select">
+                                <option value="">全部状态</option>
+                                <option value="active">活跃</option>
+                                <option value="inactive">禁用</option>
+                                <option value="pending">待审核</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">注册时间</label>
+                            <input type="date" class="filter-input">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">搜索</label>
+                            <input type="text" class="filter-input" placeholder="搜索用户名或邮箱">
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-primary">搜索</button>
+                        <button class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+                
+                <div class="user-table">
+                    <div class="table-header">
+                        <h3 class="table-title">用户列表</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary">
+                                <span>📥</span>
+                                <span>导出</span>
+                            </button>
+                            <button class="btn btn-secondary">
+                                <span>🔄</span>
+                                <span>刷新</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户信息</th>
+                                <th>角色</th>
+                                <th>状态</th>
+                                <th>注册时间</th>
+                                <th>最后登录</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar">A</div>
+                                        <div class="user-info-cell">
+                                            <div class="user-fullname">管理员</div>
+                                            <div class="user-email">admin@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge role-admin">管理员</span></td>
+                                <td><span class="status-badge status-active">活跃</span></td>
+                                <td>2026-01-01</td>
+                                <td>2026-03-15 10:23</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="editUser(1)">编辑</button>
+                                        <button class="action-btn" onclick="resetPassword(1)">重置密码</button>
+                                        <button class="action-btn" onclick="deleteUser(1)">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar">Z</div>
+                                        <div class="user-info-cell">
+                                            <div class="user-fullname">张三</div>
+                                            <div class="user-email">zhangsan@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge role-user">普通用户</span></td>
+                                <td><span class="status-badge status-active">活跃</span></td>
+                                <td>2026-01-15</td>
+                                <td>2026-03-14 16:45</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="editUser(2)">编辑</button>
+                                        <button class="action-btn" onclick="resetPassword(2)">重置密码</button>
+                                        <button class="action-btn" onclick="deleteUser(2)">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar">L</div>
+                                        <div class="user-info-cell">
+                                            <div class="user-fullname">李四</div>
+                                            <div class="user-email">lisi@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge role-user">普通用户</span></td>
+                                <td><span class="status-badge status-inactive">禁用</span></td>
+                                <td>2026-02-01</td>
+                                <td>2026-03-10 09:12</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="editUser(3)">编辑</button>
+                                        <button class="action-btn" onclick="resetPassword(3)">重置密码</button>
+                                        <button class="action-btn" onclick="deleteUser(3)">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar">W</div>
+                                        <div class="user-info-cell">
+                                            <div class="user-fullname">王五</div>
+                                            <div class="user-email">wangwu@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge role-guest">访客</span></td>
+                                <td><span class="status-badge status-pending">待审核</span></td>
+                                <td>2026-03-01</td>
+                                <td>2026-03-01 14:30</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="editUser(4)">编辑</button>
+                                        <button class="action-btn" onclick="resetPassword(4)">重置密码</button>
+                                        <button class="action-btn" onclick="deleteUser(4)">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar">Z</div>
+                                        <div class="user-info-cell">
+                                            <div class="user-fullname">赵六</div>
+                                            <div class="user-email">zhaoliu@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge role-user">普通用户</span></td>
+                                <td><span class="status-badge status-active">活跃</span></td>
+                                <td>2026-03-10</td>
+                                <td>2026-03-15 08:45</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" onclick="editUser(5)">编辑</button>
+                                        <button class="action-btn" onclick="resetPassword(5)">重置密码</button>
+                                        <button class="action-btn" onclick="deleteUser(5)">删除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="pagination">
+                        <div class="pagination-info">显示 1-5 条，共 124 条</div>
+                        <div class="pagination-controls">
+                            <button class="page-btn">上一页</button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">4</button>
+                            <button class="page-btn">5</button>
+                            <button class="page-btn">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增用户模态框 -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">新增用户</h3>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form id="addForm">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-input" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-input" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">确认密码</label>
+                    <input type="password" class="form-input" placeholder="请确认密码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色</label>
+                    <select class="form-select">
+                        <option value="admin">管理员</option>
+                        <option value="user">普通用户</option>
+                        <option value="guest">访客</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">状态</label>
+                    <select class="form-select">
+                        <option value="active">活跃</option>
+                        <option value="inactive">禁用</option>
+                        <option value="pending">待审核</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 打开新增用户模态框
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        // 关闭新增用户模态框
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        // 编辑用户
+        function editUser(id) {
+            alert('编辑用户 ID: ' + id);
+        }
+
+        // 重置密码
+        function resetPassword(id) {
+            if (confirm('确定要重置该用户的密码吗？')) {
+                alert('密码已重置，新密码：123456');
+            }
+        }
+
+        // 删除用户
+        function deleteUser(id) {
+            if (confirm('确定要删除该用户吗？')) {
+                alert('用户已删除 ID: ' + id);
+            }
+        }
+
+        // 表单提交
+        document.getElementById('addForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('用户已创建');
+            closeAddModal();
+        });
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const addModal = document.getElementById('addModal');
+            if (event.target == addModal) {
+                addModal.style.display = 'none';
+            }
+        }
+    </script>
+    <script>
+        (function syncAdminNavState() {
+            const current = location.pathname.split('/').pop();
+            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                if (href && href === current) link.classList.add('active');
+            });
+        })();
+    </script>
+</body>
+</html>

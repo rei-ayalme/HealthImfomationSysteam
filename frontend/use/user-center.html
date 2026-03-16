@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康数据洞察平台 - 用户中心</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+    }
+
+    /* 顶部导航 */
+    .top-nav {
+      background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+      color: white;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #4299e1, #63b3ed);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .main-nav {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .nav-item {
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-item.dropdown {
+      position: relative;
+    }
+
+    .dropdown-icon {
+      font-size: 10px;
+      transition: transform 0.3s;
+    }
+
+    .nav-item.dropdown:hover .dropdown-icon {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      min-width: 170px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: all 0.25s;
+      overflow: hidden;
+      z-index: 1200;
+    }
+
+    .nav-item.dropdown:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: block;
+      text-decoration: none;
+      color: #333;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .dropdown-item:hover {
+      background: #f5f5f5;
+    }
+
+    .dropdown-item.active {
+      background: #e6f7ff;
+      color: #1677ff;
+    }
+
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 8px 16px 8px 36px;
+      color: white;
+      width: 240px;
+      font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* 主布局 */
+    .main-container {
+      display: flex;
+      margin-top: 64px;
+      min-height: calc(100vh - 64px);
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      width: 280px;
+      background: white;
+      border-right: 1px solid #e8e8e8;
+      padding: 20px;
+      position: fixed;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+
+    .user-profile {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      color: white;
+    }
+
+    .user-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 12px;
+      color: #667eea;
+    }
+
+    .user-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .user-email {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 12px;
+    }
+
+    .user-stats {
+      display: flex;
+      justify-content: space-around;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .menu-section {
+      margin-bottom: 24px;
+    }
+
+    .menu-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8c8c8c;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding-left: 12px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #595959;
+      margin-bottom: 4px;
+    }
+
+    .menu-item:hover {
+      background: #f0f0f0;
+    }
+
+    .menu-item.active {
+      background: #e6f7ff;
+      color: #1890ff;
+    }
+
+    .menu-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .menu-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .menu-badge {
+      margin-left: auto;
+      background: #f5222d;
+      color: white;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* 内容区 */
+    .content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 24px;
+    }
+
+    .content-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: #8c8c8c;
+    }
+
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: white;
+    }
+
+    .btn:hover {
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+
+    .btn-primary {
+      background: #1890ff;
+      color: white;
+      border-color: #1890ff;
+    }
+
+    .btn-primary:hover {
+      background: #40a9ff;
+      border-color: #40a9ff;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #595959;
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #1890ff;
+      box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .info-item {
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #8c8c8c;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: #e6f7ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .list-content {
+      flex: 1;
+    }
+
+    .list-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .list-desc {
+      font-size: 12px;
+      color: #8c8c8c;
+    }
+
+    .list-time {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .list-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 4px 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .action-btn:hover {
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #8c8c8c;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .chart-container {
+      height: 300px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .content {
+        margin-left: 0;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部导航 -->
+  <nav class="top-nav">
+    <div class="logo">
+      <div class="logo-icon">🏥</div>
+      <span>健康数据洞察平台</span>
+    </div>
+    <div class="main-nav">
+      <a href="index.html" class="nav-item" data-nav="index.html">
+        <span>🏠</span>
+        <span>首页</span>
+      </a>
+      <a href="datasets.html" class="nav-item" data-nav="datasets.html">
+        <span>📁</span>
+        <span>数据集</span>
+      </a>
+      <div class="nav-item dropdown">
+        <span>📈</span>
+        <span>数据分析</span>
+        <span class="dropdown-icon">▼</span>
+        <div class="dropdown-menu">
+          <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">宏观分析</a>
+          <a href="meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">中观分析</a>
+          <a href="micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">微观分析</a>
+          <a href="prediction.html" class="dropdown-item" data-nav="prediction.html">预测模拟</a>
+        </div>
+      </div>
+    </div>
+    <div class="user-actions">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="搜索数据、指标、国家...">
+      </div>
+      <a href="login.html" class="nav-item">登录</a>
+      <a href="register.html" class="nav-item">注册</a>
+      <a href="account-center.html" class="nav-item active" data-nav="account-center.html">个人中心</a>
+      <a href="../frontend-admin/dashboard.html" class="nav-item">管理端</a>
+    </div>
+  </nav>
+
+  <!-- 主布局 -->
+  <div class="main-container">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="user-profile">
+        <div class="user-avatar">👤</div>
+        <div class="user-name">用户名</div>
+        <div class="user-email">user@example.com</div>
+        <div class="user-stats">
+          <div class="stat-item">
+            <div class="stat-value">12</div>
+            <div class="stat-label">收藏</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">28</div>
+            <div class="stat-label">分析</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">5</div>
+            <div class="stat-label">报告</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-title">个人中心</div>
+        <div class="menu-item active" onclick="showSection('profile')">
+          <span class="menu-icon">👤</span>
+          <span class="menu-text">个人信息</span>
+        </div>
+        <div class="menu-item" onclick="showSection('favorites')">
+          <span class="menu-icon">⭐</span>
+          <span class="menu-text">我的收藏</span>
+          <span class="menu-badge">12</span>
+        </div>
+        <div class="menu-item" onclick="showSection('history')">
+          <span class="menu-icon">📋</span>
+          <span class="menu-text">分析历史</span>
+          <span class="menu-badge">28</span>
+        </div>
+        <div class="menu-item" onclick="showSection('reports')">
+          <span class="menu-icon">📄</span>
+          <span class="menu-text">我的报告</span>
+          <span class="menu-badge">5</span>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-title">账户设置</div>
+        <div class="menu-item" onclick="showSection('settings')">
+          <span class="menu-icon">⚙️</span>
+          <span class="menu-text">账户设置</span>
+        </div>
+        <div class="menu-item" onclick="showSection('security')">
+          <span class="menu-icon">🔒</span>
+          <span class="menu-text">安全设置</span>
+        </div>
+        <div class="menu-item" onclick="showSection('notifications')">
+          <span class="menu-icon">🔔</span>
+          <span class="menu-text">通知设置</span>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <div class="menu-title">其他</div>
+        <div class="menu-item" onclick="showSection('help')">
+          <span class="menu-icon">❓</span>
+          <span class="menu-text">帮助中心</span>
+        </div>
+        <div class="menu-item" onclick="logout()">
+          <span class="menu-icon">🚪</span>
+          <span class="menu-text">退出登录</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 内容区 -->
+    <main class="content">
+      <!-- 个人信息 -->
+      <div class="content-section active" id="profile">
+        <div class="content-header">
+          <h1 class="page-title">个人信息</h1>
+          <p class="page-subtitle">管理您的个人资料和账户信息</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">基本信息</h3>
+            <div class="card-actions">
+              <button class="btn btn-primary" onclick="editProfile()">编辑资料</button>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">用户名</div>
+              <div class="info-value">用户名</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">邮箱</div>
+              <div class="info-value">user@example.com</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">注册时间</div>
+              <div class="info-value">2026-01-15</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">会员等级</div>
+              <div class="info-value">高级会员</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">使用统计</h3>
+          </div>
+          <div id="usageChart" class="chart-container"></div>
+        </div>
+      </div>
+
+      <!-- 我的收藏 -->
+      <div class="content-section" id="favorites">
+        <div class="content-header">
+          <h1 class="page-title">我的收藏</h1>
+          <p class="page-subtitle">您收藏的数据和分析内容</p>
+        </div>
+
+        <div class="card">
+          <div class="list-item">
+            <div class="list-icon">🌍</div>
+            <div class="list-content">
+              <div class="list-title">全球疾病负担趋势分析</div>
+              <div class="list-desc">1990-2024年全球DALYs变化趋势</div>
+            </div>
+            <div class="list-time">2026-03-14</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">取消收藏</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon">📊</div>
+            <div class="list-content">
+              <div class="list-title">心血管疾病风险因素分析</div>
+              <div class="list-desc">主要风险因素对心血管疾病的影响</div>
+            </div>
+            <div class="list-time">2026-03-13</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">取消收藏</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon">🏛️</div>
+            <div class="list-content">
+              <div class="list-title">中国疾病谱系转型分析</div>
+              <div class="list-desc">中国疾病负担结构变化趋势</div>
+            </div>
+            <div class="list-time">2026-03-12</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">取消收藏</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分析历史 -->
+      <div class="content-section" id="history">
+        <div class="content-header">
+          <h1 class="page-title">分析历史</h1>
+          <p class="page-subtitle">您的数据分析记录</p>
+        </div>
+
+        <div class="card">
+          <div class="list-item">
+            <div class="list-icon">📊</div>
+            <div class="list-content">
+              <div class="list-title">全球疾病负担趋势分析</div>
+              <div class="list-desc">地区：全球 | 时间：1990-2024 | 指标：DALYs</div>
+            </div>
+            <div class="list-time">2026-03-15 10:30</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">重新分析</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon">📈</div>
+            <div class="list-content">
+              <div class="list-title">心血管疾病预测分析</div>
+              <div class="list-desc">地区：中国 | 时间：2024-2030 | 模型：BSTS</div>
+            </div>
+            <div class="list-time">2026-03-14 15:20</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">重新分析</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon">⚠️</div>
+            <div class="list-content">
+              <div class="list-title">风险因素归因分析</div>
+              <div class="list-desc">地区：东亚 | 时间：2020-2024 | 指标：死亡率</div>
+            </div>
+            <div class="list-time">2026-03-13 09:45</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">重新分析</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 我的报告 -->
+      <div class="content-section" id="reports">
+        <div class="content-header">
+          <h1 class="page-title">我的报告</h1>
+          <p class="page-subtitle">您生成的分析报告</p>
+        </div>
+
+        <div class="card">
+          <div class="list-item">
+            <div class="list-icon">📄</div>
+            <div class="list-content">
+              <div class="list-title">2026年全球健康趋势分析报告</div>
+              <div class="list-desc">包含疾病负担、区域对比、政策建议等内容</div>
+            </div>
+            <div class="list-time">2026-03-15</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">下载</button>
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="list-icon">📄</div>
+            <div class="list-content">
+              <div class="list-title">中国心血管疾病风险评估报告</div>
+              <div class="list-desc">基于BSTS模型的预测分析报告</div>
+            </div>
+            <div class="list-time">2026-03-14</div>
+            <div class="list-actions">
+              <button class="action-btn">查看</button>
+              <button class="action-btn">下载</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 账户设置 -->
+      <div class="content-section" id="settings">
+        <div class="content-header">
+          <h1 class="page-title">账户设置</h1>
+          <p class="page-subtitle">管理您的账户偏好设置</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">基本设置</h3>
+          </div>
+          <form>
+            <div class="form-group">
+              <label class="form-label">用户名</label>
+              <input type="text" class="form-input" value="用户名">
+            </div>
+            <div class="form-group">
+              <label class="form-label">邮箱</label>
+              <input type="email" class="form-input" value="user@example.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">手机号</label>
+              <input type="tel" class="form-input" value="13800138000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">个人简介</label>
+              <textarea class="form-textarea">健康数据分析爱好者</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">保存设置</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 安全设置 -->
+      <div class="content-section" id="security">
+        <div class="content-header">
+          <h1 class="page-title">安全设置</h1>
+          <p class="page-subtitle">保护您的账户安全</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">修改密码</h3>
+          </div>
+          <form>
+            <div class="form-group">
+              <label class="form-label">当前密码</label>
+              <input type="password" class="form-input" placeholder="请输入当前密码">
+            </div>
+            <div class="form-group">
+              <label class="form-label">新密码</label>
+              <input type="password" class="form-input" placeholder="请输入新密码">
+            </div>
+            <div class="form-group">
+              <label class="form-label">确认新密码</label>
+              <input type="password" class="form-input" placeholder="请再次输入新密码">
+            </div>
+            <button type="submit" class="btn btn-primary">修改密码</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">两步验证</h3>
+          </div>
+          <div class="info-item">
+            <div class="info-label">当前状态</div>
+            <div class="info-value">未开启</div>
+          </div>
+          <button class="btn btn-primary" style="margin-top: 16px;">开启两步验证</button>
+        </div>
+      </div>
+
+      <!-- 通知设置 -->
+      <div class="content-section" id="notifications">
+        <div class="content-header">
+          <h1 class="page-title">通知设置</h1>
+          <p class="page-subtitle">管理您的通知偏好</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">通知类型</h3>
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">邮件通知</div>
+              <div class="list-desc">接收重要更新和报告通知</div>
+            </div>
+            <input type="checkbox" checked>
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">短信通知</div>
+              <div class="list-desc">接收紧急安全提醒</div>
+            </div>
+            <input type="checkbox">
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">推送通知</div>
+              <div class="list-desc">接收平台通知</div>
+            </div>
+            <input type="checkbox" checked>
+          </div>
+        </div>
+      </div>
+
+      <!-- 帮助中心 -->
+      <div class="content-section" id="help">
+        <div class="content-header">
+          <h1 class="page-title">帮助中心</h1>
+          <p class="page-subtitle">常见问题和使用指南</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">常见问题</h3>
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">如何进行数据分析？</div>
+              <div class="list-desc">选择分析类型、设置筛选条件、点击应用筛选即可开始分析</div>
+            </div>
+            <button class="action-btn">查看详情</button>
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">如何导出数据？</div>
+              <div class="list-desc">在图表右上角点击"导出数据"按钮即可下载</div>
+            </div>
+            <button class="action-btn">查看详情</button>
+          </div>
+          <div class="list-item">
+            <div class="list-content">
+              <div class="list-title">如何生成分析报告？</div>
+              <div class="list-desc">在分析页面点击"生成报告"按钮，AI将自动生成报告</div>
+            </div>
+            <button class="action-btn">查看详情</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 切换内容区域
+    function showSection(sectionId) {
+      // 隐藏所有内容区域
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // 显示选中的内容区域
+      document.getElementById(sectionId).classList.add('active');
+
+      // 更新菜单项状态
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+
+      // 如果是个人信息页面，初始化图表
+      if (sectionId === 'profile') {
+        initUsageChart();
+      }
+    }
+
+    // 初始化使用统计图表
+    function initUsageChart() {
+      const chart = echarts.init(document.getElementById('usageChart'));
+
+      const option = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+        },
+        yAxis: {
+          type: 'value',
+          name: '使用次数'
+        },
+        series: [
+          {
+            name: '分析次数',
+            type: 'bar',
+            data: [5, 8, 12, 7, 15, 10, 6],
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: '#667eea' },
+                { offset: 1, color: '#764ba2' }
+              ])
+            }
+          }
+        ]
+      };
+
+      chart.setOption(option);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    // 编辑资料
+    function editProfile() {
+      alert('打开编辑资料对话框');
+    }
+
+    // 退出登录
+    function logout() {
+      if (confirm('确定要退出登录吗？')) {
+        window.location.href = 'index.html';
+      }
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function () {
+      initUsageChart();
+    });
+  </script>
+
+  <!-- AI智能助手悬浮窗 -->
+  <div id="ai-assistant" style="
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 10000;
+  ">
+    <button id="ai-toggle" style="
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #4299e1, #63b3ed);
+          border: none;
+          color: white;
+          font-size: 24px;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          transition: all 0.3s ease;
+      ">🤖</button>
+    <div id="ai-panel" style="
+          position: absolute;
+          bottom: 70px;
+          right: 0;
+          width: 320px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+          padding: 20px;
+          display: none;
+      ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">AI智能助手</h3>
+        <button id="ai-close" style="
+                  background: none;
+                  border: none;
+                  font-size: 16px;
+                  cursor: pointer;
+                  color: #666;
+              ">×</button>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">我可以帮您：</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button onclick="aiNavigate('index.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🏠 前往首页</button>
+          <button onclick="aiNavigate('datasets.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">📁 浏览数据集</button>
+          <button onclick="aiNavigate('macro-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🌍 宏观分析</button>
+          <button onclick="aiNavigate('meso-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🏛️ 中观分析</button>
+          <button onclick="aiNavigate('micro-analysis.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">👥 微观分析</button>
+          <button onclick="aiNavigate('prediction.html')" style="
+                      padding: 8px 12px;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      background: white;
+                      text-align: left;
+                      cursor: pointer;
+                      transition: all 0.2s;
+                  ">🔮 预测与建议</button>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+        <p style="font-size: 12px; color: #999; margin-bottom: 10px;">💡 提示：点击上方按钮快速导航到相应页面</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // AI助手功能
+    document.addEventListener('DOMContentLoaded', function () {
+      const aiToggle = document.getElementById('ai-toggle');
+      const aiPanel = document.getElementById('ai-panel');
+      const aiClose = document.getElementById('ai-close');
+
+      if (aiToggle && aiPanel && aiClose) {
+        aiToggle.addEventListener('click', function () {
+          aiPanel.style.display = aiPanel.style.display === 'block' ? 'none' : 'block';
+        });
+
+        aiClose.addEventListener('click', function () {
+          aiPanel.style.display = 'none';
+        });
+
+        // 点击其他地方关闭面板
+        document.addEventListener('click', function (event) {
+          if (!aiToggle.contains(event.target) && !aiPanel.contains(event.target)) {
+            aiPanel.style.display = 'none';
+          }
+        });
+      }
+    });
+
+    function aiNavigate(url) {
+      window.location.href = url;
+    }
+
+    (function syncNavState() {
+      const current = location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-item[data-nav], .dropdown-item[data-nav]').forEach(el => {
+        el.classList.remove('active');
+        if (el.getAttribute('data-nav') === current) {
+          el.classList.add('active');
+        }
+      });
+      const dropdown = document.querySelector('.nav-item.dropdown');
+      if (dropdown && dropdown.querySelector('.dropdown-item.active')) {
+        dropdown.classList.add('active');
+      } else if (dropdown) {
+        dropdown.classList.remove('active');
+      }
+    })();
+  </script>
+</body>
+
+</html>

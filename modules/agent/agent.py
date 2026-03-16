@@ -22,10 +22,11 @@ chat_llm = ChatOpenAI(
 )
 
 analyzer_llm = ChatOpenAI(
-    model=os.getenv("DEEPSEEK_ANALYZER_MODEL", "deepseek-reasoner"),
-    openai_api_key=os.getenv("DEEPSEEK_API_KEY"),
-    openai_api_base="https://api.deepseek.com/v1",
-    temperature=0
+    model=os.getenv("DEEPSEEK_ANALYZER_MODEL", "DeepAnalyze-8B"),
+    openai_api_key=os.getenv("DEEPSEEK_API_KEY","EMPTY"),
+    openai_api_base="https://u906943-aad8-00a5d162.westc.seetacloud.com:8443/v1",
+    temperature=0,
+    max_tokens=2048
 )
 
 # --- 2. 增强型分析工具 ---
@@ -34,14 +35,34 @@ def deepseek_analyzer_tool(analysis_query: str) -> str:
     """卫生数据分析专家工具。用于复杂计算、趋势预测和深度推理。"""
     db = SessionLocal()
     try:
-        # 获取背景数据提供给 Reasoner 模型
+        # 修复1：将变量名 context 修改为 data_context 保持一致
         base_metrics = db.query(GlobalHealthMetric).limit(5).all()
-        context = "\n".join([f"{m.region} {m.indicator}: {m.value}" for m in base_metrics])
+        data_context = "\n".join([f"{m.region} {m.indicator}: {m.value}" for m in base_metrics])
     finally:
         db.close()
 
+    policy_context = ""
+    try:
+        with open("data/china/policy_notes.txt", "r", encoding="utf-8") as f:
+            policy_context = f.read()[:4000]  # 只取精华部分
+    except FileNotFoundError:
+        policy_context = "暂无官方政策背景说明。"
+
+    system_prompt = f"""
+你是一名资深中国卫生数据科学家。
+
+【当前数值数据】
+{data_context}
+
+【官方政策与统计口径背景】
+{policy_context}
+
+请结合上述政策背景（如医改、统计范围调整）和数值数据，回答用户的分析请求。
+"""
+
+    # 修复2：这里传入上面精心构建的 system_prompt
     response = analyzer_llm.invoke([
-        ("system", f"你是一名资深卫生数据科学家。背景数据：\n{context}"),
+        ("system", system_prompt),
         ("human", analysis_query)
     ])
     return f"--- 深度分析报告 ---\n{response.content}"
