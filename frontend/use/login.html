@@ -5,67 +5,162 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用户登录 - 健康数据洞察平台</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg,#1a365d,#2c5282); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-card { width: 100%; max-width: 420px; background: #fff; border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,0.2); padding: 28px; }
-        .title { font-size: 24px; font-weight: 700; color: #1a365d; margin-bottom: 8px; }
-        .subtitle { font-size: 14px; color: #666; margin-bottom: 22px; }
-        .field { margin-bottom: 14px; }
-        .label { display: block; font-size: 13px; color: #444; margin-bottom: 6px; }
-        .input { width: 100%; border: 1px solid #d9d9d9; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
-        .input:focus { outline: none; border-color: #1677ff; }
-        .btn { width: 100%; border: none; border-radius: 8px; padding: 11px 14px; background: #1677ff; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 6px; }
-        .hint { margin-top: 16px; font-size: 13px; color: #666; text-align: center; }
-        .hint a { color: #1677ff; text-decoration: none; }
-        .top-links { display: flex; justify-content: space-between; margin-bottom: 16px; }
-        .top-links a { font-size: 13px; text-decoration: none; color: #1677ff; }
-        .notice { margin-top: 12px; font-size: 13px; color: #1d39c4; background: #f0f5ff; border-radius: 8px; padding: 8px 10px; display: none; }
+        
+
+        
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+            padding: 28px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a365d;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 22px;
+            text-align: center;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .label {
+            display: block;
+            font-size: 13px;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .input:focus {
+            border-color: #1890ff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #40a9ff;
+        }
+
+        .notice {
+            display: none;
+            margin-top: 16px;
+            padding: 10px;
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 6px;
+            color: #1890ff;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .hint {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+        }
+
+        .hint a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+
+        .hint a:hover {
+            text-decoration: underline;
+        }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 <body>
     <div class="auth-card">
-        <div class="top-links">
-            <a href="index.html">返回首页</a>
-            <a href="register.html">没有账号？去注册</a>
-        </div>
-        <div class="title">个人用户登录</div>
-        <div class="subtitle">登录后可进入个人管理端、收藏报告和下载数据</div>
-        <form id="loginForm">
+        <div class="title">用户登录</div>
+        <div class="subtitle">欢迎回到健康数据洞察平台</div>
+
+        <form id="userLoginForm">
             <div class="field">
-                <label class="label">手机号或邮箱</label>
-                <input id="accountInput" class="input" type="text" required>
+                <label class="label" for="accountInput">账号</label>
+                <input id="accountInput" class="input" type="text" placeholder="请输入用户名或邮箱" required>
             </div>
             <div class="field">
-                <label class="label">密码</label>
-                <input id="passwordInput" class="input" type="password" required>
+                <label class="label" for="passwordInput">密码</label>
+                <input id="passwordInput" class="input" type="password" placeholder="请输入密码" required>
             </div>
             <button class="btn" type="submit">登录</button>
         </form>
+
         <div id="notice" class="notice"></div>
-        <div class="hint">管理员请使用 <a href="/admin/login.html">管理端登录</a>
+
+        <div class="hint">管理员请使用 <a href="/admin/login.html">管理端登录</a></div>
+        <div class="hint" style="margin-top: 8px;">还没有账号？ <a href="register.html">立即注册</a></div>
     </div>
+
     <script>
         function showNotice(message) {
             const notice = document.getElementById('notice');
             notice.style.display = 'block';
             notice.textContent = message;
         }
-        document.getElementById('loginForm').addEventListener('submit', function (e) {
+
+        document.getElementById('userLoginForm').addEventListener('submit', function (e) {
             e.preventDefault();
+
             const account = document.getElementById('accountInput').value.trim();
             const password = document.getElementById('passwordInput').value;
+
             if (!account || !password) {
                 showNotice('请填写完整账号和密码');
                 return;
             }
+
             const users = JSON.parse(localStorage.getItem('userAccounts') || '[]');
-            const found = users.find(item => (item.account === account || item.email === account) && item.password === password);
+            const found = users.find(item =>
+                (item.account === account || item.email === account) && item.password === password
+            );
+
             if (!found) {
                 showNotice('账号或密码错误，请重试');
                 return;
             }
+
             localStorage.setItem('currentUser', JSON.stringify(found));
             showNotice('登录成功，正在进入个人管理端...');
+
             setTimeout(() => {
                 window.location.href = 'account-center.html';
             }, 600);

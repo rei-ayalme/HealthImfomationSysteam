@@ -5,17 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台 - 系统设置</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f0f2f5;
-            color: #333;
-        }
+        
 
         .admin-container {
             display: flex;
@@ -37,15 +29,9 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        
 
-        .logo-icon {
-            font-size: 24px;
-        }
+        
 
         .logo-text {
             font-size: 18px;
@@ -56,27 +42,11 @@
             margin-top: 24px;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 24px;
-            text-decoration: none;
-            color: rgba(255,255,255,0.8);
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
+        
 
-        .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-        }
+        
 
-        .nav-item.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border-left-color: #4299e1;
-        }
+        
 
         .nav-icon {
             font-size: 16px;
@@ -331,14 +301,6 @@
             font-size: 14px;
         }
 
-        .form-select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d9d9d9;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
         .form-textarea {
             width: 100%;
             padding: 10px 12px;
@@ -465,16 +427,18 @@
                 width: 0;
                 overflow: hidden;
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
             }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -485,7 +449,7 @@
                     <div class="logo-text">健康数据平台</div>
                 </div>
             </div>
-            
+
             <div class="nav-menu">
                 <a href="dashboard.html" class="nav-item">
                     <span class="nav-icon">📊</span>
@@ -518,7 +482,7 @@
                 </a>
             </div>
         </div>
-        
+
         <div class="main-content">
             <div class="top-bar">
                 <div class="top-bar-left">
@@ -528,7 +492,7 @@
                 <div class="top-bar-right">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" class="search-input" placeholder="搜索设置...">
+                        <input type="text" class="search-input" placeholder="搜索设置..." aria-label="全局搜索设置">
                     </div>
                     <div class="user-menu">
                         <div class="user-info">
@@ -539,7 +503,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="settings-content">
                 <div class="content-header">
                     <div class="header-left">
@@ -557,7 +521,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="settings-tabs">
                     <div class="tab-nav">
                         <div class="tab-item active">基本设置</div>
@@ -565,7 +529,7 @@
                         <div class="tab-item">通知设置</div>
                         <div class="tab-item">备份设置</div>
                     </div>
-                    
+
                     <div class="tab-content">
                         <div class="settings-card">
                             <div class="card-header">
@@ -573,26 +537,26 @@
                             </div>
                             <form>
                                 <div class="form-group">
-                                    <label class="form-label">系统名称</label>
-                                    <input type="text" class="form-input" value="健康数据洞察平台">
+                                    <label class="form-label" for="sysName">系统名称</label>
+                                    <input type="text" id="sysName" class="form-input" value="健康数据洞察平台">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">系统描述</label>
-                                    <textarea class="form-textarea">基于AI的全球健康数据分析平台，提供多维度健康数据洞察和预测分析。</textarea>
+                                    <label class="form-label" for="sysDesc">系统描述</label>
+                                    <textarea id="sysDesc" class="form-textarea">基于AI的全球健康数据分析平台，提供多维度健康数据洞察和预测分析。</textarea>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label class="form-label">系统版本</label>
-                                        <input type="text" class="form-input" value="v2.1.0" readonly>
+                                        <label class="form-label" for="sysVersion">系统版本</label>
+                                        <input type="text" id="sysVersion" class="form-input" value="v2.1.0" readonly>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">更新时间</label>
-                                        <input type="text" class="form-input" value="2026-03-15" readonly>
+                                        <label class="form-label" for="updateDate">更新时间</label>
+                                        <input type="text" id="updateDate" class="form-input" value="2026-03-15" readonly>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div class="settings-card">
                             <div class="card-header">
                                 <h3 class="card-title">系统参数</h3>
@@ -603,8 +567,8 @@
                                     <div class="setting-desc">定期自动同步外部数据源</div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
+                                    <label class="switch" for="autoSync">
+                                        <input type="checkbox" id="autoSync" checked>
                                         <span class="slider"></span>
                                     </label>
                                     <span class="switch-label">已启用</span>
@@ -616,8 +580,8 @@
                                     <div class="setting-desc">启用数据缓存以提高性能</div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
+                                    <label class="switch" for="dataCache">
+                                        <input type="checkbox" id="dataCache" checked>
                                         <span class="slider"></span>
                                     </label>
                                     <span class="switch-label">已启用</span>
@@ -629,8 +593,8 @@
                                     <div class="setting-desc">记录系统操作日志</div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
+                                    <label class="switch" for="logRecord">
+                                        <input type="checkbox" id="logRecord" checked>
                                         <span class="slider"></span>
                                     </label>
                                     <span class="switch-label">已启用</span>
@@ -642,41 +606,41 @@
                                     <div class="setting-desc">启用维护模式限制用户访问</div>
                                 </div>
                                 <div class="toggle-switch">
-                                    <label class="switch">
-                                        <input type="checkbox">
+                                    <label class="switch" for="maintainMode">
+                                        <input type="checkbox" id="maintainMode">
                                         <span class="slider"></span>
                                     </label>
                                     <span class="switch-label">未启用</span>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="settings-card">
                             <div class="card-header">
                                 <h3 class="card-title">性能设置</h3>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">最大并发用户数</label>
-                                    <input type="number" class="form-input" value="1000">
+                                    <label class="form-label" for="maxUsers">最大并发用户数</label>
+                                    <input type="number" id="maxUsers" class="form-input" value="1000">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">单次查询超时时间（秒）</label>
-                                    <input type="number" class="form-input" value="30">
+                                    <label class="form-label" for="queryTimeout">单次查询超时时间（秒）</label>
+                                    <input type="number" id="queryTimeout" class="form-input" value="30">
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">数据缓存时间（分钟）</label>
-                                    <input type="number" class="form-input" value="60">
+                                    <label class="form-label" for="cacheTime">数据缓存时间（分钟）</label>
+                                    <input type="number" id="cacheTime" class="form-input" value="60">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">日志保留天数</label>
-                                    <input type="number" class="form-input" value="90">
+                                    <label class="form-label" for="logKeepDays">日志保留天数</label>
+                                    <input type="number" id="logKeepDays" class="form-input" value="90">
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="info-box">
                             <div class="info-box-title">💡 提示</div>
                             <div class="info-box-content">
@@ -691,7 +655,8 @@
 
     <script>
         // 切换标签
-        document.querySelectorAll('.tab-item').forEach((item, index) => {
+        // 修复：移除了未使用到的参数 index，消除编辑器警告
+        document.querySelectorAll('.tab-item').forEach(item => {
             item.addEventListener('click', function() {
                 document.querySelectorAll('.tab-item').forEach(i => i.classList.remove('active'));
                 this.classList.add('active');
@@ -701,7 +666,8 @@
     <script>
         (function syncAdminNavState() {
             const current = location.pathname.split('/').pop();
-            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+            // 修复：删除了未使用的旧类名 .sidebar-menu a
+            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
                 link.classList.remove('active');
                 const href = link.getAttribute('href');
                 if (href && href === current) link.classList.add('active');

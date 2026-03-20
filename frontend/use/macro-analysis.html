@@ -5,174 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>宏观分析 - 健康数据洞察平台</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script>
-        if (!window.echarts) {
-            document.write('<script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"><\\/script>');
-        }
-    </script>
+    <script src="/assets/js/echarts.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f0f2f5;
-            color: #1a1a1a;
-            transition: all 0.3s ease;
-        }
+        
 
         /* 顶部导航 */
-        .top-nav {
-            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-            color: white;
-            padding: 0 24px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
+        
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 20px;
-            font-weight: 600;
-        }
+        
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4299e1, #63b3ed);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
+        
 
-        .main-nav {
-            display: flex;
-            gap: 4px;
-        }
+        
 
-        .nav-item {
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        
 
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        
 
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-        }
+        
 
         /* 下拉菜单 */
-        .nav-item.dropdown {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        
 
-        .dropdown-icon {
-            font-size: 10px;
-            transition: transform 0.3s;
-        }
+        
 
-        .nav-item.dropdown:hover .dropdown-icon {
-            transform: rotate(180deg);
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            margin-top: 8px;
-            background: white;
-            color: #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            padding: 8px 0;
-            min-width: 200px;
-            z-index: 1001;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s;
-        }
-
-        .nav-item.dropdown:hover .dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            text-decoration: none;
-            color: #333;
-            transition: background 0.2s;
-            font-size: 14px;
-        }
-
-        .dropdown-item:hover {
-            background: #f5f5f5;
-        }
-
-        .nav-badge {
-            background: #f5222d;
-            color: white;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-        }
-
-        .user-actions {
+                        .user-actions {
             display: flex;
             align-items: center;
             gap: 16px;
-        }
-
-        .status-indicator {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-online {
-            background: rgba(52, 211, 153, 0.2);
-            color: #10b981;
-        }
-
-        .status-offline {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
         }
 
         .refresh-btn {
@@ -213,33 +75,6 @@
 
         .export-btn:hover {
             background: rgba(16, 185, 129, 0.3);
-        }
-
-        .theme-btn {
-            padding: 8px 16px;
-            background: rgba(147, 51, 234, 0.2);
-            border: 1px solid rgba(147, 51, 234, 0.4);
-            border-radius: 6px;
-            color: #a855f7;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .theme-btn:hover {
-            background: rgba(147, 51, 234, 0.3);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4299e1, #63b3ed);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            cursor: pointer;
         }
 
         /* 主内容区 */
@@ -629,8 +464,7 @@
         .conclusion-list li {
             font-size: 14px;
             color: #555;
-            padding: 8px 0;
-            padding-left: 20px;
+            padding: 8px 0 8px 20px;
             position: relative;
         }
 
@@ -790,10 +624,11 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
-    <!-- 顶部导航 -->
     <nav class="top-nav">
         <div class="logo">
             <div class="logo-icon">🏥</div>
@@ -840,19 +675,18 @@
             <a href="login.html" class="nav-item">登录</a>
             <a href="register.html" class="nav-item">注册</a>
             <a href="account-center.html" class="nav-item">个人中心</a>
-            <a href="../frontend-admin/dashboard.html" class="nav-item">管理端</a>
+            <a href="/admin/dashboard.html" class="nav-item">管理端</a>
         </div>
     </nav>
 
     <div class="main-container">
-        <!-- 侧边栏 -->
         <aside class="sidebar">
             <div class="sidebar-title">🔍 筛选条件</div>
 
             <div class="filter-section">
                 <div class="filter-title">🌍 地理范围</div>
                 <div class="filter-group">
-                    <label class="filter-label">分析层级</label>
+                    <label class="filter-label" for="geoLevel">分析层级</label>
                     <select class="filter-select" id="geoLevel" onchange="updateGeoOptions()">
                         <option value="global">全球</option>
                         <option value="region">区域/大洲</option>
@@ -860,7 +694,7 @@
                     </select>
                 </div>
                 <div class="filter-group" id="regionSelectGroup" style="display: none;">
-                    <label class="filter-label">选择区域</label>
+                    <label class="filter-label" for="regionSelect">选择区域</label>
                     <select class="filter-select" id="regionSelect">
                         <option value="east_asia">东亚</option>
                         <option value="southeast_asia">东南亚</option>
@@ -872,7 +706,7 @@
                     </select>
                 </div>
                 <div class="filter-group" id="countrySelectGroup">
-                    <label class="filter-label">选择国家/地区</label>
+                    <label class="filter-label" for="countrySelect">选择国家/地区</label>
                     <select class="filter-select" id="countrySelect">
                         <option value="china" selected>中国</option>
                         <option value="usa">美国</option>
@@ -887,7 +721,7 @@
             <div class="filter-section">
                 <div class="filter-title">📅 时间范围</div>
                 <div class="filter-group">
-                    <label class="filter-label">时间粒度</label>
+                    <label class="filter-label" for="timeGranularity">时间粒度</label>
                     <select class="filter-select" id="timeGranularity" onchange="updateTimeRangeOptions()">
                         <option value="year">年度</option>
                         <option value="quarter">季度</option>
@@ -895,31 +729,31 @@
                     </select>
                 </div>
                 <div class="filter-group" id="yearRangeGroup">
-                    <label class="filter-label">年份范围</label>
+                    <label class="filter-label" for="startYear">年份范围</label>
                     <div class="year-range-container">
-                        <select class="filter-select" id="startYear">
+                        <select class="filter-select" id="startYear" aria-label="起始年份">
                             <option value="2010">2010</option>
                             <option value="2015">2015</option>
                             <option value="2020" selected>2020</option>
                         </select>
                         <span class="range-separator">-</span>
-                        <select class="filter-select" id="endYear">
+                        <select class="filter-select" id="endYear" aria-label="结束年份">
                             <option value="2023">2023</option>
                             <option value="2024" selected>2024</option>
                         </select>
                     </div>
                 </div>
                 <div class="filter-group" id="quarterRangeGroup" style="display: none;">
-                    <label class="filter-label">季度范围</label>
+                    <label class="filter-label" for="startQuarter">季度范围</label>
                     <div class="quarter-range-container">
-                        <select class="filter-select" id="startQuarter">
+                        <select class="filter-select" id="startQuarter" aria-label="起始季度">
                             <option value="Q1">Q1</option>
                             <option value="Q2">Q2</option>
                             <option value="Q3">Q3</option>
                             <option value="Q4">Q4</option>
                         </select>
                         <span class="range-separator">-</span>
-                        <select class="filter-select" id="endQuarter">
+                        <select class="filter-select" id="endQuarter" aria-label="结束季度">
                             <option value="Q1">Q1</option>
                             <option value="Q2">Q2</option>
                             <option value="Q3">Q3</option>
@@ -928,9 +762,9 @@
                     </div>
                 </div>
                 <div class="filter-group" id="monthRangeGroup" style="display: none;">
-                    <label class="filter-label">月份范围</label>
+                    <label class="filter-label" for="startMonth">月份范围</label>
                     <div class="month-range-container">
-                        <select class="filter-select" id="startMonth">
+                        <select class="filter-select" id="startMonth" aria-label="起始月份">
                             <option value="1">1月</option>
                             <option value="2">2月</option>
                             <option value="3">3月</option>
@@ -945,7 +779,7 @@
                             <option value="12">12月</option>
                         </select>
                         <span class="range-separator">-</span>
-                        <select class="filter-select" id="endMonth">
+                        <select class="filter-select" id="endMonth" aria-label="结束月份">
                             <option value="1">1月</option>
                             <option value="2">2月</option>
                             <option value="3">3月</option>
@@ -1002,7 +836,7 @@
             <div class="filter-section">
                 <div class="filter-title">⚙️ 外部因素</div>
                 <div class="filter-group">
-                    <label class="filter-label">数据质量权重</label>
+                    <label class="filter-label" for="dataQuality">数据质量权重</label>
                     <select class="filter-select" id="dataQuality">
                         <option value="standard" selected>标准口径</option>
                         <option value="conservative">保守口径</option>
@@ -1010,7 +844,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label class="filter-label">政策情景</label>
+                    <label class="filter-label" for="policyScenario">政策情景</label>
                     <select class="filter-select" id="policyScenario">
                         <option value="baseline" selected>基准情景</option>
                         <option value="tight_control">强化防控</option>
@@ -1022,15 +856,12 @@
             <button class="apply-btn" onclick="updateCharts()">✓ 更新图表</button>
         </aside>
 
-        <!-- 内容区 -->
         <main class="content">
-            <!-- 页面标题 -->
             <div class="page-header">
                 <h1 class="page-title">宏观分析 - 全球与区域健康格局</h1>
                 <p class="page-subtitle">从全球视角分析疾病负担分布、区域差异及时间演变趋势，识别健康不平等现象</p>
             </div>
 
-            <!-- 分析框架 -->
             <div class="analysis-framework">
                 <div class="framework-header">
                     <div class="framework-icon">🔬</div>
@@ -1068,7 +899,6 @@
                     </div>
                 </div>
 
-                <!-- 问题定义 -->
                 <div class="problem-section">
                     <div class="problem-title">🎯 研究问题</div>
                     <div class="problem-content">
@@ -1082,7 +912,6 @@
                 </div>
             </div>
 
-            <!-- 关键指标 -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">🌍</div>
@@ -1110,7 +939,6 @@
                 </div>
             </div>
 
-            <!-- 全球健康分布 -->
             <div class="chart-grid">
                 <div class="chart-card full-width">
                     <div class="chart-header">
@@ -1125,7 +953,6 @@
                 </div>
             </div>
 
-            <!-- 区域对比 -->
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
@@ -1150,7 +977,6 @@
                 </div>
             </div>
 
-            <!-- 疾病负担构成 -->
             <div class="chart-grid">
                 <div class="chart-card">
                     <div class="chart-header">
@@ -1175,7 +1001,6 @@
                 </div>
             </div>
 
-            <!-- 健康公平性分析 -->
             <div class="chart-grid">
                 <div class="chart-card full-width">
                     <div class="chart-header">
@@ -1190,7 +1015,6 @@
                 </div>
             </div>
 
-            <!-- 数据表格 -->
             <div class="analysis-framework">
                 <div class="chart-header">
                     <h4 class="chart-title">📋 主要国家健康指标对比表</h4>
@@ -1279,7 +1103,6 @@
                 <div class="data-source">数据来源：WHO World Health Statistics 2024、World Bank 2024</div>
             </div>
 
-            <!-- 分析结论 -->
             <div class="conclusion-section">
                 <div class="conclusion-title">📋 核心分析结论</div>
                 <ul class="conclusion-list">
@@ -1287,13 +1110,12 @@
                     </li>
                     <li><strong>健康差距依然显著：</strong>最高（日本84.2岁）与最低（中非共和国54.0岁）预期寿命差距达30.2岁，健康不公平性仍是全球公共卫生面临的重大挑战</li>
                     <li><strong>疾病谱发生根本性转变：</strong>非传染性疾病（NCDs）占全球死亡的74%，心血管疾病、肿瘤、慢性呼吸系统疾病和糖尿病成为主要死因</li>
-                    <li><strong>经济发展与健康水平高度相关：</strong>人均GDP与预期寿命呈显著正相关（r=0.78, p<0.001），但超过一定阈值后边际效应递减< /li>
+                    <li><strong>经济发展与健康水平高度相关：</strong>人均GDP与预期寿命呈显著正相关（r=0.78, p<0.001），但超过一定阈值后边际效应递减</li>
                     <li><strong>中国健康水平快速提升：</strong>预期寿命从2010年的75.6岁增至2024年的79.0岁，超过全球平均水平，但仍低于发达国家5-10岁</li>
                     <li><strong>区域差异明显：</strong>欧洲、西太平洋地区健康水平最高，非洲地区最低，撒哈拉以南非洲仍面临传染病与NCDs双重负担</li>
                 </ul>
             </div>
 
-            <!-- 政策建议 -->
             <div class="recommendation-section">
                 <div class="recommendation-title">💡 基于证据的决策建议</div>
                 <div class="recommendation-grid">
@@ -1321,6 +1143,8 @@
     </div>
 
     <script>
+        /* global echarts */
+
         // API基础URL
         const API_BASE_URL = 'http://localhost:8000/api/v1';
         function getOrInitChart(chartDom) {
@@ -1352,7 +1176,7 @@
                     <div style="margin-bottom:4px;">报告摘要：${reportPayload.report.summary}</div>
                     <div style="opacity:0.9;">${findings.map(item => `• ${item}`).join('<br>')}</div>
                 `;
-            } catch (_) {
+            } catch (e) {
                 banner.textContent = '洞察：当前未连接到实时分析接口，正在使用页面内置分析逻辑。';
             }
         }
@@ -1477,7 +1301,7 @@
             try {
                 const raw = localStorage.getItem('macroAnalysisFilters');
                 return raw ? JSON.parse(raw) : null;
-            } catch (_) {
+            } catch (e) {
                 return null;
             }
         }
@@ -1527,6 +1351,7 @@
             const startYear = Number(state.startYear || 2000);
             const endYear = Number(state.endYear || 2024);
             const endpoints = [
+                `/api/dataset`, // 优先尝试真实后端API获取真实数据
                 `${API_BASE_URL}/data/admin?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}&limit=200`,
                 `${API_BASE_URL}/chart/trend?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`
             ];
@@ -1535,6 +1360,20 @@
                     const response = await fetch(url);
                     if (!response.ok) continue;
                     const payload = await response.json();
+                    
+                    // 适配真实后端的返回格式 (如 /api/dataset 返回的是 items 数组)
+                    if (payload && Array.isArray(payload.items) && payload.items.length) {
+                        window.healthData = payload.items.map(item => ({
+                            year: item.year,
+                            value: item.value,
+                            metric: metricCode,
+                            region: item.country || item.region || regionCode
+                        }));
+                        cacheData();
+                        return true;
+                    }
+                    
+                    // 适配原有的模拟接口格式
                     if (payload && Array.isArray(payload.data) && payload.data.length) {
                         window.healthData = payload.data;
                         cacheData();
@@ -1550,12 +1389,12 @@
                         cacheData();
                         return true;
                     }
-                } catch (_) {}
+                } catch (e) {
+                    console.warn(`请求 ${url} 失败，将尝试下一个接口或降级使用模拟数据`, e);
+                }
             }
             return false;
         }
-
-
 
         // 导出数据为CSV
         function exportData() {
@@ -1587,10 +1426,6 @@
             }
         }
 
-
-
-
-
         // 缓存数据到本地存储
         function cacheData() {
             const cacheData = {
@@ -1620,15 +1455,47 @@
         }
 
         // 全球地图
-        // 全球地图图表 - 支持切换指标和视图
         let worldMapChart;
         let currentWorldMapIndicator = 'life_expectancy';
+        let geoJsonLoaded = false;
+        let continentsGeoJsonLoaded = false;
 
-        function initWorldMapChart() {
+        async function initWorldMapChart() {
             const chartDom = document.getElementById('worldMapChart');
             if (!chartDom) return;
 
             worldMapChart = getOrInitChart(chartDom);
+            
+            // 获取当前的地理层级筛选条件
+            const state = getMacroFilterState();
+            const geoLevel = state.geoLevel || 'global';
+            
+            worldMapChart.showLoading();
+            try {
+                // 如果用户选择了“区域/大洲”，则加载大洲的 GeoJSON
+                if (geoLevel === 'region' && !continentsGeoJsonLoaded) {
+                    const response = await fetch('/api/geojson/continents');
+                    if (response.ok) {
+                        const geoJson = await response.json();
+                        echarts.registerMap('continents', geoJson);
+                        continentsGeoJsonLoaded = true;
+                    }
+                } 
+                // 默认加载全球国家级 GeoJSON
+                else if (!geoJsonLoaded) {
+                    const response = await fetch('/api/geojson/world');
+                    if (response.ok) {
+                        const geoJson = await response.json();
+                        echarts.registerMap('world', geoJson);
+                        geoJsonLoaded = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load map geojson:', e);
+            } finally {
+                worldMapChart.hideLoading();
+            }
+
             updateWorldMapChart(currentWorldMapIndicator);
 
             // 添加图表控制按钮
@@ -1645,6 +1512,11 @@
             if (!worldMapChart) return;
 
             currentWorldMapIndicator = indicator;
+            
+            // 根据筛选条件决定使用哪个地图底图
+            const state = getMacroFilterState();
+            const geoLevel = state.geoLevel || 'global';
+            const currentMapType = (geoLevel === 'region') ? 'continents' : 'world';
 
             // 不同指标的数据
             const data = {
@@ -1773,7 +1645,7 @@
                 series: [{
                     name: config.name,
                     type: 'map',
-                    mapType: 'world',
+                    mapType: currentMapType,
                     roam: true,
                     emphasis: {
                         label: { show: true },
@@ -3044,7 +2916,6 @@
         }
     </script>
 
-    <!-- AI智能助手悬浮窗 -->
     <div id="ai-assistant" style="
         position: fixed;
         bottom: 30px;

@@ -5,137 +5,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>健康数据洞察平台 - 用户中心</title>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="/assets/js/echarts.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: #f0f2f5;
-      color: #1a1a1a;
-    }
+    
 
     /* 顶部导航 */
-    .top-nav {
-      background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-      color: white;
-      padding: 0 24px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
+    
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 20px;
-      font-weight: 600;
-    }
+    
 
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #4299e1, #63b3ed);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
+    
 
-    .main-nav {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
+    
 
-    .nav-item {
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    
 
-    .nav-item:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
+    
 
-    .nav-item.active {
-      background: rgba(255, 255, 255, 0.2);
-    }
+    
 
-    .nav-item.dropdown {
-      position: relative;
-    }
+    
 
-    .dropdown-icon {
-      font-size: 10px;
-      transition: transform 0.3s;
-    }
+    
 
-    .nav-item.dropdown:hover .dropdown-icon {
-      transform: rotate(180deg);
-    }
-
-    .dropdown-menu {
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 0;
-      min-width: 170px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-6px);
-      transition: all 0.25s;
-      overflow: hidden;
-      z-index: 1200;
-    }
-
-    .nav-item.dropdown:hover .dropdown-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-
-    .dropdown-item {
-      display: block;
-      text-decoration: none;
-      color: #333;
-      padding: 10px 12px;
-      font-size: 13px;
-    }
-
-    .dropdown-item:hover {
-      background: #f5f5f5;
-    }
-
-    .dropdown-item.active {
-      background: #e6f7ff;
-      color: #1677ff;
-    }
-
-    .user-actions {
+            .user-actions {
       display: flex;
       align-items: center;
       gap: 16px;
@@ -541,10 +436,11 @@
       }
     }
   </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
-  <!-- 顶部导航 -->
   <nav class="top-nav">
     <div class="logo">
       <div class="logo-icon">🏥</div>
@@ -574,18 +470,16 @@
     <div class="user-actions">
       <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" placeholder="搜索数据、指标、国家...">
+        <input type="text" placeholder="搜索数据、指标、国家..." aria-label="全局搜索">
       </div>
       <a href="login.html" class="nav-item">登录</a>
       <a href="register.html" class="nav-item">注册</a>
       <a href="account-center.html" class="nav-item active" data-nav="account-center.html">个人中心</a>
-      <a href="../frontend-admin/dashboard.html" class="nav-item">管理端</a>
+      <a href="/admin/dashboard.html" class="nav-item">管理端</a>
     </div>
   </nav>
 
-  <!-- 主布局 -->
   <div class="main-container">
-    <!-- 侧边栏 -->
     <aside class="sidebar">
       <div class="user-profile">
         <div class="user-avatar">👤</div>
@@ -609,21 +503,21 @@
 
       <div class="menu-section">
         <div class="menu-title">个人中心</div>
-        <div class="menu-item active" onclick="showSection('profile')">
+        <div class="menu-item active" onclick="showSection(event, 'profile')">
           <span class="menu-icon">👤</span>
           <span class="menu-text">个人信息</span>
         </div>
-        <div class="menu-item" onclick="showSection('favorites')">
+        <div class="menu-item" onclick="showSection(event, 'favorites')">
           <span class="menu-icon">⭐</span>
           <span class="menu-text">我的收藏</span>
           <span class="menu-badge">12</span>
         </div>
-        <div class="menu-item" onclick="showSection('history')">
+        <div class="menu-item" onclick="showSection(event, 'history')">
           <span class="menu-icon">📋</span>
           <span class="menu-text">分析历史</span>
           <span class="menu-badge">28</span>
         </div>
-        <div class="menu-item" onclick="showSection('reports')">
+        <div class="menu-item" onclick="showSection(event, 'reports')">
           <span class="menu-icon">📄</span>
           <span class="menu-text">我的报告</span>
           <span class="menu-badge">5</span>
@@ -632,15 +526,15 @@
 
       <div class="menu-section">
         <div class="menu-title">账户设置</div>
-        <div class="menu-item" onclick="showSection('settings')">
+        <div class="menu-item" onclick="showSection(event, 'settings')">
           <span class="menu-icon">⚙️</span>
           <span class="menu-text">账户设置</span>
         </div>
-        <div class="menu-item" onclick="showSection('security')">
+        <div class="menu-item" onclick="showSection(event, 'security')">
           <span class="menu-icon">🔒</span>
           <span class="menu-text">安全设置</span>
         </div>
-        <div class="menu-item" onclick="showSection('notifications')">
+        <div class="menu-item" onclick="showSection(event, 'notifications')">
           <span class="menu-icon">🔔</span>
           <span class="menu-text">通知设置</span>
         </div>
@@ -648,7 +542,7 @@
 
       <div class="menu-section">
         <div class="menu-title">其他</div>
-        <div class="menu-item" onclick="showSection('help')">
+        <div class="menu-item" onclick="showSection(event, 'help')">
           <span class="menu-icon">❓</span>
           <span class="menu-text">帮助中心</span>
         </div>
@@ -659,9 +553,7 @@
       </div>
     </aside>
 
-    <!-- 内容区 -->
     <main class="content">
-      <!-- 个人信息 -->
       <div class="content-section active" id="profile">
         <div class="content-header">
           <h1 class="page-title">个人信息</h1>
@@ -703,7 +595,6 @@
         </div>
       </div>
 
-      <!-- 我的收藏 -->
       <div class="content-section" id="favorites">
         <div class="content-header">
           <h1 class="page-title">我的收藏</h1>
@@ -750,7 +641,6 @@
         </div>
       </div>
 
-      <!-- 分析历史 -->
       <div class="content-section" id="history">
         <div class="content-header">
           <h1 class="page-title">分析历史</h1>
@@ -797,7 +687,6 @@
         </div>
       </div>
 
-      <!-- 我的报告 -->
       <div class="content-section" id="reports">
         <div class="content-header">
           <h1 class="page-title">我的报告</h1>
@@ -832,7 +721,6 @@
         </div>
       </div>
 
-      <!-- 账户设置 -->
       <div class="content-section" id="settings">
         <div class="content-header">
           <h1 class="page-title">账户设置</h1>
@@ -845,27 +733,26 @@
           </div>
           <form>
             <div class="form-group">
-              <label class="form-label">用户名</label>
-              <input type="text" class="form-input" value="用户名">
+              <label class="form-label" for="setting-username">用户名</label>
+              <input type="text" id="setting-username" class="form-input" value="用户名">
             </div>
             <div class="form-group">
-              <label class="form-label">邮箱</label>
-              <input type="email" class="form-input" value="user@example.com">
+              <label class="form-label" for="setting-email">邮箱</label>
+              <input type="email" id="setting-email" class="form-input" value="user@example.com">
             </div>
             <div class="form-group">
-              <label class="form-label">手机号</label>
-              <input type="tel" class="form-input" value="13800138000">
+              <label class="form-label" for="setting-phone">手机号</label>
+              <input type="tel" id="setting-phone" class="form-input" value="13800138000">
             </div>
             <div class="form-group">
-              <label class="form-label">个人简介</label>
-              <textarea class="form-textarea">健康数据分析爱好者</textarea>
+              <label class="form-label" for="setting-bio">个人简介</label>
+              <textarea id="setting-bio" class="form-textarea">健康数据分析爱好者</textarea>
             </div>
             <button type="submit" class="btn btn-primary">保存设置</button>
           </form>
         </div>
       </div>
 
-      <!-- 安全设置 -->
       <div class="content-section" id="security">
         <div class="content-header">
           <h1 class="page-title">安全设置</h1>
@@ -878,16 +765,16 @@
           </div>
           <form>
             <div class="form-group">
-              <label class="form-label">当前密码</label>
-              <input type="password" class="form-input" placeholder="请输入当前密码">
+              <label class="form-label" for="sec-old-pwd">当前密码</label>
+              <input type="password" id="sec-old-pwd" class="form-input" placeholder="请输入当前密码">
             </div>
             <div class="form-group">
-              <label class="form-label">新密码</label>
-              <input type="password" class="form-input" placeholder="请输入新密码">
+              <label class="form-label" for="sec-new-pwd">新密码</label>
+              <input type="password" id="sec-new-pwd" class="form-input" placeholder="请输入新密码">
             </div>
             <div class="form-group">
-              <label class="form-label">确认新密码</label>
-              <input type="password" class="form-input" placeholder="请再次输入新密码">
+              <label class="form-label" for="sec-confirm-pwd">确认新密码</label>
+              <input type="password" id="sec-confirm-pwd" class="form-input" placeholder="请再次输入新密码">
             </div>
             <button type="submit" class="btn btn-primary">修改密码</button>
           </form>
@@ -905,7 +792,6 @@
         </div>
       </div>
 
-      <!-- 通知设置 -->
       <div class="content-section" id="notifications">
         <div class="content-header">
           <h1 class="page-title">通知设置</h1>
@@ -921,26 +807,25 @@
               <div class="list-title">邮件通知</div>
               <div class="list-desc">接收重要更新和报告通知</div>
             </div>
-            <input type="checkbox" checked>
+            <input type="checkbox" checked aria-label="接收邮件通知">
           </div>
           <div class="list-item">
             <div class="list-content">
               <div class="list-title">短信通知</div>
               <div class="list-desc">接收紧急安全提醒</div>
             </div>
-            <input type="checkbox">
+            <input type="checkbox" aria-label="接收短信通知">
           </div>
           <div class="list-item">
             <div class="list-content">
               <div class="list-title">推送通知</div>
               <div class="list-desc">接收平台通知</div>
             </div>
-            <input type="checkbox" checked>
+            <input type="checkbox" checked aria-label="接收推送通知">
           </div>
         </div>
       </div>
 
-      <!-- 帮助中心 -->
       <div class="content-section" id="help">
         <div class="content-header">
           <h1 class="page-title">帮助中心</h1>
@@ -978,8 +863,11 @@
   </div>
 
   <script>
+    /* global echarts */
+
     // 切换内容区域
-    function showSection(sectionId) {
+    // 修复：加入 event 传参，避免废弃方法引发报错
+    function showSection(event, sectionId) {
       // 隐藏所有内容区域
       document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
@@ -992,7 +880,9 @@
       document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
       });
-      event.currentTarget.classList.add('active');
+      if (event && event.currentTarget) {
+          event.currentTarget.classList.add('active');
+      }
 
       // 如果是个人信息页面，初始化图表
       if (sectionId === 'profile') {
@@ -1002,7 +892,10 @@
 
     // 初始化使用统计图表
     function initUsageChart() {
-      const chart = echarts.init(document.getElementById('usageChart'));
+      const chartDom = document.getElementById('usageChart');
+      if (!chartDom) return;
+
+      const chart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
 
       const option = {
         tooltip: {
@@ -1049,7 +942,9 @@
     // 退出登录
     function logout() {
       if (confirm('确定要退出登录吗？')) {
-        window.location.href = 'index.html';
+        // 修复：补全清除本地存储逻辑并重定向到正确页面
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
       }
     }
 
@@ -1059,7 +954,6 @@
     });
   </script>
 
-  <!-- AI智能助手悬浮窗 -->
   <div id="ai-assistant" style="
       position: fixed;
       bottom: 30px;

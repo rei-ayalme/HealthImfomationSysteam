@@ -5,160 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据集 - 健康数据洞察平台</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script>
-        if (!window.echarts) {
-            document.write('<script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"><\\/script>');
-        }
-    </script>
+    <script src="/assets/js/echarts.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
+        
 
         /* 顶部导航 */
-        .top-nav {
-            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-            color: white;
-            padding: 0 24px;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
+        
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 20px;
-            font-weight: 600;
-        }
+        
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4299e1, #63b3ed);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
+        
 
-        .main-nav {
-            display: flex;
-            gap: 4px;
-        }
+        
 
-        .nav-item {
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        
 
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        
 
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-        }
+        
 
         /* 下拉菜单 */
-        .nav-item.dropdown {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        
 
-        .dropdown-icon {
-            font-size: 10px;
-            transition: transform 0.3s;
-        }
+        
 
-        .nav-item.dropdown:hover .dropdown-icon {
-            transform: rotate(180deg);
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            margin-top: 8px;
-            background: white;
-            color: #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            padding: 8px 0;
-            min-width: 200px;
-            z-index: 1001;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s;
-        }
-
-        .nav-item.dropdown:hover .dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            text-decoration: none;
-            color: #333;
-            transition: background 0.2s;
-            font-size: 14px;
-        }
-
-        .dropdown-item:hover {
-            background: #f5f5f5;
-        }
-
-        .dropdown-item.active {
-            background: #e6f7ff;
-            color: #1890ff;
-        }
-
-        .nav-badge {
-            background: #f5222d;
-            color: white;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-        }
-
-        .user-actions {
+                        .user-actions {
             display: flex;
             align-items: center;
             gap: 16px;
@@ -188,23 +61,6 @@
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.6);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4299e1, #63b3ed);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .user-avatar:hover {
-            transform: scale(1.1);
         }
 
         /* 主内容区 */
@@ -505,9 +361,7 @@
             color: #1a365d;
         }
 
-        .modal-body {
-            margin-bottom: 20px;
-        }
+        .modal-
 
         .data-table {
             width: 100%;
@@ -560,9 +414,10 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <!-- 顶部导航 -->
     <nav class="top-nav">
         <div class="logo">
             <div class="logo-icon">🏥</div>
@@ -604,18 +459,16 @@
         <div class="user-actions">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索数据集...">
+                <input type="text" placeholder="搜索数据集..." aria-label="搜索数据集">
             </div>
             <a href="login.html" class="nav-item">登录</a>
             <a href="register.html" class="nav-item">注册</a>
             <a href="account-center.html" class="nav-item">个人中心</a>
-            <a href="../frontend-admin/dashboard.html" class="nav-item">管理端</a>
+            <a href="/admin/dashboard.html" class="nav-item">管理端</a>
         </div>
     </nav>
 
-    <!-- 主内容区 -->
     <div class="main-content">
-        <!-- 页面标题 -->
         <div class="page-header">
             <h1 class="page-title">📁 数据集管理</h1>
             <p class="page-description">
@@ -626,8 +479,8 @@
 
         <div class="advanced-search-panel">
             <div class="advanced-search-grid">
-                <input id="searchKeyword" class="advanced-input" placeholder="关键词：DALYs/吸烟/预期寿命">
-                <select id="searchCategory" class="advanced-input">
+                <input id="searchKeyword" class="advanced-input" placeholder="关键词：DALYs/吸烟/预期寿命" aria-label="搜索关键词">
+                <select id="searchCategory" class="advanced-input" aria-label="分类筛选">
                     <option value="all">全部分类</option>
                     <option value="global">全球健康</option>
                     <option value="disease">疾病负担</option>
@@ -635,7 +488,7 @@
                     <option value="intervention">干预措施</option>
                     <option value="demographic">人口统计</option>
                 </select>
-                <select id="searchRegion" class="advanced-input">
+                <select id="searchRegion" class="advanced-input" aria-label="地区筛选">
                     <option value="">全部地区</option>
                     <option value="global">全球</option>
                     <option value="china">中国</option>
@@ -643,9 +496,9 @@
                     <option value="japan">日本</option>
                     <option value="india">印度</option>
                 </select>
-                <input id="searchMetric" class="advanced-input" placeholder="指标代码：dalys/prevalence">
-                <input id="searchSource" class="advanced-input" placeholder="来源关键词：OWID/WHO">
-                <select id="searchSort" class="advanced-input">
+                <input id="searchMetric" class="advanced-input" placeholder="指标代码：dalys/prevalence" aria-label="指标筛选">
+                <input id="searchSource" class="advanced-input" placeholder="来源关键词：OWID/WHO" aria-label="来源筛选">
+                <select id="searchSort" class="advanced-input" aria-label="排序方式">
                     <option value="updated_desc">按更新时间</option>
                     <option value="records_desc">按记录数</option>
                     <option value="year_desc">按最新年份</option>
@@ -659,7 +512,6 @@
 
         <div class="insight-bar" id="datasetInsightBar"></div>
 
-        <!-- 数据分类导航 -->
         <div class="data-categories">
             <button class="category-btn active" data-category="all">全部数据集</button>
             <button class="category-btn" data-category="global">全球健康数据</button>
@@ -669,9 +521,7 @@
             <button class="category-btn" data-category="demographic">人口统计数据</button>
         </div>
 
-        <!-- 数据集列表 -->
         <div class="dataset-grid" id="datasetGrid">
-            <!-- 数据集卡片 1 -->
             <div class="dataset-card" data-category="global">
                 <div class="dataset-header">
                     <h3 class="dataset-title">全球DALYs数据 (1990-2024)</h3>
@@ -711,7 +561,6 @@
                 </div>
             </div>
 
-            <!-- 数据集卡片 2 -->
             <div class="dataset-card" data-category="disease">
                 <div class="dataset-header">
                     <h3 class="dataset-title">疾病负担分类数据</h3>
@@ -751,7 +600,6 @@
                 </div>
             </div>
 
-            <!-- 数据集卡片 3 -->
             <div class="dataset-card" data-category="risk">
                 <div class="dataset-header">
                     <h3 class="dataset-title">健康风险因素数据</h3>
@@ -791,7 +639,6 @@
                 </div>
             </div>
 
-            <!-- 数据集卡片 4 -->
             <div class="dataset-card" data-category="intervention">
                 <div class="dataset-header">
                     <h3 class="dataset-title">健康干预措施效果数据</h3>
@@ -831,7 +678,6 @@
                 </div>
             </div>
 
-            <!-- 数据集卡片 5 -->
             <div class="dataset-card" data-category="demographic">
                 <div class="dataset-header">
                     <h3 class="dataset-title">人口统计与健康指标数据</h3>
@@ -871,7 +717,6 @@
                 </div>
             </div>
 
-            <!-- 数据集卡片 6 -->
             <div class="dataset-card" data-category="global">
                 <div class="dataset-header">
                     <h3 class="dataset-title">全球预期寿命数据</h3>
@@ -913,7 +758,6 @@
         </div>
     </div>
 
-    <!-- 数据详情模态框 -->
     <div class="modal" id="datasetModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -921,8 +765,7 @@
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body" id="modalBody">
-                <!-- 动态内容将通过JavaScript填充 -->
-            </div>
+                </div>
         </div>
     </div>
 
@@ -972,7 +815,7 @@
                         <p><strong>更新日期:</strong> 2024-03-15</p>
                         <p><strong>格式:</strong> CSV</p>
                         <p><strong>数据字段:</strong> 国家/地区, 年份, 疾病类别, DALYs总数, DALYs率</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1033,7 +876,7 @@
                         <p><strong>更新日期:</strong> 2024-03-10</p>
                         <p><strong>格式:</strong> Excel</p>
                         <p><strong>数据字段:</strong> 疾病类别, 年份, 死亡率(%), 发病率(%), 患病率(%)</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1094,7 +937,7 @@
                         <p><strong>更新日期:</strong> 2024-03-05</p>
                         <p><strong>格式:</strong> CSV</p>
                         <p><strong>数据字段:</strong> 风险因素, 年份, 流行率(%), 归因分数(%)</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1149,7 +992,7 @@
                         <p><strong>更新日期:</strong> 2024-02-28</p>
                         <p><strong>格式:</strong> Excel</p>
                         <p><strong>数据字段:</strong> 干预措施, 年份, 有效率(%), 成本(元/人)</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1204,7 +1047,7 @@
                         <p><strong>更新日期:</strong> 2024-03-12</p>
                         <p><strong>格式:</strong> CSV</p>
                         <p><strong>数据字段:</strong> 国家/地区, 年份, 65+人口比例(%), 预期寿命(岁)</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1259,7 +1102,7 @@
                         <p><strong>更新日期:</strong> 2024-03-08</p>
                         <p><strong>格式:</strong> Excel</p>
                         <p><strong>数据字段:</strong> 国家/地区, 年份, 出生时预期寿命(岁), 65岁时预期寿命(岁)</p>
-                        
+
                         <h3>数据预览</h3>
                         <table class="data-table">
                             <thead>
@@ -1335,7 +1178,7 @@
                 const data = await response.json();
                 if (!data || !Array.isArray(data.data)) return null;
                 return data.data;
-            } catch (_) {
+            } catch (e) {
                 return null;
             }
         }
@@ -1365,6 +1208,7 @@
         // 点击模态框外部关闭
         window.addEventListener('click', function(event) {
             const modal = document.getElementById('datasetModal');
+            // 修复：致命的 ===== 语法错误改为严格等于 ===
             if (event.target === modal) {
                 closeModal();
             }
@@ -1460,7 +1304,7 @@
                     return;
                 }
                 grid.innerHTML = datasets.map(datasetCardHtml).join('');
-            } catch (_) {
+            } catch (e) {
                 grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">后端不可用，当前展示静态数据卡片。</p></div></div>';
             }
         }
@@ -1496,7 +1340,7 @@
                     <table class="data-table"><thead><tr><th>地区</th><th>年份</th><th>指标</th><th>值</th><th>来源</th></tr></thead><tbody>${tableRows}</tbody></table>
                 `;
                 modal.classList.add('active');
-            } catch (_) {
+            } catch (e) {
                 modalTitle.textContent = '数据集详情';
                 modalBody.innerHTML = '<p>详情加载失败，请确认后端服务是否已启动。</p>';
                 modal.classList.add('active');
@@ -1516,7 +1360,7 @@
                 link.href = URL.createObjectURL(blob);
                 link.download = `${datasetId}_${Date.now()}.csv`;
                 link.click();
-            } catch (_) {
+            } catch (e) {
                 alert('下载失败，请确认后端服务是否已启动。');
             }
         }

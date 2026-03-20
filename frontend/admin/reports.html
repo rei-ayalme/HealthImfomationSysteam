@@ -4,19 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台 - 报表管理</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="/assets/js/echarts.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f0f2f5;
-            color: #333;
-        }
+        
 
         .admin-container {
             display: flex;
@@ -38,15 +30,9 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        
 
-        .logo-icon {
-            font-size: 24px;
-        }
+        
 
         .logo-text {
             font-size: 18px;
@@ -57,27 +43,11 @@
             margin-top: 24px;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 24px;
-            text-decoration: none;
-            color: rgba(255,255,255,0.8);
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
+        
 
-        .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-        }
+        
 
-        .nav-item.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border-left-color: #4299e1;
-        }
+        
 
         .nav-icon {
             font-size: 16px;
@@ -527,6 +497,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -580,7 +552,7 @@
                 <div class="top-bar-right">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" class="search-input" placeholder="搜索报表...">
+                        <input type="text" class="search-input" placeholder="搜索报表..." aria-label="搜索报表">
                     </div>
                     <div class="user-menu">
                         <div class="user-info">
@@ -591,7 +563,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="reports-content">
                 <div class="content-header">
                     <div class="header-left">
@@ -609,7 +581,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-header">
@@ -623,7 +595,7 @@
                             <span>↑ 12</span> 本月新增
                         </div>
                     </div>
-                    
+
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-info">
@@ -636,7 +608,7 @@
                             <span>91.0%</span> 完成率
                         </div>
                     </div>
-                    
+
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-info">
@@ -649,7 +621,7 @@
                             <span>5.1%</span> 处理中
                         </div>
                     </div>
-                    
+
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-info">
@@ -663,7 +635,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="reports-grid">
                     <div class="report-card">
                         <div class="report-header">
@@ -679,7 +651,7 @@
                             <div class="report-status status-completed">已完成</div>
                         </div>
                     </div>
-                    
+
                     <div class="report-card">
                         <div class="report-header">
                             <h3 class="report-title">数据访问统计</h3>
@@ -695,7 +667,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="reports-list">
                     <div class="list-header">
                         <h3 class="list-title">报表列表</h3>
@@ -710,7 +682,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <table>
                         <thead>
                             <tr>
@@ -801,6 +773,8 @@
     </div>
 
     <script>
+        /* global echarts */
+
         // 初始化用户活跃度图表
         const userActivityChart = echarts.init(document.getElementById('userActivityChart'));
         const userActivityOption = {
@@ -897,7 +871,8 @@
     <script>
         (function syncAdminNavState() {
             const current = location.pathname.split('/').pop();
-            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+            // 修复：清除了不存在的 .sidebar-menu a 选择器，只保留实际用到的
+            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
                 link.classList.remove('active');
                 const href = link.getAttribute('href');
                 if (href && href === current) link.classList.add('active');

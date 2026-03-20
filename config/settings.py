@@ -121,10 +121,10 @@ class Settings:
     }
 
     OPENAI_CONFIG = {
-        "api_key": os.getenv("DEEPSEEK_API_KEY", "your_fallback_key"),
-        "api_base": "https://api.deepseek.com/v1",
-        "chat_model": "deepseek-chat",
-        "reasoner_model": "deepseek-reasoner"
+        "api_key": os.getenv("OPENAI_API_KEY", "your_openai_fallback_key"),  # 修改了环境变量名
+        "api_base": "https://api.openai.com/v1",  # 修复为OpenAI官方接口地址
+        "chat_model": "gpt-4o",  # 修复为标准的OpenAI模型名
+        "reasoner_model": "o1-preview"
     }
 
     # API 相关配置

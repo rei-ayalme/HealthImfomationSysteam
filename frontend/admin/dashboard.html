@@ -4,19 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台 - 管理端</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="/assets/js/echarts.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f0f2f5;
-            color: #333;
-        }
+        
 
         .admin-container {
             display: flex;
@@ -39,15 +31,9 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        
 
-        .logo-icon {
-            font-size: 24px;
-        }
+        
 
         .logo-text {
             font-size: 18px;
@@ -58,27 +44,11 @@
             margin-top: 24px;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 24px;
-            text-decoration: none;
-            color: rgba(255,255,255,0.8);
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
+        
 
-        .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
-        }
+        
 
-        .nav-item.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border-left-color: #4299e1;
-        }
+        
 
         .nav-icon {
             font-size: 16px;
@@ -358,7 +328,9 @@
         }
 
         .activity-list {
-            space-y: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .activity-item {
@@ -434,6 +406,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -487,7 +461,7 @@
                 <div class="top-bar-right">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" class="search-input" placeholder="搜索...">
+                       <input type="text" class="search-input" placeholder="搜索..." aria-label="全局搜索">
                     </div>
                     <div class="user-menu">
                         <div class="user-info">
@@ -611,6 +585,7 @@
     </div>
 
     <script>
+        /* global echarts */
         // 初始化用户增长趋势图表
         const userGrowthChart = echarts.init(document.getElementById('userGrowthChart'));
         const userGrowthOption = {
@@ -624,7 +599,7 @@
                 }
             },
             legend: {
-                data: ['新用户', '活跃用户']
+                data: ['新增用户', '活跃用户']
             },
             grid: {
                 left: '3%',
@@ -632,14 +607,18 @@
                 bottom: '3%',
                 containLabel: true
             },
-            xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-            },
-            yAxis: {
-                type: 'value'
-            },
+            xAxis: [
+                {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['一月', '二月', '三月'] // 修改为三月对比
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value'
+                }
+            ],
             series: [
                 {
                     name: '新用户',
@@ -662,30 +641,17 @@
                     emphasis: {
                         focus: 'series'
                     },
-                    data: [120, 132, 101, 134, 90, 230, 210, 250, 230, 220, 280, 320]
+                    data: [120, 200, 150] // 修改为三月数据对比
                 },
                 {
-                    name: '活跃用户',
+                    name: '新增用户',
                     type: 'line',
                     stack: 'Total',
-                    areaStyle: {
-                        color: {
-                            type: 'linear',
-                            x: 0,
-                            y: 0,
-                            x2: 0,
-                            y2: 1,
-                            colorStops: [{
-                                offset: 0, color: 'rgba(82, 196, 26, 0.5)'
-                            }, {
-                                offset: 1, color: 'rgba(82, 196, 26, 0.1)'
-                            }]
-                        }
-                    },
+                    areaStyle: {},
                     emphasis: {
                         focus: 'series'
                     },
-                    data: [220, 182, 191, 234, 290, 330, 310, 350, 330, 320, 380, 420]
+                    data: [220, 182, 191] // 修改为三月数据对比
                 }
             ]
         };
