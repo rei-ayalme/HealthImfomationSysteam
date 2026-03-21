@@ -1149,7 +1149,25 @@
         const API_BASE_URL = 'http://localhost:8000/api/v1';
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
-            return echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+            const chart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+            return chart;
+        }
+
+        // 统一的数据空状态处理
+        function handleEmptyData(chart, dataArray) {
+            if (!dataArray || dataArray.length === 0) {
+                chart.clear();
+                chart.setOption({
+                    title: {
+                        text: '暂无数据',
+                        left: 'center',
+                        top: 'center',
+                        textStyle: { color: '#999', fontSize: 14, fontWeight: 'normal' }
+                    }
+                });
+                return true;
+            }
+            return false;
         }
         async function refreshMacroInsight() {
             const state = getMacroFilterState();
@@ -2841,7 +2859,11 @@
                             xAxis: { data: points.map(p => String(p.year)) },
                             series: [{ name: '数据库实测', type: 'line', smooth: true, data: points.map(p => (Number(p.value) * scenarioFactor).toFixed(1)) }]
                         });
+                    } else {
+                        handleEmptyData(mortalityTrendChart, []);
                     }
+                } else {
+                    if (mortalityTrendChart) handleEmptyData(mortalityTrendChart, []);
                 }
             });
             refreshMacroInsight();

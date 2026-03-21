@@ -7,20 +7,20 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast-message';
     
-    // 根据类型设置图标或颜色
+    // 根据类型设置图标或颜色，使用CSS变量
     let icon = '';
     if (type === 'success') {
         icon = '✅ ';
-        toast.style.borderLeft = '4px solid #52c41a';
+        toast.style.borderLeft = '4px solid var(--success-color, #52c41a)';
     } else if (type === 'error') {
         icon = '❌ ';
-        toast.style.borderLeft = '4px solid #f5222d';
+        toast.style.borderLeft = '4px solid var(--error-color, #f5222d)';
     } else if (type === 'warning') {
         icon = '⚠️ ';
-        toast.style.borderLeft = '4px solid #fa8c16';
+        toast.style.borderLeft = '4px solid var(--warning-color, #fa8c16)';
     } else {
         icon = 'ℹ️ ';
-        toast.style.borderLeft = '4px solid #1890ff';
+        toast.style.borderLeft = '4px solid var(--primary-color, #1890ff)';
     }
     
     toast.innerHTML = `${icon}<span>${message}</span>`;
@@ -39,12 +39,26 @@ function showToast(message, type = 'info') {
 }
 
 // 检查是否登录（示例方法，根据实际情况调整）
-function checkAuth() {
+async function checkAuth() {
     const token = localStorage.getItem('token');
     if (!token) {
-        // 如果未登录，且不是登录页/注册页/首页，则跳转到登录页
         const path = window.location.pathname;
-        const publicPages = ['/login.html', '/register.html', '/index.html', '/'];
+        let publicPages = ['/login.html', '/register.html', '/index.html', '/'];
+        
+        // 尝试从后端获取动态配置的公共页面列表
+        try {
+            const response = await fetch('/api/config/public-routes');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.publicPages && Array.isArray(data.publicPages)) {
+                    // 确保匹配格式
+                    publicPages = data.publicPages.map(p => p.startsWith('/') ? p : '/' + p);
+                }
+            }
+        } catch (e) {
+            console.warn('获取公共路由配置失败，使用默认配置', e);
+        }
+
         const isPublic = publicPages.some(p => path.endsWith(p));
         
         if (!isPublic) {

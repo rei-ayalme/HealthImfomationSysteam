@@ -70,9 +70,15 @@ class AdvancedGlobalHealthCleaner:
                 ]
 
         # 修复 KeyError: 动态检查列是否存在，只对存在的列执行去空操作
+        # 注意：不再强制丢弃没有 year 的行，以应对部分 WDI 或其他源缺失 year 列
         subset_cols = [c for c in ['year', 'val'] if c in df_clean.columns]
         if subset_cols:
-            df_clean = df_clean.dropna(subset=subset_cols, how='any')
+            # 修改：只在所有检查列都为空时才丢弃，或者直接用默认的 any 视情况而定
+            # 如果是 val 为空才丢弃比较合理
+            if 'val' in df_clean.columns:
+                df_clean = df_clean.dropna(subset=['val'], how='any')
+            else:
+                df_clean = df_clean.dropna(subset=subset_cols, how='all')
 
         return df_clean.copy()
 

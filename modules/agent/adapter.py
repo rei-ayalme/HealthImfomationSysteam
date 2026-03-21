@@ -44,7 +44,7 @@ def owid_2_deepseek_input(
         if df.empty:
             return {"status": "error", "msg": "无可用OWID数据"}
 
-        # 转换为DeepSeek要求的格式（假设模型要求：{国家: {年份: {指标: 值}}}）
+        # 转换为要求的格式（假设模型要求：{国家: {年份: {指标: 值}}}）
         deepseek_input = {}
         for country in countries:
             country_data = df[df["country"] == country]

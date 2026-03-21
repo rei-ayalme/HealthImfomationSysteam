@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from typing import Dict, Optional
 from modules.core.interface import IDiseaseAnalyzer
 from config.settings import SETTINGS
 
@@ -11,8 +12,12 @@ class DiseaseRiskAnalyzer(IDiseaseAnalyzer):
     疾病风险预测分析器 (GBD 数据驱动版)
     """
 
-    def __init__(self, spectrum_data: pd.DataFrame = None, risk_data: pd.DataFrame = None):
-        # 接收清洗后的 GBD 数据
+    def __init__(self, spectrum_data: Optional[pd.DataFrame] = None, risk_data: Optional[pd.DataFrame] = None):
+        """
+        初始化时接收两个 DataFrame
+        risk_data: 风险归因数据，必须包含 ['year', 'location_name', 'paf', 'rei_name', 'risk_category']
+        spectrum_data: 疾病谱基线数据，必须包含 ['year', 'cause_name', 'val']
+        """
         self.spectrum_data = spectrum_data if spectrum_data is not None else pd.DataFrame()
         self.risk_data = risk_data if risk_data is not None else pd.DataFrame()
         self.impact_factors = SETTINGS.HEALTH_IMPACT_FACTORS

@@ -11,7 +11,7 @@ def save_processed_data_to_db(db: Session, df: pd.DataFrame):
 
     for _, row in df.iterrows():
         db_record = HealthResource(
-            region_name=row.get('region_name'),
+            region=row.get('region_name'),
             year=int(row.get('year', 2020)),
             physicians_per_1000=row.get('physicians_per_1000', 0),
             nurses_per_1000=row.get('nurses_per_1000', 0),

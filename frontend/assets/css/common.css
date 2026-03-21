@@ -1,4 +1,15 @@
 /* 全局公共样式 */
+:root {
+    --primary-color: #1890ff;
+    --success-color: #52c41a;
+    --warning-color: #fa8c16;
+    --error-color: #f5222d;
+    --bg-color: #f0f2f5;
+    --text-color: #1a1a1a;
+    --nav-bg-start: #1a365d;
+    --nav-bg-end: #2c5282;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -7,8 +18,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: #f0f2f5;
-    color: #1a1a1a;
+    background: var(--bg-color);
+    color: var(--text-color);
     line-height: 1.6;
 }
 

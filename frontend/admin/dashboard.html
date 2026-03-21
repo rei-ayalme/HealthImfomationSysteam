@@ -586,6 +586,24 @@
 
     <script>
         /* global echarts */
+        
+        // 统一的数据空状态处理
+        function handleEmptyData(chart, dataArray) {
+            if (!dataArray || dataArray.length === 0) {
+                chart.clear();
+                chart.setOption({
+                    title: {
+                        text: '暂无数据',
+                        left: 'center',
+                        top: 'center',
+                        textStyle: { color: '#999', fontSize: 14, fontWeight: 'normal' }
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
+
         // 初始化用户增长趋势图表
         const userGrowthChart = echarts.init(document.getElementById('userGrowthChart'));
         const userGrowthOption = {

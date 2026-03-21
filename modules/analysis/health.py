@@ -3,6 +3,8 @@ import numpy as np
 from typing import Dict
 from modules.core.interface import IHealthAnalyzer
 from config.settings import SETTINGS
+from utils.logger import logger
+from utils.validator import validate_data_columns
 
 
 class UnifiedHealthAnalyzer(IHealthAnalyzer):
@@ -12,9 +14,21 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
     """
 
     def __init__(self, data: pd.DataFrame):
+        """
+        初始化时传入一个包含地区基础医疗统计的 DataFrame
+        必须包含以下列: year, population, physicians_per_1000, nurses_per_1000, hospital_beds_per_1000
+        """
         self.data = data
         self.weights = SETTINGS.RESOURCE_WEIGHTS
         self.baselines = SETTINGS.BASE_MEDICAL_RESOURCE_DENSITIES
+
+        # 使用 validator 进行数据校验
+        is_valid, missing_cols = validate_data_columns(
+            self.data, 
+            ['year', 'population', 'physicians_per_1000', 'nurses_per_1000', 'hospital_beds_per_1000']
+        )
+        if not is_valid:
+            logger.warning(f"UnifiedHealthAnalyzer 初始化数据缺失列: {missing_cols}，可能影响分析准确性。")
 
     def compute_resource_gap(self, year: int) -> pd.DataFrame:
         """核心计算逻辑：实际供给 vs 理论需求"""
@@ -51,7 +65,7 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
         # 5. 缺口等级分类
         df['gap_severity'] = pd.cut(
             df['relative_gap_rate'],
-            bins=[-np.inf, 0.0, 0.1, 0.3, np.inf],
+            bins=[-np.inf, SETTINGS.GAP_THRESHOLD_ADEQUATE, SETTINGS.GAP_THRESHOLD_REASONABLE, SETTINGS.GAP_THRESHOLD_MILD, np.inf],
             labels=['配置充足', '配置合理', '轻度短缺', '严重短缺']
         )
 
@@ -83,12 +97,8 @@ class UnifiedHealthAnalyzer(IHealthAnalyzer):
         latest_year = self.data['year'].max()
         latest_data = self.data[self.data['year'] == latest_year].copy()
 
-        # 定义不同情景下的人口或需求增长系数（例如：基准按每年 2% 增长）
-        scenario_multipliers = {
-            "基准": 1.02,
-            "高增长": 1.05,
-            "平稳": 1.00
-        }
+        # 定义不同情景下的人口或需求增长系数
+        scenario_multipliers = SETTINGS.SCENARIO_MULTIPLIERS
         multiplier = scenario_multipliers.get(scenario, 1.02)
 
         predictions = []

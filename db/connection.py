@@ -5,11 +5,11 @@ from sqlalchemy.orm import sessionmaker,Session
 from config.settings import SETTINGS
 import os
 from db.models import Base, HealthResource, GlobalHealthMetric
-# 默认使用项目根目录下的 SQLite 数据库
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_URL = f"sqlite:///{os.path.join(BASE_DIR, 'health_system.db')}"
 
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
+# 使用外部配置文件中的数据库连接
+DB_URL = SETTINGS.DATABASE_URL
+
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
