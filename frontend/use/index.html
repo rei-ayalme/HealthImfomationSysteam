@@ -307,27 +307,31 @@
             <span>健康数据洞察平台</span>
         </div>
         <nav class="main-nav">
-            <a class="nav-item active" href="index.html" data-nav="index.html">首页</a>
-            <a class="nav-item" href="datasets.html" data-nav="datasets.html">数据集</a>
+            <a class="nav-item active" href="/use/index.html" data-nav="index.html">首页</a>
+            <a class="nav-item" href="/use/datasets.html" data-nav="datasets.html">数据集</a>
             <div class="nav-item dropdown">数据分析 <span class="dropdown-icon">▼</span>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item" href="macro-analysis.html" data-nav="macro-analysis.html">宏观分析</a>
-                    <a class="dropdown-item" href="meso-analysis.html" data-nav="meso-analysis.html">中观分析</a>
-                    <a class="dropdown-item" href="micro-analysis.html" data-nav="micro-analysis.html">微观分析</a>
-                    <a class="dropdown-item" href="prediction.html" data-nav="prediction.html">预测模拟</a>
+                    <a class="dropdown-item" href="/use/macro-analysis.html" data-nav="macro-analysis.html">宏观分析</a>
+                    <a class="dropdown-item" href="/use/meso-analysis.html" data-nav="meso-analysis.html">中观分析</a>
+                    <a class="dropdown-item" href="/use/micro-analysis.html" data-nav="micro-analysis.html">微观分析</a>
+                    <a class="dropdown-item" href="/use/prediction.html" data-nav="prediction.html">预测模拟</a>
                 </div>
             </div>
         </nav>
-        <div class="user-actions">
+        <div class="user-actions" id="userActions">
             <div class="status-chip">数据源在线</div>
             <div class="search-box"><input placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标"></div>
-            <a class="nav-item" href="login.html">登录</a>
-            <a class="nav-item" href="register.html">注册</a>
-            <a class="nav-item" href="account-center.html">个人中心</a>
-            <a class="nav-item" href="/admin/dashboard.html">管理端</a>
-            <div class="avatar">GH</div>
+            <!-- 未登录时显示 -->
+            <a class="nav-item guest-only" href="/use/login.html">登录</a>
+            <a class="nav-item signup-btn guest-only" href="/use/register.html">免费注册</a>
+            <!-- 已登录时显示 -->
+            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
+            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
+            <div class="avatar user-only" style="display: none;" onclick="window.location.href='/use/account-center.html'" style="cursor:pointer">GH</div>
         </div>
     </header>
+    <!-- 在原有的 main-container 内容前加入高德地图脚本，用于全球/中国地图展示 -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=893aa291ba8fd5ceea01973a6162f182"></script>
     <div class="main-container">
         <aside class="sidebar">
             <div class="filter-group">
@@ -375,6 +379,11 @@
             <h1 class="page-title">全球健康概览</h1>
             <section class="kpi-grid" id="kpiGrid"></section>
             <section class="chart-grid">
+                <!-- 新增：全球地图分布图表模块 -->
+                <div class="card" style="grid-column: 1 / -1;">
+                    <div class="card-title">🌍 全球卫生数据地理分布</div>
+                    <div id="mapChart" style="height: 400px; width: 100%;"></div>
+                </div>
                 <div class="card">
                     <div class="card-title">疾病负担趋势</div>
                     <div id="trendChart" class="chart"></div>
@@ -403,6 +412,7 @@
         const searchInput = document.querySelector('.search-box input');
         const trendChart = echarts.init(document.getElementById('trendChart'));
         const pieChart = echarts.init(document.getElementById('pieChart'));
+        const mapChart = echarts.init(document.getElementById('mapChart'));
 
         const kpiMap = {
             dalys: [
@@ -446,9 +456,10 @@
         };
 
         const newsPool = [
-            { t: 'WHO发布2025全球卫生融资建议', d: '强调初级卫生保健投入对长期疾病负担控制的关键作用。' },
-            { t: '多国联合推进慢病早筛项目', d: '心血管与肿瘤早筛覆盖率较去年提升12%。' },
-            { t: '全球空气污染健康风险报告更新', d: '部分地区PM2.5暴露仍对呼吸系统疾病形成持续压力。' }
+            { t: 'WHO发布2024全球卫生统计报告', d: '最新数据显示，全球预期寿命在经历了疫情影响后开始逐步回升。' },
+            { t: '中国启动新一轮慢性病防治行动', d: '卫健委联合多部门印发干预方案，重点关注心血管与代谢类疾病。' },
+            { t: '柳叶刀最新研究：环境风险对健康的长期影响', d: '空气污染仍然是导致全球呼吸系统疾病高发的核心环境因素之一。' },
+            { t: 'AI 在医疗资源配置中的应用', d: '通过空间可及性分析，多个城市成功优化了基层医疗网点布局。' }
         ];
 
         function renderKPI(metric) {
@@ -530,13 +541,58 @@
             reportText.textContent = `${year}年视角：${reportPool[region] || reportPool.global}`;
         }
 
-        function renderNews(keyword = '') {
+        async function renderNews(keyword = '') {
             const key = keyword.trim();
+            newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">正在加载最新健康资讯...</div>';
+            
+            try {
+                // 尝试通过后端获取真实资讯
+                const response = await fetch('/api/news');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success' && data.news && data.news.length > 0) {
+                        newsList.innerHTML = '';
+                        const filteredNews = data.news.filter(item => !key || item.title.includes(key) || item.description.includes(key));
+                        
+                        if (filteredNews.length === 0) {
+                            newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">未找到匹配的资讯</div>';
+                            return;
+                        }
+                        
+                        filteredNews.forEach(item => {
+                            const box = document.createElement('div');
+                            box.className = 'news-item';
+                            box.style.cursor = 'pointer';
+                            box.onclick = () => window.open(item.url, '_blank');
+                            box.innerHTML = `
+                                <h4>${item.title}</h4>
+                                <p>${item.description}</p>
+                                <span style="font-size: 11px; color: #bfbfbf;">来源: ${item.source} | ${item.publishedAt.slice(0,10)}</span>
+                            `;
+                            newsList.appendChild(box);
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('获取真实资讯失败，降级使用静态数据', e);
+            }
+            
+            // 降级静态数据
             newsList.innerHTML = '';
-            newsPool.filter(item => !key || item.t.includes(key) || item.d.includes(key)).forEach(item => {
+            const filteredStatic = newsPool.filter(item => !key || item.t.includes(key) || item.d.includes(key));
+            
+            if (filteredStatic.length === 0) {
+                newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">未找到匹配的资讯</div>';
+                return;
+            }
+            
+            filteredStatic.forEach(item => {
                 const box = document.createElement('div');
                 box.className = 'news-item';
-                box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p>`;
+                box.style.cursor = 'pointer';
+                box.onclick = () => alert('当前为模拟静态数据，无真实链接。');
+                box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p><span style="font-size: 11px; color: #bfbfbf;">来源: 平台资讯库</span>`;
                 newsList.appendChild(box);
             });
         }
@@ -549,6 +605,53 @@
             });
         }
 
+        async function renderMap(region) {
+            try {
+                // 加载世界地图数据（这里通过 API 或者直接通过 ECharts 的世界地图 json 获取）
+                const geoJsonRes = await fetch('/api/geojson/world');
+                const geoJson = await geoJsonRes.json();
+                echarts.registerMap('world', geoJson);
+
+                // 简单的地图配置，如果是特定地区则高亮
+                const mapData = geoJson.features.map(f => {
+                    return {
+                        name: f.properties.name,
+                        value: (region === 'global' || f.properties.name.toLowerCase().includes(region)) ? 100 : 10
+                    }
+                });
+
+                mapChart.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}'
+                    },
+                    visualMap: {
+                        min: 0,
+                        max: 100,
+                        text: ['High', 'Low'],
+                        realtime: false,
+                        calculable: true,
+                        inRange: {
+                            color: ['#e0f3f8', '#313695']
+                        },
+                        show: false
+                    },
+                    series: [
+                        {
+                            name: 'World Health',
+                            type: 'map',
+                            map: 'world',
+                            roam: true,
+                            data: mapData
+                        }
+                    ]
+                });
+            } catch (e) {
+                console.warn("加载世界地图数据失败", e);
+                mapChart.showLoading({text: "地图加载失败"});
+            }
+        }
+
         function apply() {
             const region = document.getElementById('region').value;
             const metric = document.getElementById('metric').value;
@@ -558,6 +661,7 @@
             renderTrend(region, metric, year, granularity);
             renderPie(region);
             renderReport(region, year);
+            renderMap(region); // 调用渲染地图函数
         }
 
         document.getElementById('applyBtn').addEventListener('click', apply);
@@ -578,6 +682,23 @@
         window.addEventListener('resize', () => {
             trendChart.resize();
             pieChart.resize();
+            mapChart.resize();
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update auth state in nav
+            const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'inline-flex');
+                    if (user.role === 'admin') {
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
+                    }
+                } catch (e) {}
+            }
         });
     </script>
 </body>

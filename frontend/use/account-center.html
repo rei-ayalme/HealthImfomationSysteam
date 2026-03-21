@@ -177,9 +177,9 @@
             <span>健康数据平台 · 个人管理端</span>
         </div>
         <div class="nav-right">
-            <a class="nav-btn" href="index.html">首页</a>
-            <a class="nav-btn" href="datasets.html">数据集</a>
-            <a class="nav-btn" href="/admin/dashboard.html">管理端</a>
+            <a class="nav-btn" href="/use/index.html">首页</a>
+            <a class="nav-btn" href="/use/datasets.html">数据集</a>
+            <a class="nav-btn" href="/admin/dashboard.html" id="adminLink">管理端</a>
             <a class="nav-btn" href="javascript:void(0)" onclick="logout()">退出</a>
         </div>
     </nav>
@@ -216,11 +216,11 @@
         <div class="section">
             <div class="section-title">快捷功能</div>
             <div class="row">
-                <a class="item" href="macro-analysis.html">宏观分析</a>
-                <a class="item" href="meso-analysis.html">中观分析</a>
-                <a class="item" href="micro-analysis.html">微观分析</a>
-                <a class="item" href="prediction.html">预测模拟</a>
-                <a class="item" href="datasets.html">数据集搜索</a>
+                <a class="item" href="/use/macro-analysis.html">宏观分析</a>
+                <a class="item" href="/use/meso-analysis.html">中观分析</a>
+                <a class="item" href="/use/micro-analysis.html">微观分析</a>
+                <a class="item" href="/use/prediction.html">预测模拟</a>
+                <a class="item" href="/use/datasets.html">数据集搜索</a>
             </div>
         </div>
 
@@ -246,7 +246,7 @@
         function guardAuth() {
             const user = getCurrentUser();
             if (!user) {
-                window.location.href = 'login.html';
+                window.location.href = '/use/login.html';
                 return null;
             }
             return user;
@@ -256,7 +256,15 @@
             const user = guardAuth();
             if (!user) return;
 
-            document.getElementById('welcomeTitle').textContent = `你好，${user.name || '用户'}`;
+            document.getElementById('welcomeTitle').textContent = `你好，${user.name || user.username || '用户'}`;
+            document.getElementById('userBadge').textContent = user.role === 'admin' ? '管理员' : '普通用户';
+
+            const adminLink = document.getElementById('adminLink');
+            if (user.role === 'admin') {
+                adminLink.style.display = 'inline-block';
+            } else {
+                adminLink.style.display = 'none';
+            }
             document.getElementById('userBadge').textContent = user.role === 'user' ? '个人用户' : user.role;
 
             const favorites = JSON.parse(localStorage.getItem('userFavorites') || '[]');
@@ -289,7 +297,7 @@
 
         function logout() {
             localStorage.removeItem('currentUser');
-            window.location.href = 'login.html';
+            window.location.href = '/use/login.html';
         }
 
         // 页面加载时渲染用户信息

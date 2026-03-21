@@ -108,6 +108,9 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
+    <div class="header">
+        <a href="/use/index.html" class="back-link">← 返回首页</a>
+    </div>
     <div class="auth-card">
         <div class="title">用户登录</div>
         <div class="subtitle">欢迎回到健康数据洞察平台</div>
@@ -127,7 +130,7 @@
         <div id="notice" class="notice"></div>
 
         <div class="hint">管理员请使用 <a href="/admin/login.html">管理端登录</a></div>
-        <div class="hint" style="margin-top: 8px;">还没有账号？ <a href="register.html">立即注册</a></div>
+        <div class="hint" style="margin-top: 8px;">还没有账号？ <a href="/use/register.html">立即注册</a></div>
     </div>
 
     <script>
@@ -162,7 +165,7 @@
             showNotice('登录成功，正在进入个人管理端...');
 
             setTimeout(() => {
-                window.location.href = 'account-center.html';
+                window.location.href = '/use/account-center.html';
             }, 600);
         });
     </script>

@@ -723,11 +723,11 @@
             <span>健康数据洞察平台</span>
         </div>
         <div class="main-nav">
-            <a href="index.html" class="nav-item" data-nav="index.html">
+            <a href="/use/index.html" class="nav-item" data-nav="index.html">
                 <span>🏠</span>
                 <span>首页</span>
             </a>
-            <a href="datasets.html" class="nav-item" data-nav="datasets.html">
+            <a href="/use/datasets.html" class="nav-item" data-nav="datasets.html">
                 <span>📁</span>
                 <span>数据集</span>
             </a>
@@ -736,19 +736,19 @@
                 <span>数据分析</span>
                 <span class="dropdown-icon">▼</span>
                 <div class="dropdown-menu">
-                    <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
+                    <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
                         <span>🌍</span>
                         <span>宏观分析</span>
                     </a>
-                    <a href="meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
+                    <a href="/use/meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
                         <span>🏛️</span>
                         <span>中观分析</span>
                     </a>
-                    <a href="micro-analysis.html" class="dropdown-item active" data-nav="micro-analysis.html">
+                    <a href="/use/micro-analysis.html" class="dropdown-item active" data-nav="micro-analysis.html">
                         <span>👥</span>
                         <span>微观分析</span>
                     </a>
-                    <a href="prediction.html" class="dropdown-item" data-nav="prediction.html">
+                    <a href="/use/prediction.html" class="dropdown-item" data-nav="prediction.html">
                         <span>🔮</span>
                         <span>预测模拟</span>
                     </a>
@@ -761,10 +761,12 @@
                 <input type="text" placeholder="搜索数据、指标、人群..." aria-label="搜索数据、指标、人群...">
             </div>
 
-            <a href="login.html" class="nav-item">登录</a>
-            <a href="register.html" class="nav-item">注册</a>
-            <a href="account-center.html" class="nav-item">个人中心</a>
-            <a href="/admin/dashboard.html" class="nav-item">管理端</a>
+            <!-- 未登录时显示 -->
+            <a class="nav-item guest-only" href="/use/login.html">登录</a>
+            <a class="nav-item guest-only" href="/use/register.html">注册</a>
+            <!-- 已登录时显示 -->
+            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
+            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
         </div>
     </nav>
 
@@ -787,6 +789,10 @@
                 <a href="#behavior" class="sidebar-item">
                     <span class="sidebar-icon">🚶</span>
                     <span>行为模式分析</span>
+                </a>
+                <a href="#spatial-accessibility" class="sidebar-item">
+                    <span class="sidebar-icon">📍</span>
+                    <span>微观空间可及性</span>
                 </a>
                 <a href="#intervention" class="sidebar-item">
                     <span class="sidebar-icon">💊</span>
@@ -1116,6 +1122,23 @@
                 </div>
             </div>
 
+            <div class="chart-card full-width" id="spatial-accessibility">
+                <div class="chart-header">
+                    <div>
+                        <h3 class="chart-title">📍 微观空间可及性分析 (成都市 2SFCA模型)</h3>
+                        <p class="chart-subtitle">基于真实高德路网数据与社区人口计算的医疗资源空间可及性指数及地理分布热力图</p>
+                    </div>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="fetchSpatialData()">重新计算</button>
+                    </div>
+                </div>
+                <!-- 左边柱状图，右边地图 -->
+                <div style="display: flex; gap: 20px;">
+                    <div id="spatialChart" class="chart-container" style="flex: 1; height: 400px;"></div>
+                    <div id="spatialMapChart" class="chart-container" style="flex: 1; height: 400px;"></div>
+                </div>
+            </div>
+
             <div class="chart-card full-width" id="intervention">
                 <div class="chart-header">
                     <div>
@@ -1294,7 +1317,7 @@
         /* global echarts */
 
         // 全局图表实例
-        let pafChart, populationChart, trendChart, activityChart, dietChart, interventionChart;
+        let pafChart, populationChart, trendChart, activityChart, dietChart, interventionChart, spatialChart, spatialMapChart;
         const MICRO_API_BASE_URL = 'http://localhost:8000/api/v1';
 
         function getOrInitChart(chartDom) {
@@ -1350,6 +1373,119 @@
                 } catch (e) {}
             }
             return null;
+        }
+
+        // 空间可及性分析图 (成都市 2SFCA)
+        async function fetchSpatialData() {
+            const chartDom = document.getElementById('spatialChart');
+            const mapDom = document.getElementById('spatialMapChart');
+            if (!chartDom || !mapDom) return;
+            
+            spatialChart = getOrInitChart(chartDom);
+            spatialMapChart = getOrInitChart(mapDom);
+            
+            spatialChart.showLoading({text: '正在通过高德API进行路网规划和空间计算...'});
+            spatialMapChart.showLoading({text: '正在加载地图数据...'});
+            
+            try {
+                // 加载成都地图数据
+                const mapRes = await fetch('/api/geojson/chengdu'); // 假设我们在 main.py 里也挂载了这个 geojson
+                if (!mapRes.ok) throw new Error('Failed to load Chengdu GeoJSON');
+                const chengduGeoJson = await mapRes.json();
+                echarts.registerMap('chengdu', chengduGeoJson);
+
+                // 调用后端实际 API
+                const response = await fetch('http://localhost:8000/api/spatial_analysis?region=成都市');
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                if (data.status === "success" && data.chart_data) {
+                    const chartData = data.chart_data;
+                    
+                    // 1. 柱状图
+                    const optionBar = {
+                        tooltip: { trigger: 'axis', formatter: '{b} <br/> 可及性指数: {c}' },
+                        grid: { left: '10%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
+                        xAxis: { type: 'category', data: chartData.labels, axisLabel: { interval: 0, rotate: 30 } },
+                        yAxis: { type: 'value', name: '空间可及性指数' },
+                        series: [{
+                            name: '可及性', type: 'bar', data: chartData.datasets[0].data,
+                            itemStyle: { color: chartData.datasets[0].backgroundColor || '#1890ff', borderRadius: [4, 4, 0, 0] },
+                            label: { show: true, position: 'top', formatter: '{c}' }
+                        }]
+                    };
+                    spatialChart.setOption(optionBar);
+
+                    // 2. 地图/热力图
+                    const mapData = chartData.geo_points || []; // [{"name": "锦江区", "value": [lon, lat, score]}, ...]
+                    
+                    // 提取最大值以设定 visualMap
+                    let maxScore = 0.05;
+                    if (mapData.length > 0) {
+                        maxScore = Math.max(...mapData.map(item => item.value[2])) || 0.05;
+                    }
+
+                    // 成都市中心经纬度大约为 104.06, 30.67
+                    const optionMap = {
+                        title: { text: '成都市各区空间可及性分布', left: 'center', textStyle: { fontSize: 14 } },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: function (params) {
+                                if (params.value && params.value.length === 3) {
+                                    return params.name + ' : ' + params.value[2];
+                                }
+                                return params.name;
+                            }
+                        },
+                        visualMap: {
+                            min: 0,
+                            max: maxScore,
+                            calculable: true,
+                            inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] },
+                            text: ['高', '低'],
+                            left: 'right',
+                            top: 'bottom'
+                        },
+                        geo: {
+                            map: 'chengdu',
+                            roam: true,
+                            zoom: 1.2,
+                            center: [104.06, 30.67], // 强制设置地图中心点，防止 GeoJSON 的偏移
+                            label: { show: true, color: '#333', fontSize: 10 },
+                            itemStyle: { areaColor: '#f4f4f4', borderColor: '#ccc' },
+                            emphasis: { itemStyle: { areaColor: '#ddd' } }
+                        },
+                        series: [
+                            {
+                                name: '可及性',
+                                type: 'effectScatter', // 改用 effectScatter 增强热力视觉
+                                coordinateSystem: 'geo',
+                                data: mapData,
+                                symbolSize: function (val) {
+                                    // 根据分数动态调整散点大小，适当放大以便观察
+                                    return Math.max(12, (val[2] / maxScore) * 35);
+                                },
+                                itemStyle: { shadowBlur: 10, shadowColor: '#333' }
+                            }
+                        ]
+                    };
+                    spatialMapChart.setOption(optionMap);
+
+                } else {
+                    console.error('获取空间分析数据失败:', data.msg);
+                    spatialChart.showLoading({text: '获取数据失败，请检查后端或高德API配额', textColor: '#f5222d'});
+                    spatialMapChart.showLoading({text: '渲染地图失败', textColor: '#f5222d'});
+                }
+            } catch (e) {
+                console.error(e);
+                spatialChart.showLoading({text: '网络请求失败，请确保后端服务正常运行', textColor: '#f5222d'});
+                spatialMapChart.showLoading({text: '渲染地图失败', textColor: '#f5222d'});
+            } finally {
+                setTimeout(() => {
+                    spatialChart.hideLoading();
+                    spatialMapChart.hideLoading();
+                }, 1000);
+            }
         }
 
         // PAF归因分析图
@@ -1654,10 +1790,37 @@
                             { value: 722, name: '睡眠', itemStyle: { color: '#1890ff' } }
                         ]
                     }
+                ],
+                graphic: [
+                    {
+                        type: 'text',
+                        left: '60%',
+                        top: '50%',
+                        style: {
+                            text: 'WHO建议:\n每周至少\n150分钟\n中高强度',
+                            textAlign: 'center',
+                            fill: '#8c8c8c',
+                            fontSize: 12
+                        },
+                        z: 10
+                    }
                 ]
             };
 
             activityChart.setOption(option);
+        }
+
+        function showActivityGuidelines() {
+            if (!activityChart) return;
+            const currentOption = activityChart.getOption();
+            currentOption.series[0].data = [
+                { value: 50, name: '中高强度活动(达标)', itemStyle: { color: '#52c41a' } },
+                { value: 103, name: '轻度活动', itemStyle: { color: '#1890ff' } },
+                { value: 565, name: '久坐行为', itemStyle: { color: '#f5222d' } },
+                { value: 722, name: '睡眠', itemStyle: { color: '#bfbfbf' } }
+            ];
+            activityChart.setOption(currentOption);
+            alert("已更新为WHO指南对比视角：每周至少150-300分钟中等强度有氧活动。图表已突出显示中高强度达标情况。");
         }
 
         // 膳食结构图
@@ -1810,6 +1973,7 @@
             initActivityChart(population, gender, area, income, education, access);
             initDietChart(population, gender, area, income, education, access);
             initInterventionChart(population, gender, area, income, education, access);
+            fetchSpatialData();
         }
 
         // 更新图表（连接筛选器和图表）
@@ -1876,13 +2040,14 @@
         }
 
         // 窗口大小改变时重新渲染图表
-        window.addEventListener('resize', function () {
+        window.addEventListener('resize', () => {
             if (pafChart) pafChart.resize();
             if (populationChart) populationChart.resize();
             if (trendChart) trendChart.resize();
             if (activityChart) activityChart.resize();
             if (dietChart) dietChart.resize();
             if (interventionChart) interventionChart.resize();
+            if (spatialChart) spatialChart.resize();
         });
 
         // 显示分析步骤详情
@@ -1904,6 +2069,38 @@
             }
 
             showNotification('步骤切换', '已切换到分析步骤 ' + step);
+        }
+
+        function showPopulationStandard() {
+            if (!populationChart) return;
+            const option = populationChart.getOption();
+            option.series[0].data = [15, 20, 45, 20];
+            option.series[1].data = [20, 25, 40, 15];
+            populationChart.setOption(option);
+            alert("已切换为全国标准人口结构数据对比。");
+        }
+
+        function showDietaryGuidelines() {
+            if (!dietChart) return;
+            const option = dietChart.getOption();
+            // 模拟膳食指南达标
+            option.series[0].data = [5000, 25000, 300000, 200000, 50000, 50000, 25000];
+            dietChart.setOption(option);
+            alert("已将实际摄入调整为符合膳食指南的推荐水平，观察差异变化。");
+        }
+
+        function filterInterventions() {
+            if (!interventionChart) return;
+            const option = interventionChart.getOption();
+            // 过滤只显示A级
+            const newData = option.series[0].data.filter(item => item.value[2] === 'A级');
+            option.series[0].data = newData;
+            interventionChart.setOption(option);
+            alert("已过滤：仅显示 A 级 (高性价比) 干预措施。");
+        }
+
+        function showInterventionDetail() {
+            alert("即将展示基于当前人群配置的详细系统综述报告 (Meta-Analysis)...");
         }
 
         // 导出数据功能
@@ -2078,6 +2275,22 @@
                 dropdown.classList.remove('active');
             }
         })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update auth state in nav
+            const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'inline-flex');
+                    if (user.role === 'admin') {
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
+                    }
+                } catch (e) {}
+            }
+        });
     </script>
 </body>
 

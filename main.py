@@ -98,6 +98,85 @@ async def get_dataset(db: Session = Depends(get_db)):
         logger.exception("数据库查询异常")
         return {"items": []}
 
+@app.get("/api/dataset/{dataset_id}/detail")
+async def get_dataset_detail(dataset_id: str, limit: int = 50, db: Session = Depends(get_db)):
+    try:
+        from db.models import AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
+        
+        preview_data = []
+        d_meta = {
+            "title": f"数据集：{dataset_id}",
+            "category": "健康指标",
+            "record_count": 0,
+            "region_coverage": 0,
+            "year_min": 2000,
+            "year_max": 2024,
+            "latest_updated": "2024-03-21",
+            "fields": [
+                {"name": "region", "type": "string", "description": "国家/地区"},
+                {"name": "year", "type": "int", "description": "年份"},
+                {"name": "metric", "type": "string", "description": "指标名称"},
+                {"name": "value", "type": "float", "description": "数值"},
+                {"name": "source", "type": "string", "description": "数据来源"}
+            ]
+        }
+
+        if dataset_id.startswith("disease_"):
+            records = db.query(AdvancedDiseaseTransition).limit(limit).all()
+            d_meta["category"] = "疾病负担数据"
+            d_meta["record_count"] = db.query(AdvancedDiseaseTransition).count()
+            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
+            for r in records:
+                preview_data.append({
+                    "region": r.location_name,
+                    "year": r.year,
+                    "metric": r.cause_name,
+                    "value": r.val,
+                    "source": "GBD 2019"
+                })
+        elif dataset_id.startswith("risk_"):
+            records = db.query(AdvancedRiskCloud).limit(limit).all()
+            d_meta["category"] = "风险因素数据"
+            d_meta["record_count"] = db.query(AdvancedRiskCloud).count()
+            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
+            for r in records:
+                preview_data.append({
+                    "region": r.location_name,
+                    "year": r.year,
+                    "metric": r.rei_name,
+                    "value": r.paf,
+                    "source": "GBD 2019"
+                })
+        elif dataset_id.startswith("resource_"):
+            records = db.query(AdvancedResourceEfficiency).limit(limit).all()
+            d_meta["category"] = "卫生资源效率数据"
+            d_meta["record_count"] = db.query(AdvancedResourceEfficiency).count()
+            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
+            for r in records:
+                preview_data.append({
+                    "region": r.location_name,
+                    "year": r.year,
+                    "metric": "DEA 效率",
+                    "value": r.dea_efficiency if r.dea_efficiency else 0,
+                    "source": "WDI / Local"
+                })
+        else:
+            return {"status": "error", "msg": "未知数据集 ID"}
+
+        if preview_data:
+            d_meta["year_min"] = min([r["year"] for r in preview_data])
+            d_meta["year_max"] = max([r["year"] for r in preview_data])
+
+        return {
+            "status": "success",
+            "dataset": d_meta,
+            "preview": preview_data
+        }
+    except Exception as e:
+        from utils.logger import logger
+        logger.exception("获取数据集详情失败")
+        return {"status": "error", "msg": str(e)}
+
 @app.get("/api/disease_simulation")
 async def get_disease_simulation(years: int = 17, region: str = "China"):
     try:
@@ -178,6 +257,172 @@ async def get_disease_simulation(years: int = 17, region: str = "China"):
         from utils.logger import logger
         logger.exception("预测模拟失败")
         return {"status": "error", "msg": str(e)}
+
+@app.get("/api/spatial_analysis")
+async def get_spatial_analysis(region: str = "成都市", threshold_km: float = 10.0):
+    try:
+        from config.settings import SETTINGS
+        import os
+        import json
+        import time
+        
+        # 增加本地缓存机制，减少高德API调用
+        cache_file = os.path.join(SETTINGS.DATA_DIR, "processed", f"spatial_cache_{region}.json")
+        try:
+            if os.path.exists(cache_file):
+                file_mtime = os.path.getmtime(cache_file)
+                current_time = time.time()
+                # 缓存有效期设为 30 天 (不频繁变化的数据可以存久一点)
+                if current_time - file_mtime < 30 * 86400:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cached_data = json.load(f)
+                        return cached_data
+                else:
+                    # 缓存过期，删除它
+                    os.remove(cache_file)
+        except Exception as e:
+            from utils.logger import logger
+            logger.warning(f"读取或清理空间分析缓存失败: {e}")
+
+        from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
+        from modules.analysis.advanced_algorithms import HealthMathModels
+        import pandas as pd
+        
+        # 1. 获取供给端和需求端数据
+        supply_df = fetch_hospital_pois(city=region, keyword="三甲医院")
+        demand_df = fetch_community_demand(city=region)
+        
+        if supply_df.empty or demand_df.empty:
+            return {"status": "error", "msg": f"未能获取 {region} 的微观地理数据"}
+            
+        # 2. 调用 2SFCA 算法
+        access_scores = HealthMathModels.calculate_2sfca(
+            supply_df, demand_df, threshold_km=threshold_km, use_network_distance=True
+        )
+        demand_df['accessibility_score'] = access_scores
+        
+        # 3. 构造前端需要的图表数据（增加坐标点用于热力图/散点图展示）
+        labels = demand_df['name'].tolist()
+        scores = demand_df['accessibility_score'].round(4).tolist()
+        
+        geo_points = []
+        for _, row in demand_df.iterrows():
+            geo_points.append({
+                "name": row['name'],
+                "value": [row['lon'], row['lat'], round(row['accessibility_score'], 4)]
+            })
+        
+        result_data = {
+            "status": "success",
+            "region": region,
+            "chart_data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": f"{region} 各区空间可及性指数 (2SFCA)",
+                    "data": scores,
+                    "backgroundColor": "#1890ff"
+                }],
+                "geo_points": geo_points
+            }
+        }
+        
+        # 保存到缓存
+        try:
+            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(result_data, f, ensure_ascii=False)
+        except Exception as e:
+            from utils.logger import logger
+            logger.warning(f"保存空间分析缓存失败: {e}")
+            
+        return result_data
+    except Exception as e:
+        from utils.logger import logger
+        logger.exception("微观空间分析失败")
+        return {"status": "error", "msg": str(e)}
+
+@app.get("/api/news")
+async def get_health_news():
+    """获取最新健康资讯 (Mediastack API) 带缓存"""
+    import os
+    import json
+    import time
+    from config.settings import SETTINGS
+    import requests
+    
+    cache_file = os.path.join(SETTINGS.DATA_DIR, "processed", "news_cache.json")
+    
+    # 检查缓存是否存在且是3天内的
+    try:
+        if os.path.exists(cache_file):
+            file_mtime = os.path.getmtime(cache_file)
+            current_time = time.time()
+            # 如果缓存文件是3天(259200秒)内生成的，直接返回缓存
+            if current_time - file_mtime < 259200:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cached_data = json.load(f)
+                    return {"status": "success", "news": cached_data, "source": "cache"}
+            else:
+                # 缓存过期，删除它
+                os.remove(cache_file)
+    except Exception as e:
+        from utils.logger import logger
+        logger.warning(f"读取或清理新闻缓存失败: {e}")
+
+    try:
+        news_config = SETTINGS.SEARCH_ENGINE_CONFIG.get("news_api", {})
+        api_key = news_config.get("api_key")
+        if not api_key:
+            return {"status": "error", "msg": "未配置 NewsAPI Key"}
+            
+        # Mediastack 参数
+        # keywords: health, disease, WHO
+        # categories: health
+        # languages: en, zh (可选)
+        url = f"{news_config['api_url']}?access_key={api_key}&categories=health&limit=10"
+        
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            articles = data.get("data", [])
+            news_list = []
+            for article in articles:
+                if article.get("title"):
+                    news_list.append({
+                        "title": article.get("title"),
+                        "description": article.get("description") or "点击查看详情",
+                        "url": article.get("url"),
+                        "source": article.get("source", "Health News"),
+                        "publishedAt": article.get("published_at", "")
+                    })
+            
+            # 保存到缓存
+            try:
+                os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(news_list, f, ensure_ascii=False)
+            except Exception as e:
+                from utils.logger import logger
+                logger.warning(f"保存新闻缓存失败: {e}")
+                
+            return {"status": "success", "news": news_list, "source": "api"}
+        else:
+            return {"status": "error", "msg": f"NewsAPI 返回状态码: {response.status_code}, {response.text}"}
+    except Exception as e:
+        from utils.logger import logger
+        logger.exception("获取健康资讯失败")
+        return {"status": "error", "msg": str(e)}
+
+@app.get("/api/geojson/chengdu")
+async def get_chengdu_geojson():
+    import os
+    from config.settings import SETTINGS
+    # 在 settings 中最好补充 GEOJSON_PATH_CHENGDU，这里硬编码先作为演示
+    file_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "chengdu.geojson")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/json")
+    return {"status": "error", "msg": "Chengdu GeoJSON file not found"}
 
 @app.get("/api/admin/settings")
 async def get_sys_settings():

@@ -900,11 +900,11 @@
             <span>健康数据洞察平台</span>
         </div>
         <div class="main-nav">
-            <a href="index.html" class="nav-item" data-nav="index.html">
+            <a href="/use/index.html" class="nav-item" data-nav="index.html">
                 <span>🏠</span>
                 <span>首页</span>
             </a>
-            <a href="datasets.html" class="nav-item" data-nav="datasets.html">
+            <a href="/use/datasets.html" class="nav-item" data-nav="datasets.html">
                 <span>📁</span>
                 <span>数据集</span>
             </a>
@@ -913,19 +913,19 @@
                 <span>数据分析</span>
                 <span class="dropdown-icon">▼</span>
                 <div class="dropdown-menu">
-                    <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
+                    <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
                         <span>🌍</span>
                         <span>宏观分析</span>
                     </a>
-                    <a href="meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
+                    <a href="/use/meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
                         <span>🏛️</span>
                         <span>中观分析</span>
                     </a>
-                    <a href="micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
+                    <a href="/use/micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
                         <span>👥</span>
                         <span>微观分析</span>
                     </a>
-                    <a href="prediction.html" class="dropdown-item active" data-nav="prediction.html">
+                    <a href="/use/prediction.html" class="dropdown-item active" data-nav="prediction.html">
                         <span>🔮</span>
                         <span>预测模拟</span>
                     </a>
@@ -935,12 +935,14 @@
         <div class="user-actions">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索数据、指标、国家..." aria-label="搜索数据、指标、国家...">
+                <input type="text" placeholder="搜索模型、指标..." aria-label="搜索模型、指标...">
             </div>
-            <a href="login.html" class="nav-item">登录</a>
-            <a href="register.html" class="nav-item">注册</a>
-            <a href="account-center.html" class="nav-item">个人中心</a>
-            <a href="/admin/dashboard.html" class="nav-item">管理端</a>
+            <!-- 未登录时显示 -->
+            <a class="nav-item guest-only" href="/use/login.html">登录</a>
+            <a class="nav-item guest-only" href="/use/register.html">注册</a>
+            <!-- 已登录时显示 -->
+            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
+            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
         </div>
     </nav>
 
@@ -2142,6 +2144,22 @@
                 dropdown.classList.remove('active');
             }
         })();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update auth state in nav
+            const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
+                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'inline-flex');
+                    if (user.role === 'admin') {
+                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
+                    }
+                } catch (e) {}
+            }
+        });
     </script>
 </body>
 

@@ -163,7 +163,7 @@ class Settings:
         "geocode_url": "https://restapi.amap.com/v3/geocode/geo"
     }
 
-    #搜索引擎API配置
+    # 搜索引擎API配置
     SEARCH_ENGINE_CONFIG = {
         "type": "serpapi",  # 可选 "serpapi" 或 "bing"
         "serpapi": {
@@ -178,6 +178,10 @@ class Settings:
             "api_url": "https://api.bing.microsoft.com/v7.0/search",
             "result_num": 5,
             "timeout": 10
+        },
+        "news_api": {
+            "api_key": os.getenv("NEWS_API_KEY", "CD3422DBBC0710A106D3C7178080DF4A"),  # Mediastack API Key
+            "api_url": "http://api.mediastack.com/v1/news"
         }
     }
 

@@ -48,7 +48,7 @@ body {
 
 /* 顶部导航 */
 .top-nav {
-    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    background: linear-gradient(135deg, var(--nav-bg-start) 0%, var(--nav-bg-end) 100%);
     color: #fff;
     padding: 0 24px;
     height: 64px;
