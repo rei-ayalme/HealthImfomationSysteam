@@ -1,6 +1,6 @@
 # main.py
 import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +43,12 @@ async def get_dataset(db: Session = Depends(get_db)):
         
         # 1. 获取疾病负担数据
         disease_data = db.query(AdvancedDiseaseTransition).limit(20).all()
+        # 预先计算 DALYs 归一化 (假定当前取出的最大值作为基准)
+        max_dalys = max([d.val for d in disease_data]) if disease_data else 1.0
+        if max_dalys == 0: max_dalys = 1.0
+        
         for i, d in enumerate(disease_data):
+            z_weight = round(0.1 + 0.9 * (d.val / max_dalys), 4)
             items.append({
                 "id": f"disease_{d.id}",
                 "name": f"{d.cause_name} 疾病负担",
@@ -55,6 +60,7 @@ async def get_dataset(db: Session = Depends(get_db)):
                 "year": d.year,
                 "value": d.val,
                 "unit": 'DALYs',
+                "z_weight": z_weight, # 新增 3D 渲染权重
                 "status": "success"
             })
             
@@ -217,13 +223,23 @@ async def get_disease_simulation(years: int = 17, region: str = "China"):
         target_causes = ["Cardiovascular diseases", "Neoplasms", "Diabetes", "Mental disorders"]
         display_names = ["心血管疾病", "肿瘤", "糖尿病", "精神疾病"]
         
+        # 为了防止数据为空时前端无数据渲染，如果 spectrum_df 是空的，抛出警告，不生成伪造的 baseline
+        if spectrum_df.empty:
+            from utils.logger import log_missing_data
+            log_missing_data("DiseaseSimulationAPI", "Disease Burden Baseline", 2023, region, "缺少该地区的疾病谱系数据作为预测基线")
+            return {"status": "error", "msg": f"未能找到 {region} 的疾病负担基线数据，无法进行 SDE 预测"}
+
         for idx, cause in enumerate(target_causes):
             # 获取该疾病的当前负担基线
-            current_burden = 100.0
-            if not spectrum_df.empty:
-                cause_df = spectrum_df[spectrum_df['cause_name'].str.contains(cause.split()[0], na=False, case=False)]
-                if not cause_df.empty:
-                    current_burden = float(cause_df.sort_values(by='year').iloc[-1]['val'])
+            current_burden = 0.0
+            cause_df = spectrum_df[spectrum_df['cause_name'].str.contains(cause.split()[0], na=False, case=False)]
+            if not cause_df.empty:
+                current_burden = float(cause_df.sort_values(by='year').iloc[-1]['val'])
+            else:
+                # 记录该特定疾病在当前地区的缺失情况，跳过该疾病的模拟
+                from utils.logger import log_missing_data
+                log_missing_data("DiseaseSimulationAPI", f"{cause} Baseline", 2023, region, f"缺少 {cause} 负担基线数据")
+                continue
             
             # 调用 SDE 模型生成未来趋势
             pred_df = da.run_sde_model_simple(cause, current_burden, years_ahead=years)
@@ -258,8 +274,77 @@ async def get_disease_simulation(years: int = 17, region: str = "China"):
         logger.exception("预测模拟失败")
         return {"status": "error", "msg": str(e)}
 
+def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str):
+    """后台运行实际的空间分析并写入缓存"""
+    try:
+        from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
+        from modules.analysis.advanced_algorithms import HealthMathModels
+        import pandas as pd
+        import json
+        import os
+        
+        # 1. 获取供给端和需求端数据
+        supply_df = fetch_hospital_pois(city=region, keyword="三甲医院")
+        demand_df = fetch_community_demand(city=region)
+        
+        if supply_df.empty or demand_df.empty:
+            result_data = {"status": "error", "msg": f"未能获取 {region} 的微观地理数据"}
+        else:
+            # 2. 调用 2SFCA 算法
+            access_scores = HealthMathModels.calculate_2sfca(
+                supply_df, demand_df, threshold_km=threshold_km, use_network_distance=True
+            )
+            demand_df['accessibility_score'] = access_scores
+            
+            # 3. 构造前端需要的图表数据（增加坐标点用于热力图/散点图展示）
+            labels = demand_df['name'].tolist()
+            scores = demand_df['accessibility_score'].round(4).tolist()
+            
+            # 为了支持 3D 可视化，将 2SFCA 评分归一化为 Z 轴权重 (0.1 ~ 1.0)
+            max_score = max(scores) if scores and max(scores) > 0 else 1.0
+            min_score = min(scores) if scores else 0.0
+            range_score = max_score - min_score if max_score > min_score else 1.0
+            
+            geo_points = []
+            for _, row in demand_df.iterrows():
+                score = round(row['accessibility_score'], 4)
+                z_weight = round(0.1 + 0.9 * ((score - min_score) / range_score), 4)
+                geo_points.append({
+                    "name": row['name'],
+                    "value": [row['lon'], row['lat'], score],
+                    "z_weight": z_weight
+                })
+            
+            result_data = {
+                "status": "success",
+                "region": region,
+                "chart_data": {
+                    "labels": labels,
+                    "datasets": [{
+                        "label": f"{region} 各区空间可及性指数 (2SFCA)",
+                        "data": scores,
+                        "backgroundColor": "#1890ff"
+                    }],
+                    "geo_points": geo_points
+                }
+            }
+        
+        # 写入缓存文件供下次读取
+        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(result_data, f, ensure_ascii=False)
+            
+    except Exception as e:
+        from utils.logger import logger
+        logger.exception("后台执行微观空间分析失败")
+        # 写入失败结果缓存，避免前端无限轮询
+        error_data = {"status": "error", "msg": str(e)}
+        os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(error_data, f, ensure_ascii=False)
+
 @app.get("/api/spatial_analysis")
-async def get_spatial_analysis(region: str = "成都市", threshold_km: float = 10.0):
+async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = "成都市", threshold_km: float = 10.0):
     try:
         from config.settings import SETTINGS
         import os
@@ -272,7 +357,7 @@ async def get_spatial_analysis(region: str = "成都市", threshold_km: float = 
             if os.path.exists(cache_file):
                 file_mtime = os.path.getmtime(cache_file)
                 current_time = time.time()
-                # 缓存有效期设为 30 天 (不频繁变化的数据可以存久一点)
+                # 缓存有效期设为 30 天
                 if current_time - file_mtime < 30 * 86400:
                     with open(cache_file, "r", encoding="utf-8") as f:
                         cached_data = json.load(f)
@@ -284,61 +369,19 @@ async def get_spatial_analysis(region: str = "成都市", threshold_km: float = 
             from utils.logger import logger
             logger.warning(f"读取或清理空间分析缓存失败: {e}")
 
-        from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
-        from modules.analysis.advanced_algorithms import HealthMathModels
-        import pandas as pd
+        # 如果没有缓存，则将繁重的计算任务放入 BackgroundTasks 后台执行
+        background_tasks.add_task(run_spatial_analysis_task, region, threshold_km, cache_file)
         
-        # 1. 获取供给端和需求端数据
-        supply_df = fetch_hospital_pois(city=region, keyword="三甲医院")
-        demand_df = fetch_community_demand(city=region)
-        
-        if supply_df.empty or demand_df.empty:
-            return {"status": "error", "msg": f"未能获取 {region} 的微观地理数据"}
-            
-        # 2. 调用 2SFCA 算法
-        access_scores = HealthMathModels.calculate_2sfca(
-            supply_df, demand_df, threshold_km=threshold_km, use_network_distance=True
-        )
-        demand_df['accessibility_score'] = access_scores
-        
-        # 3. 构造前端需要的图表数据（增加坐标点用于热力图/散点图展示）
-        labels = demand_df['name'].tolist()
-        scores = demand_df['accessibility_score'].round(4).tolist()
-        
-        geo_points = []
-        for _, row in demand_df.iterrows():
-            geo_points.append({
-                "name": row['name'],
-                "value": [row['lon'], row['lat'], round(row['accessibility_score'], 4)]
-            })
-        
-        result_data = {
-            "status": "success",
-            "region": region,
-            "chart_data": {
-                "labels": labels,
-                "datasets": [{
-                    "label": f"{region} 各区空间可及性指数 (2SFCA)",
-                    "data": scores,
-                    "backgroundColor": "#1890ff"
-                }],
-                "geo_points": geo_points
-            }
+        # 立即返回接收状态，前端可以展示“正在分析中，请稍后刷新...”
+        return {
+            "status": "processing",
+            "msg": f"正在后台调度高德API及进行2SFCA路网计算，这可能需要几十秒时间，请稍后自动重试...",
+            "region": region
         }
         
-        # 保存到缓存
-        try:
-            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-            with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(result_data, f, ensure_ascii=False)
-        except Exception as e:
-            from utils.logger import logger
-            logger.warning(f"保存空间分析缓存失败: {e}")
-            
-        return result_data
     except Exception as e:
         from utils.logger import logger
-        logger.exception("微观空间分析失败")
+        logger.exception("触发微观空间分析任务失败")
         return {"status": "error", "msg": str(e)}
 
 @app.get("/api/news")

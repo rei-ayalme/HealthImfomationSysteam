@@ -185,6 +185,13 @@ class Settings:
         }
     }
 
+    # 公共卫生意识 (HLI) 模块数据映射
+    PUBLIC_HEALTH_LITERACY_MAPPING = {
+        "functional": ["basic_literacy", "reading_comprehension", "health_info_access"],
+        "interactive": ["communication_skills", "social_support_seeking", "decision_making"],
+        "critical": ["information_appraisal", "risk_perception", "system_navigation"]
+    }
+
 
 SETTINGS = Settings()
 

@@ -106,13 +106,15 @@ class HealthDataPipeline:
         try:
             raw_gbd_data = pd.read_csv("data/raw/GBD.csv")
         except FileNotFoundError:
-            logger.warning("未找到 GBD.csv，使用模拟数据。")
+            from utils.logger import log_missing_data
+            log_missing_data("GBD_Pipeline", "All Metrics", 2019, "Global", "未找到 GBD.csv 真实文件")
             raw_gbd_data = pd.DataFrame()
 
         try:
             raw_wdi_data = pd.read_csv("data/raw/WDI.csv")
         except FileNotFoundError:
-            logger.warning("未找到 WDI.csv，使用模拟数据。")
+            from utils.logger import log_missing_data
+            log_missing_data("WDI_Pipeline", "All Metrics", 2019, "Global", "未找到 WDI.csv 真实文件")
             raw_wdi_data = pd.DataFrame()
 
         if not raw_gbd_data.empty:
@@ -155,13 +157,9 @@ class HealthDataPipeline:
             
             # 如果从 GBD 中抽不到，使用模拟回退
             if raw_risk_data.empty:
-                raw_risk_data = pd.DataFrame({
-                    'Location': ['China', 'China', 'USA'],
-                    'Year': [2019, 2019, 2019],
-                    'Risk Name': ['Smoking', 'Ambient particulate matter pollution', 'High BMI'],
-                    'PAF': [0.15, 0.08, 0.20],
-                    'exposure_category': ['高', '中', '极高']
-                })
+                from utils.logger import log_missing_data
+                log_missing_data("GBD_Pipeline", "Risk/PAF", 2019, "Global", "从 GBD 中未能提取出有效的风险数据字段")
+                raw_risk_data = pd.DataFrame(columns=['Location', 'Year', 'Risk Name', 'PAF', 'exposure_category'])
             else:
                 raw_risk_data = raw_risk_data.rename(columns=col_mapping)
                 # 尝试找到风险名称列
@@ -179,32 +177,15 @@ class HealthDataPipeline:
                 raw_risk_data['exposure_category'] = '中' # 临时填充
                 
             if raw_spectrum_data.empty:
-                raw_spectrum_data = pd.DataFrame({
-                    'Location': ['China', 'China', 'USA'],
-                    'Year': [2019, 2019, 2019],
-                    'cause': [400, 600, 600],
-                    'Cause Name': ['Tuberculosis', 'Cardiovascular diseases', 'Cardiovascular diseases'],
-                    'Value': [1200.0, 5000.5, 4800.0]
-                })
+                from utils.logger import log_missing_data
+                log_missing_data("GBD_Pipeline", "Disease Spectrum", 2019, "Global", "从 GBD 中未能提取出有效的疾病谱系字段")
+                raw_spectrum_data = pd.DataFrame(columns=['Location', 'Year', 'cause', 'Cause Name', 'Value'])
             else:
                 raw_spectrum_data = raw_spectrum_data.rename(columns=col_mapping)
                 raw_spectrum_data['cause'] = 600 # 临时填充
         else:
-            raw_risk_data = pd.DataFrame({
-                'Location': ['China', 'China', 'USA'],
-                'Year': [2019, 2019, 2019],
-                'Risk Name': ['Smoking', 'Ambient particulate matter pollution', 'High BMI'],
-                'PAF': [0.15, 0.08, 0.20],
-                'exposure_category': ['高', '中', '极高']  # 用于触发云模型
-            })
-
-            raw_spectrum_data = pd.DataFrame({
-                'Location': ['China', 'China', 'USA'],
-                'Year': [2019, 2019, 2019],
-                'cause': [400, 600, 600],  # 400级别传染病, 600级别非传染
-                'Cause Name': ['Tuberculosis', 'Cardiovascular diseases', 'Cardiovascular diseases'],
-                'Value': [1200.0, 5000.5, 4800.0]
-            })
+            raw_risk_data = pd.DataFrame(columns=['Location', 'Year', 'Risk Name', 'PAF', 'exposure_category'])
+            raw_spectrum_data = pd.DataFrame(columns=['Location', 'Year', 'cause', 'Cause Name', 'Value'])
 
         # 构造资源数据
         if not raw_wdi_data.empty and 'Country Name' in raw_wdi_data.columns and 'Indicator Name' in raw_wdi_data.columns:
@@ -230,14 +211,9 @@ class HealthDataPipeline:
                 })
             raw_resources_data = pd.DataFrame(wdi_list)
         else:
-            raw_resources_data = pd.DataFrame({
-                'Location': ['China', 'USA', 'India'],
-                'Year': [2019, 2019, 2019],
-                'physicians': [2.2, 2.6, 0.9],
-                'beds': [4.3, 2.9, 0.5],
-                'health expenditure per capita': [500, 10000, 60],
-                'hale': [68.5, 66.1, 60.3]
-            })
+            from utils.logger import log_missing_data
+            log_missing_data("WDI_Pipeline", "Resource Capacity", 2019, "Global", "WDI 资源数据不足")
+            raw_resources_data = pd.DataFrame(columns=['Location', 'Year', 'physicians', 'beds', 'health expenditure per capita', 'hale'])
 
         raw_data_dict = {
             'gbd_disease': raw_spectrum_data,
@@ -305,6 +281,14 @@ class HealthDataPipeline:
             
             if not supply_df.empty and not demand_df.empty:
                 logger.info(f"-> 成功获取 {len(supply_df)} 家三甲医院，{len(demand_df)} 个社区节点，开始计算 2SFCA 指数...")
+                
+                # 注意：不再使用 random 随机模拟人口等，如果缺失，抛出日志并放弃或使用真实均值填补
+                if 'population' not in demand_df.columns:
+                    from utils.logger import log_missing_data
+                    log_missing_data("HealthMathModels", "2SFCA", 2024, "Chengdu", "缺失网格人口数据")
+                    # 记录完缺失后我们仍然给一个默认常量以保证流程能跑通，但不使用随机数造假
+                    demand_df['population'] = 5000
+                    
                 # 传入 use_network_distance=True 使用真实高德路网计算可及性
                 access_scores = HealthMathModels.calculate_2sfca(supply_df, demand_df, threshold_km=10.0, use_network_distance=True)
                 demand_df['2sfca_access_score'] = access_scores

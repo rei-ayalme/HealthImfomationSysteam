@@ -1399,78 +1399,35 @@
                 if (!response.ok) throw new Error('API error');
                 
                 const data = await response.json();
+                
+                if (data.status === "processing") {
+                    // 后端正在异步处理，给出提示并允许前端通过轮询或手动刷新获取
+                    spatialChart.showLoading({text: data.msg, textColor: '#1890ff', maskColor: 'rgba(255, 255, 255, 0.9)'});
+                    spatialMapChart.showLoading({text: data.msg, textColor: '#1890ff', maskColor: 'rgba(255, 255, 255, 0.9)'});
+                    // 模拟简单的轮询（每 10 秒请求一次，最多 6 次）
+                    let retryCount = 0;
+                    const timer = setInterval(async () => {
+                        retryCount++;
+                        if (retryCount > 6) {
+                            clearInterval(timer);
+                            spatialChart.showLoading({text: '计算超时，请稍后手动重试', textColor: '#faad14'});
+                            return;
+                        }
+                        const res = await fetch('http://localhost:8000/api/spatial_analysis?region=成都市');
+                        const rData = await res.json();
+                        if (rData.status === 'success') {
+                            clearInterval(timer);
+                            renderSpatialCharts(rData);
+                        } else if (rData.status === 'error') {
+                            clearInterval(timer);
+                            spatialChart.showLoading({text: '计算失败: ' + rData.msg, textColor: '#f5222d'});
+                        }
+                    }, 10000);
+                    return;
+                }
+                
                 if (data.status === "success" && data.chart_data) {
-                    const chartData = data.chart_data;
-                    
-                    // 1. 柱状图
-                    const optionBar = {
-                        tooltip: { trigger: 'axis', formatter: '{b} <br/> 可及性指数: {c}' },
-                        grid: { left: '10%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
-                        xAxis: { type: 'category', data: chartData.labels, axisLabel: { interval: 0, rotate: 30 } },
-                        yAxis: { type: 'value', name: '空间可及性指数' },
-                        series: [{
-                            name: '可及性', type: 'bar', data: chartData.datasets[0].data,
-                            itemStyle: { color: chartData.datasets[0].backgroundColor || '#1890ff', borderRadius: [4, 4, 0, 0] },
-                            label: { show: true, position: 'top', formatter: '{c}' }
-                        }]
-                    };
-                    spatialChart.setOption(optionBar);
-
-                    // 2. 地图/热力图
-                    const mapData = chartData.geo_points || []; // [{"name": "锦江区", "value": [lon, lat, score]}, ...]
-                    
-                    // 提取最大值以设定 visualMap
-                    let maxScore = 0.05;
-                    if (mapData.length > 0) {
-                        maxScore = Math.max(...mapData.map(item => item.value[2])) || 0.05;
-                    }
-
-                    // 成都市中心经纬度大约为 104.06, 30.67
-                    const optionMap = {
-                        title: { text: '成都市各区空间可及性分布', left: 'center', textStyle: { fontSize: 14 } },
-                        tooltip: {
-                            trigger: 'item',
-                            formatter: function (params) {
-                                if (params.value && params.value.length === 3) {
-                                    return params.name + ' : ' + params.value[2];
-                                }
-                                return params.name;
-                            }
-                        },
-                        visualMap: {
-                            min: 0,
-                            max: maxScore,
-                            calculable: true,
-                            inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] },
-                            text: ['高', '低'],
-                            left: 'right',
-                            top: 'bottom'
-                        },
-                        geo: {
-                            map: 'chengdu',
-                            roam: true,
-                            zoom: 1.2,
-                            center: [104.06, 30.67], // 强制设置地图中心点，防止 GeoJSON 的偏移
-                            label: { show: true, color: '#333', fontSize: 10 },
-                            itemStyle: { areaColor: '#f4f4f4', borderColor: '#ccc' },
-                            emphasis: { itemStyle: { areaColor: '#ddd' } }
-                        },
-                        series: [
-                            {
-                                name: '可及性',
-                                type: 'effectScatter', // 改用 effectScatter 增强热力视觉
-                                coordinateSystem: 'geo',
-                                data: mapData,
-                                symbolSize: function (val) {
-                                    // 根据分数动态调整散点大小，适当放大以便观察
-                                    return Math.max(12, (val[2] / maxScore) * 35);
-                                },
-                                itemStyle: { shadowBlur: 10, shadowColor: '#333' }
-                            }
-                        ]
-                    };
-                    spatialMapChart.setOption(optionMap);
-
+                    renderSpatialCharts(data);
                 } else {
                     console.error('获取空间分析数据失败:', data.msg);
                     spatialChart.showLoading({text: '获取数据失败，请检查后端或高德API配额', textColor: '#f5222d'});
@@ -1481,11 +1438,83 @@
                 spatialChart.showLoading({text: '网络请求失败，请确保后端服务正常运行', textColor: '#f5222d'});
                 spatialMapChart.showLoading({text: '渲染地图失败', textColor: '#f5222d'});
             } finally {
-                setTimeout(() => {
-                    spatialChart.hideLoading();
-                    spatialMapChart.hideLoading();
-                }, 1000);
+                // 如果不是在 processing 状态，隐藏 loading (渲染函数内自己隐藏)
             }
+        }
+        
+        function renderSpatialCharts(data) {
+            const chartData = data.chart_data;
+            
+            // 1. 柱状图
+            const optionBar = {
+                tooltip: { trigger: 'axis', formatter: '{b} <br/> 可及性指数: {c}' },
+                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
+                xAxis: { type: 'category', data: chartData.labels, axisLabel: { interval: 0, rotate: 30 } },
+                yAxis: { type: 'value', name: '空间可及性指数' },
+                series: [{
+                    name: '可及性', type: 'bar', data: chartData.datasets[0].data,
+                    itemStyle: { color: chartData.datasets[0].backgroundColor || '#1890ff', borderRadius: [4, 4, 0, 0] },
+                    label: { show: true, position: 'top', formatter: '{c}' }
+                }]
+            };
+            spatialChart.hideLoading();
+            spatialChart.setOption(optionBar);
+
+            // 2. 地图/热力图
+            const mapData = chartData.geo_points || []; // [{"name": "锦江区", "value": [lon, lat, score], "z_weight": 0.5}, ...]
+            
+            // 提取最大值以设定 visualMap
+            let maxScore = 0.05;
+            if (mapData.length > 0) {
+                maxScore = Math.max(...mapData.map(item => item.value[2])) || 0.05;
+            }
+
+            // 成都市中心经纬度大约为 104.06, 30.67
+            const optionMap = {
+                title: { text: '成都市各区空间可及性分布', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        if (params.value && params.value.length === 3) {
+                            return params.name + ' : ' + params.value[2] + '<br>归一化权重 (Z轴): ' + (params.data.z_weight || 0);
+                        }
+                        return params.name;
+                    }
+                },
+                visualMap: {
+                    min: 0,
+                    max: maxScore,
+                    calculable: true,
+                    inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] },
+                    text: ['高', '低'],
+                    left: 'right',
+                    top: 'bottom'
+                },
+                geo: {
+                    map: 'chengdu',
+                    roam: true,
+                    zoom: 1.2,
+                    center: [104.06, 30.67], // 强制设置地图中心点，防止 GeoJSON 的偏移
+                    label: { show: true, color: '#333', fontSize: 10 },
+                    itemStyle: { areaColor: '#f4f4f4', borderColor: '#ccc' },
+                    emphasis: { itemStyle: { areaColor: '#ddd' } }
+                },
+                series: [
+                    {
+                        name: '可及性',
+                        type: 'effectScatter', // 改用 effectScatter 增强热力视觉
+                        coordinateSystem: 'geo',
+                        data: mapData,
+                        symbolSize: function (val) {
+                            // 根据分数动态调整散点大小，适当放大以便观察
+                            return Math.max(12, (val[2] / maxScore) * 35);
+                        },
+                        itemStyle: { shadowBlur: 10, shadowColor: '#333' }
+                    }
+                ]
+            };
+            spatialMapChart.hideLoading();
+            spatialMapChart.setOption(optionMap);
         }
 
         // PAF归因分析图

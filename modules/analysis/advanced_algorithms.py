@@ -29,6 +29,11 @@ class HealthMathModels:
         返回:
             efficiencies: 包含每个 DMU (决策单元) 效率得分的数组 [0, 1]
         """
+        if X.size == 0 or Y.size == 0:
+            from utils.logger import log_missing_data
+            log_missing_data("HealthMathModels", "DEA Efficiency", 2024, "Global", "投入或产出矩阵为空")
+            return np.array([])
+
         n_dmus, m_inputs = X.shape
         _, s_outputs = Y.shape
         efficiencies = np.zeros(n_dmus)
@@ -103,6 +108,10 @@ class HealthMathModels:
         返回:
             与 demand_df 索引对应的空间可及性指数序列
         """
+        if supply_df.empty or demand_df.empty:
+            from utils.logger import log_missing_data
+            log_missing_data("HealthMathModels", "2SFCA", 2024, "Chengdu", "供需节点数据为空")
+            return pd.Series(np.zeros(len(demand_df)), index=demand_df.index)
         from scipy.spatial.distance import cdist
 
         # 高斯距离衰减函数
