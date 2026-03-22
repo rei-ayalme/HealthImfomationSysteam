@@ -11,7 +11,7 @@ from config.settings import SETTINGS
 
 # 定义健康数据验证模式
 HealthDataSchema = pa.DataFrameSchema({
-    "year": pa.Column(int, pa.Check.ge(1900), pa.Check.le(2100), coerce=True),
+    "year": pa.Column(int, pa.Check.in_range(1900, 2100), coerce=True),
     "population": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
     "physicians": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
     "nurses": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
@@ -261,8 +261,15 @@ class HealthDataPreprocessor(IPreprocessor):
                     df = schema_to_validate.validate(df)
             except pa.errors.SchemaError as e:
                 self.logger.warning(f"数据 schema 校验发现异常，部分数据可能不符合规范: {e}")
-                # 可选：剔除不符合规范的数据或记录日志
-                # df = e.failure_cases... 暂时仅做日志记录，防止阻断流程
+                # 将异常情况进行清理：对所有错误的数据点填充为 0 或者 np.nan
+                if hasattr(e, 'failure_cases'):
+                    failure_cases = e.failure_cases
+                    for _, row in failure_cases.iterrows():
+                        idx = row['index']
+                        col = row['column']
+                        if idx in df.index and col in df.columns:
+                            df.at[idx, col] = np.nan
+                self.logger.info("已尝试将不符合 Schema 的值替换为空值(NaN)，以防止阻断后续计算")
             except Exception as e:
                 self.logger.warning(f"Schema 校验时发生未知错误: {e}")
             

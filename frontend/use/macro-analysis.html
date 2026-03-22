@@ -743,9 +743,13 @@
                 <button id="exportBtn" class="export-btn" onclick="exportData()">导出数据</button>
                 <button id="refreshBtn" class="refresh-btn" onclick="updateCharts()">刷新数据</button>
             </div>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标">
+            </div>
             <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html">登录</a>
-            <a class="nav-item guest-only" href="/use/register.html">注册</a>
+            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
+            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
             <!-- 已登录时显示 -->
             <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
             <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
@@ -871,38 +875,65 @@
             </div>
 
             <div class="filter-section">
-                <div class="filter-title">📊 健康指标</div>
-                <div class="checkbox-group">
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 预期寿命
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> DALYs
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 死亡率
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 发病率
-                    </label>
+                <div class="filter-title">📊 健康指标分析 (实时)</div>
+                
+                <div class="indicator-card skeleton" id="card-dalys" onclick="window.dispatchEvent(new CustomEvent('indicator-click', {detail: 'dalys'}))">
+                    <div class="card-header">
+                        <span>核心疾病负担 (DALYs)</span>
+                    </div>
+                    <div class="card-body">
+                        <h2 id="metric-dalys" class="metric-value">--</h2>
+                        <span class="metric-unit">总值</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="trend">
+                            <i></i> <span id="metric-dalys-trend">--%</span>
+                        </span>
+                    </div>
+                    <div id="sparkline-dalys" class="sparkline-container"></div>
                 </div>
-            </div>
+                
+                <div class="indicator-card skeleton" id="card-top-disease" onclick="window.dispatchEvent(new CustomEvent('indicator-click', {detail: 'disease'}))">
+                    <div class="card-header">
+                        <span>当期高发疾病 Top 1</span>
+                    </div>
+                    <div class="card-body">
+                        <h2 id="metric-disease-name" class="metric-value" style="font-size: 20px;">--</h2>
+                    </div>
+                    <div class="card-footer">
+                        <span class="metric-unit">占比: </span>
+                        <span id="metric-disease-ratio" style="font-weight: 600; color: var(--text-color);">--%</span>
+                    </div>
+                </div>
 
-            <div class="filter-section">
-                <div class="filter-title">🏥 疾病类别</div>
-                <div class="checkbox-group">
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 心血管疾病
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 恶性肿瘤
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 慢性呼吸系统疾病
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 糖尿病
-                    </label>
+                <div class="indicator-card skeleton" id="card-dea" onclick="window.dispatchEvent(new CustomEvent('indicator-click', {detail: 'dea'}))">
+                    <div class="card-header">
+                        <span>综合效率均值 (DEA)</span>
+                    </div>
+                    <div class="card-body">
+                        <h2 id="metric-dea" class="metric-value">--</h2>
+                        <span class="metric-unit">指数</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="trend">
+                            <i></i> <span id="metric-dea-trend">--%</span>
+                        </span>
+                    </div>
+                    <div id="sparkline-dea" class="sparkline-container"></div>
+                </div>
+                
+                <div class="indicator-card skeleton" id="card-prediction" onclick="window.dispatchEvent(new CustomEvent('indicator-click', {detail: 'prediction'}))">
+                    <div class="card-header">
+                        <span>风险预测研判 (SDE)</span>
+                    </div>
+                    <div class="card-body">
+                        <h2 id="metric-pred-rate" class="metric-value" style="color: var(--warning-color);">--</h2>
+                        <span class="metric-unit">预计复合增长</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="metric-unit">高危靶点: </span>
+                        <span id="metric-pred-target" style="font-weight: 600; color: var(--text-color);">--</span>
+                    </div>
                 </div>
             </div>
 
@@ -1323,6 +1354,9 @@
                 }, 2500);
             });
             refreshMacroInsight();
+            const initState = getMacroFilterState();
+            const initRegionCode = initState.geoLevel === 'country' ? mapRegionToBackendCode(initState.countrySelect) : mapRegionToBackendCode(initState.regionSelect);
+            updateSidebarMetrics(initRegionCode, Number(initState.endYear || 2024));
         });
 
         // 带重试机制的数据获取
@@ -1395,6 +1429,139 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        // 当右侧地图点击切换区域时，触发更新左侧指标栏
+        function updateSidebarMetrics(regionName, year) {
+            const safeNum = (v, d = 0) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : d;
+            };
+            const asSparkline = (arr, fallbackBase) => {
+                if (Array.isArray(arr)) {
+                    const cleaned = arr.map(v => safeNum(v, fallbackBase)).filter(v => Number.isFinite(v));
+                    if (cleaned.length >= 2) return cleaned;
+                }
+                return [fallbackBase * 0.96, fallbackBase * 0.98, fallbackBase, fallbackBase * 1.01, fallbackBase * 1.02];
+            };
+
+            // 设置骨架屏状态
+            const cardIds = ['card-dalys', 'card-top-disease', 'card-dea', 'card-prediction'];
+            cardIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('skeleton');
+            });
+
+            // 调用后端 API 获取侧边栏指标
+            fetch(`/api/analysis/metrics?region=${regionName}&year=${year}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Metrics API Error');
+                    return response.json();
+                })
+                .then(res => {
+                    if (res.status === 'success') {
+                        const data = res.data;
+                        const dalysValue = safeNum(data?.dalys?.value, 0);
+                        const dalysTrend = safeNum(data?.dalys?.trend, 0);
+                        const deaValue = safeNum(data?.dea?.value, 0);
+                        const deaTrend = safeNum(data?.dea?.trend, 0);
+                        const predRate = safeNum(data?.prediction?.growth_rate, 0);
+                        const diseaseRatio = safeNum(data?.top_disease?.ratio, 0);
+                        
+                        // 更新 DALYs 卡片
+                        const dalysCard = document.getElementById('card-dalys');
+                        if (dalysCard) {
+                            dalysCard.classList.remove('skeleton', 'disabled');
+                            document.getElementById('metric-dalys').innerText = dalysValue.toLocaleString();
+                            const trendEl = document.getElementById('metric-dalys-trend');
+                            if (trendEl) {
+                                trendEl.innerText = `${Math.abs(dalysTrend)}%`;
+                                trendEl.parentElement.className = dalysTrend > 0 ? 'trend up' : 'trend down';
+                                trendEl.previousElementSibling.innerHTML = dalysTrend > 0 ? '↑' : '↓';
+                            }
+                            if (window.echarts) {
+                                renderSparkline('sparkline-dalys', asSparkline(data?.dalys?.sparkline, dalysValue || 100), dalysTrend > 0 ? '#f5222d' : '#52c41a');
+                            }
+                        }
+
+                        // 更新高发疾病卡片
+                        const diseaseCard = document.getElementById('card-top-disease');
+                        if (diseaseCard) {
+                            diseaseCard.classList.remove('skeleton', 'disabled');
+                            document.getElementById('metric-disease-name').innerText = data?.top_disease?.name || '暂无数据';
+                            const ratioEl = document.getElementById('metric-disease-ratio');
+                            if (ratioEl) ratioEl.innerText = `${diseaseRatio}%`;
+                        }
+
+                        // 更新 DEA 效率卡片
+                        const deaCard = document.getElementById('card-dea');
+                        if (deaCard) {
+                            deaCard.classList.remove('skeleton', 'disabled');
+                            document.getElementById('metric-dea').innerText = deaValue.toFixed(3);
+                            const trendEl = document.getElementById('metric-dea-trend');
+                            if (trendEl) {
+                                trendEl.innerText = `${Math.abs(deaTrend)}%`;
+                                trendEl.parentElement.className = deaTrend > 0 ? 'trend down' : 'trend up';
+                                trendEl.previousElementSibling.innerHTML = deaTrend > 0 ? '↑' : '↓';
+                            }
+                            if (window.echarts) {
+                                renderSparkline('sparkline-dea', asSparkline(data?.dea?.sparkline, deaValue || 1), deaTrend > 0 ? '#52c41a' : '#f5222d');
+                            }
+                        }
+
+                        // 更新预测卡片
+                        const predCard = document.getElementById('card-prediction');
+                        if (predCard) {
+                            predCard.classList.remove('skeleton', 'disabled');
+                            document.getElementById('metric-pred-rate').innerText = `${predRate}%`;
+                            const targetEl = document.getElementById('metric-pred-target');
+                            if (targetEl) targetEl.innerText = data?.prediction?.target || '暂无目标';
+                        }
+                    } else {
+                        handleMetricsError(cardIds);
+                    }
+                })
+                .catch(error => {
+                    console.error("指标加载失败", error);
+                    handleMetricsError(cardIds);
+                });
+        }
+
+        function handleMetricsError(cardIds) {
+            cardIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('skeleton');
+                    el.classList.add('disabled');
+                    const valEl = el.querySelector('.metric-value');
+                    if (valEl) valEl.innerText = '暂无数据';
+                }
+            });
+        }
+
+        function renderSparkline(elementId, dataArray, color) {
+            const dom = document.getElementById(elementId);
+            if (!dom || !window.echarts) return;
+            const chart = echarts.getInstanceByDom(dom) || echarts.init(dom);
+            const safeData = Array.isArray(dataArray) && dataArray.length > 1 ? dataArray.map(v => Number(v) || 0) : [0, 0.5, 1, 1.2, 1.4];
+            chart.setOption({
+                xAxis: { type: 'category', show: false, boundaryGap: false },
+                yAxis: { type: 'value', show: false, min: 'dataMin', max: 'dataMax' },
+                series: [{
+                    type: 'line',
+                    data: safeData,
+                    showSymbol: false,
+                    smooth: true,
+                    lineStyle: { width: 2, color: color },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: color },
+                            { offset: 1, color: 'rgba(255,255,255,0)' }
+                        ])
+                    }
+                }],
+                grid: { left: 0, right: 0, top: 0, bottom: 0 }
+            });
         }
 
         // 更新时间范围选项
@@ -2934,6 +3101,7 @@
             btn.disabled = true;
             const state = getMacroFilterState();
             saveMacroFilterState(state);
+            const regionCode = state.geoLevel === 'country' ? mapRegionToBackendCode(state.countrySelect) : mapRegionToBackendCode(state.regionSelect);
 
             setTimeout(() => {
                 // 重新初始化所有图表
@@ -2948,6 +3116,7 @@
                 btn.disabled = false;
                 showNotification('图表更新完成', '已按当前筛选条件刷新全部宏观图表');
             }, 1500);
+            updateSidebarMetrics(regionCode, Number(state.endYear || 2024));
             fetchHealthDataWithRetry().then(ok => {
                 if (ok && Array.isArray(window.healthData) && window.healthData.length && mortalityTrendChart) {
                     const points = window.healthData
@@ -3183,7 +3352,7 @@
                         cursor: pointer;
                         transition: all 0.2s;
                     ">📁 浏览数据集</button>
-                    <button onclick="aiNavigate('macro-analysis.html')" style="
+                    <button onclick="aiNavigate('macro')" style="
                         padding: 8px 12px;
                         border: 1px solid #e2e8f0;
                         border-radius: 6px;
@@ -3201,7 +3370,7 @@
                         cursor: pointer;
                         transition: all 0.2s;
                     ">🏛️ 中观分析</button>
-                    <button onclick="aiNavigate('micro-analysis.html')" style="
+                    <button onclick="aiNavigate('micro')" style="
                         padding: 8px 12px;
                         border: 1px solid #e2e8f0;
                         border-radius: 6px;
@@ -3210,7 +3379,7 @@
                         cursor: pointer;
                         transition: all 0.2s;
                     ">👥 微观分析</button>
-                    <button onclick="aiNavigate('prediction.html')" style="
+                    <button onclick="aiNavigate('prediction')" style="
                         padding: 8px 12px;
                         border: 1px solid #e2e8f0;
                         border-radius: 6px;
@@ -3251,10 +3420,6 @@
                 });
             }
         });
-
-        function aiNavigate(url) {
-            window.location.href = url;
-        }
 
         (function syncNavState() {
             const current = location.pathname.split('/').pop() || 'index.html';

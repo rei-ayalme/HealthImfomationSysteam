@@ -52,17 +52,34 @@
         }
 
         .search-box input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #f0f2f5;
+            border: 1px solid #d9d9d9;
             border-radius: 20px;
-            padding: 8px 14px;
-            color: #fff;
+            padding: 8px 16px 8px 36px;
+            color: #333;
             width: 220px;
             font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            background: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            width: 260px;
+            outline: none;
         }
 
         .search-box input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+            color: #999;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
         }
 
         .avatar {
@@ -353,14 +370,35 @@
             <span>健康数据洞察平台</span>
         </div>
         <nav class="main-nav">
-            <a class="nav-item active" href="/use/index.html" data-nav="index.html">首页</a>
-            <a class="nav-item" href="/use/datasets.html" data-nav="datasets.html">数据集</a>
-            <div class="nav-item dropdown">数据分析 <span class="dropdown-icon">▼</span>
+            <a class="nav-item active" href="/use/index.html" data-nav="index.html">
+                <span>🏠</span>
+                <span>首页</span>
+            </a>
+            <a class="nav-item" href="/use/datasets.html" data-nav="datasets.html">
+                <span>📁</span>
+                <span>数据集</span>
+            </a>
+            <div class="nav-item dropdown">
+                <span>📈</span>
+                <span>数据分析</span>
+                <span class="dropdown-icon">▼</span>
                 <div class="dropdown-menu">
-                    <a class="dropdown-item" href="/use/macro-analysis.html" data-nav="macro-analysis.html">宏观分析</a>
-                    <a class="dropdown-item" href="/use/meso-analysis.html" data-nav="meso-analysis.html">中观分析</a>
-                    <a class="dropdown-item" href="/use/micro-analysis.html" data-nav="micro-analysis.html">微观分析</a>
-                    <a class="dropdown-item" href="/use/prediction.html" data-nav="prediction.html">预测模拟</a>
+                    <a class="dropdown-item" href="/use/macro-analysis.html" data-nav="macro-analysis.html">
+                        <span>🌍</span>
+                        <span>宏观分析</span>
+                    </a>
+                    <a class="dropdown-item" href="/use/meso-analysis.html" data-nav="meso-analysis.html">
+                        <span>🏛️</span>
+                        <span>中观分析</span>
+                    </a>
+                    <a class="dropdown-item" href="/use/micro-analysis.html" data-nav="micro-analysis.html">
+                        <span>👥</span>
+                        <span>微观分析</span>
+                    </a>
+                    <a class="dropdown-item" href="/use/prediction.html" data-nav="prediction.html">
+                        <span>🔮</span>
+                        <span>预测模拟</span>
+                    </a>
                 </div>
             </div>
         </nav>
@@ -459,6 +497,7 @@
         const trendChart = echarts.init(document.getElementById('trendChart'));
         const pieChart = echarts.init(document.getElementById('pieChart'));
         const mapChart = echarts.init(document.getElementById('mapChart'));
+        let activeMapCountry = null;
 
         const kpiMap = {
             dalys: [
@@ -493,43 +532,119 @@
             ]
         };
 
-        const reportPool = {
-            global: '全球疾病负担持续向慢病倾斜，非传染性疾病占比提升。建议优先投入基层慢病管理、老龄健康服务和早筛体系。',
-            east_asia: '东亚地区在预期寿命和慢病控制方面表现稳定，但城市化带来的代谢类风险上升明显，控糖控压需要进一步前移。',
-            southeast_asia: '东南亚地区在传染病防控方面持续改善，但医疗可及性差异仍较大。应优先提升基层医疗覆盖和公共卫生投入。',
-            europe: '欧洲地区整体健康水平较高，癌症和心血管筛查体系成熟。建议继续优化老龄化社会下长期照护体系。',
-            north_america: '北美地区慢病与心理健康负担并存，健康不平等问题突出。建议通过社区干预和支付改革缩小差距。'
-        };
+        // 将从后端动态获取指标数据
+        async function fetchKPIData(region, metric, year) {
+            try {
+                const response = await fetch(`/api/dataset?limit=10`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.items && data.items.length > 0) {
+                        const regionFiltered = data.items.filter(i => {
+                            if (region === 'global') return true;
+                            const country = (i.country || '').toLowerCase();
+                            return country.includes(region.toLowerCase()) || region.toLowerCase().includes(country);
+                        });
+                        const candidates = regionFiltered.length >= 4 ? regionFiltered : data.items;
+                        const selected = candidates.slice(0, 4).map((item, idx) => {
+                            const rawValue = Number(item.value);
+                            const value = Number.isFinite(rawValue) ? rawValue.toFixed(2) : '--';
+                            return {
+                                n: item.name || `指标${idx + 1}`,
+                                v: value,
+                                c: item.year ? `${item.year}` : '最新',
+                                up: idx % 2 === 0,
+                                src: item.unit || '真实数据'
+                            };
+                        });
+                        if (selected.length) {
+                            while (selected.length < 4) {
+                                selected.push({
+                                    n: `指标${selected.length + 1}`,
+                                    v: '--',
+                                    c: '暂无',
+                                    up: false,
+                                    src: '待补充'
+                                });
+                            }
+                            return selected;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('获取真实 KPI 失败，使用静态数据', e);
+            }
+            return kpiMap[metric] || kpiMap.dalys;
+        }
 
-        const newsPool = [
-            { t: 'WHO发布2024全球卫生统计报告', d: '最新数据显示，全球预期寿命在经历了疫情影响后开始逐步回升。' },
-            { t: '中国启动新一轮慢性病防治行动', d: '卫健委联合多部门印发干预方案，重点关注心血管与代谢类疾病。' },
-            { t: '柳叶刀最新研究：环境风险对健康的长期影响', d: '空气污染仍然是导致全球呼吸系统疾病高发的核心环境因素之一。' },
-            { t: 'AI 在医疗资源配置中的应用', d: '通过空间可及性分析，多个城市成功优化了基层医疗网点布局。' }
-        ];
-
-        function renderKPI(metric) {
+        async function renderKPI(region, metric, year) {
+            kpiGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px;">数据加载中...</div>';
+            const kpiData = await fetchKPIData(region, metric, year);
+            
             kpiGrid.innerHTML = '';
-            kpiMap[metric].forEach(item => {
+            if (!Array.isArray(kpiData) || kpiData.length === 0) {
+                kpiGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #8c8c8c;">暂无可展示指标</div>';
+                return;
+            }
+            kpiData.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'kpi-card';
                 // 使用图标区分趋势并增加数据来源角标
                 const trendIcon = item.up ? '↑' : '↓';
                 const trendClass = item.up ? 'kpi-up' : 'kpi-down';
+                const sourceText = item.src || 'GBD 2019';
                 card.innerHTML = `
-                    <div class="kpi-source-tag">GBD 2019</div>
+                    <div class="kpi-source-tag">${sourceText}</div>
                     <div class="kpi-name">${item.n}</div>
                     <div class="kpi-value">${item.v}</div>
                     <div class="kpi-change ${trendClass}">
                         <span>${trendIcon}</span>
-                        <span>${item.c} (vs 上期)</span>
+                        <span>${item.c}</span>
                     </div>
                 `;
                 kpiGrid.appendChild(card);
             });
         }
 
-        function renderTrend(region, metric, year, granularity) {
+        function getDashboardState() {
+            return {
+                region: document.getElementById('region').value,
+                metric: document.getElementById('metric').value,
+                year: document.getElementById('year').value,
+                granularity: document.getElementById('granularity').value
+            };
+        }
+
+        function normalizeRegionForApi(region) {
+            const mapping = {
+                global: 'global',
+                east_asia: 'east_asia',
+                southeast_asia: 'southeast_asia',
+                europe: 'europe',
+                north_america: 'usa'
+            };
+            return mapping[region] || region;
+        }
+
+        async function fetchTrendData(region, metric, year) {
+            try {
+                const normalizedRegion = normalizeRegionForApi(region);
+                const endYear = Number(year) || 2024;
+                const startYear = Math.max(1990, endYear - 14);
+                const response = await fetch(`/api/chart/trend?region=${normalizedRegion}&metric=${metric}&start_year=${startYear}&end_year=${endYear}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const points = data?.series?.[0]?.data || [];
+                    if (Array.isArray(data?.xAxis) && data.xAxis.length >= 2 && Array.isArray(points) && points.length >= 2) {
+                        return data;
+                    }
+                }
+            } catch (e) {
+                console.warn('获取真实趋势数据失败，降级使用模拟数据');
+            }
+            return null;
+        }
+
+        async function renderTrend(region, metric, year, granularity) {
             const anchorYears = [1990, 1995, 2000, 2005, 2010, 2015, 2020, 2024];
             const map = {
                 dalys: [2.33, 2.30, 2.27, 2.35, 2.50, 2.68, 2.85, 2.85],
@@ -539,6 +654,33 @@
                 ylds: [0.59, 0.61, 0.64, 0.68, 0.72, 0.76, 0.80, 0.83]
             };
             const factor = region === 'global' ? 1 : region === 'east_asia' ? 0.86 : region === 'southeast_asia' ? 0.74 : region === 'europe' ? 0.53 : 0.61;
+            
+            // 首先尝试从真实后端接口获取
+            trendChart.showLoading({ text: '加载真实数据...', color: '#1890ff' });
+            const realData = await fetchTrendData(region, metric, year);
+            trendChart.hideLoading();
+
+            if (realData) {
+                const realSeries = Array.isArray(realData.series) ? realData.series[0] : null;
+                // 如果有真实数据，直接使用真实数据渲染
+                trendChart.setOption({
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: realData.xAxis },
+                    yAxis: { type: 'value', name: '真实数值 (DALYs)' },
+                    series: [{
+                        name: metric.toUpperCase() + ' (真实数据)',
+                        type: 'line',
+                        smooth: true,
+                        data: realSeries ? realSeries.data : [],
+                        areaStyle: { color: 'rgba(24,144,255,0.12)' },
+                        lineStyle: { color: '#1890ff' }
+                    }]
+                });
+                return;
+            }
+
+            // 降级：如果没有获取到或者数据库还没数据，使用原本的平滑曲线模拟
             const yearly = [];
 
             for (let i = 0; i < anchorYears.length - 1; i++) {
@@ -662,9 +804,60 @@
             });
         }
 
-        async function renderMap(region) {
+        function normalizeCountryKey(countryName) {
+            const alias = {
+                'unitedstatesofamerica': 'unitedstates',
+                'unitedstates': 'unitedstates',
+                'usa': 'unitedstates',
+                'korearepublicof': 'southkorea',
+                'republicofkorea': 'southkorea',
+                'southkorea': 'southkorea',
+                'russianfederation': 'russia',
+                'vietnam': 'vietnam',
+                'uk': 'unitedkingdom',
+                'unitedkingdom': 'unitedkingdom'
+            };
+            const raw = String(countryName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return alias[raw] || raw;
+        }
+
+        function getStableMapValue(countryName, state) {
+            const seedText = `${countryName}|${state.metric}|${state.year}`;
+            let hash = 0;
+            for (let i = 0; i < seedText.length; i++) {
+                hash = ((hash << 5) - hash + seedText.charCodeAt(i)) | 0;
+            }
+            const baseMap = { dalys: 62, deaths: 54, prevalence: 38, ylls: 41, ylds: 33 };
+            const base = baseMap[state.metric] || 50;
+            const noise = Math.abs(hash % 1000) / 1000;
+            const yearFactor = 1 + ((Number(state.year || 2024) - 2010) * 0.004);
+            const value = base * yearFactor * (0.78 + noise * 0.44);
+            return Math.max(1, Math.min(100, Number(value.toFixed(2))));
+        }
+
+        async function fetchWorldMetricData(state) {
             try {
-                // 加载世界地图数据（这里通过 API 或者直接通过 ECharts 的世界地图 json 获取）
+                const res = await fetch(`/api/map/world-metrics?region=${state.region}&metric=${state.metric}&year=${state.year}`);
+                if (!res.ok) return { dataMap: new Map(), meta: null };
+                const payload = await res.json();
+                if (payload.status !== 'success' || !Array.isArray(payload.data)) {
+                    return { dataMap: new Map(), meta: payload?.meta || null };
+                }
+                const dataMap = new Map();
+                payload.data.forEach(item => {
+                    const key = normalizeCountryKey(item.country);
+                    if (!key) return;
+                    dataMap.set(key, item);
+                });
+                return { dataMap, meta: payload.meta || null };
+            } catch (e) {
+                console.warn('获取地图指标失败，降级为可复现回退算法', e);
+                return { dataMap: new Map(), meta: null };
+            }
+        }
+
+        async function renderMap(state) {
+            try {
                 mapChart.showLoading({text: "正在加载地图..."});
                 const geoJsonRes = await fetch('/api/geojson/world');
                 if (!geoJsonRes.ok) {
@@ -677,46 +870,70 @@
                 }
 
                 echarts.registerMap('world', geoJson);
+                const { dataMap: worldMetricMap } = await fetchWorldMetricData(state);
 
-                // 1. 在函数内部建立大区与包含国家的映射字典（注意国家名需匹配 geojson 中的标准英文名）
                 const regionCountries = {
                     'east_asia': ['China', 'Japan', 'South Korea', 'Mongolia', 'North Korea', 'Taiwan'],
                     'southeast_asia': ['Vietnam', 'Thailand', 'Indonesia', 'Malaysia', 'Philippines', 'Singapore', 'Myanmar'],
                     'europe': ['France', 'Germany', 'United Kingdom', 'Italy', 'Spain', 'Russia', 'Ukraine', 'Poland', 'Switzerland'],
                     'north_america': ['United States of America', 'Canada', 'Mexico']
                 };
+                const focusSet = new Set((regionCountries[state.region] || []).map(normalizeCountryKey));
 
-                // 2. 重新构建数据映射逻辑
                 const mapData = geoJson.features.map(f => {
                     const countryName = f.properties.name;
-                    let val = 0; // 默认值
-
-                    if (region === 'global') {
-                        // 【修正1】全球模式下，应该展示存在差异的数据以形成热力渐变
-                        // 建议这里后续替换为从后端接口获取的真实 healthData，目前暂时用随机数模拟差异（20~100）
-                        val = Math.floor(Math.random() * 80) + 20;
-                    } else {
-                        // 【修正2】区域模式下，判断该国家是否属于所选的大区列表
-                        if (regionCountries[region] && regionCountries[region].includes(countryName)) {
-                            // 属于该大区的国家赋予较高数值
-                            val = Math.floor(Math.random() * 40) + 60;
-                        } else {
-                            // 不属于该大区的国家暗化处理
-                            val = 10;
-                        }
+                    const countryKey = normalizeCountryKey(countryName);
+                    const backendItem = worldMetricMap.get(countryKey);
+                    const fallbackValue = getStableMapValue(countryName, state);
+                    const inRegionFocus = state.region === 'global' ? true : focusSet.has(countryKey);
+                    let val = backendItem ? Number(backendItem.value) : fallbackValue;
+                    if (Number.isNaN(val)) val = fallbackValue;
+                    if (state.region !== 'global' && !inRegionFocus) {
+                        val = Math.min(val, 12);
                     }
+                    const sourceType = backendItem?.source_type || 'fallback';
+                    const sourceLabel = sourceType === 'international'
+                        ? '国际数据'
+                        : sourceType === 'local'
+                            ? '本地数据'
+                            : '算法回退';
+                    const method = backendItem?.method || 'reproducible_fallback_v1';
 
                     return {
                         name: countryName,
-                        value: val
+                        value: Number(val.toFixed(2)),
+                        indicator: backendItem?.indicator || state.metric.toUpperCase(),
+                        dataYear: backendItem?.data_year || Number(state.year),
+                        source: backendItem?.source || 'FALLBACK',
+                        sourceLabel,
+                        method,
+                        isFallback: !backendItem || backendItem?.is_fallback === true,
+                        inRegionFocus,
+                        itemStyle: state.region !== 'global' && !inRegionFocus
+                            ? { areaColor: '#f5f5f5', opacity: 0.65 }
+                            : undefined
                     };
                 });
 
                 mapChart.hideLoading();
+                const hasInternational = mapData.some(i => i.sourceLabel === '国际数据');
                 mapChart.setOption({
                     tooltip: {
                         trigger: 'item',
-                        formatter: '{b}: {c}' // 鼠标放上去显示：国家名: 数值
+                        formatter: function (params) {
+                            const d = params?.data || {};
+                            const valueText = Number.isFinite(d.value) ? d.value.toFixed(2) : '--';
+                            const fallbackText = d.isFallback ? '是（可复现）' : '否';
+                            return [
+                                `<b>${params.name || '未知地区'}</b>`,
+                                `指标：${String(d.indicator || state.metric).toUpperCase()}`,
+                                `数值：${valueText}`,
+                                `年份：${d.dataYear || state.year}`,
+                                `来源：${d.sourceLabel || '算法回退'} (${d.source || 'FALLBACK'})`,
+                                `方法：${d.method || 'reproducible_fallback_v1'}`,
+                                `缺失回退：${fallbackText}`
+                            ].join('<br/>');
+                        }
                     },
                     visualMap: {
                         min: 0,
@@ -725,115 +942,93 @@
                         realtime: false,
                         calculable: true,
                         inRange: {
-                            // 增加颜色的层次感，从浅蓝到深蓝
                             color: ['#e0f3f8', '#74add1', '#4575b4', '#313695']
                         },
-                        show: true // 建议开启图例，页面看起来更专业
+                        show: true
                     },
                     series: [
                         {
                             name: 'World Health',
                             type: 'map',
                             map: 'world',
-                            roam: false, // 禁用平移和缩放，固定在容器内
+                            roam: false,
+                            selectedMode: 'single',
                             select: {
-                                disabled: true // 禁用点击选中导致的全部高亮/异样样式
-                            },
-                            // 3. 新增：鼠标悬浮高亮配置
-                            emphasis: {
+                                disabled: false,
                                 itemStyle: {
-                                    areaColor: '#fadb14', // 鼠标指上去时变成明黄色
+                                    areaColor: '#ffc53d',
+                                    borderColor: '#fff',
+                                    borderWidth: 1.5
+                                },
+                                label: {
+                                    show: true,
+                                    color: '#111'
+                                }
+                            },
+                            emphasis: {
+                                focus: 'self',
+                                itemStyle: {
+                                    areaColor: '#fadb14',
                                     borderColor: '#fff',
                                     borderWidth: 1
                                 },
                                 label: {
                                     show: true,
-                                    color: '#000' // 显示国家名字
+                                    color: '#000'
                                 }
                             },
                             data: mapData
                         }
                     ]
                 });
+                mapChart.off('click');
+                mapChart.on('click', (params) => {
+                    activeMapCountry = params?.name || null;
+                    if (!activeMapCountry) return;
+                    mapChart.dispatchAction({
+                        type: 'showTip',
+                        seriesIndex: 0,
+                        name: activeMapCountry
+                    });
+                });
+                const statusChip = document.querySelector('.status-chip');
+                if (statusChip) {
+                    const strategy = hasInternational ? '国际数据优先' : '全量算法回退';
+                    const fallbackCount = mapData.filter(i => i.isFallback).length;
+                    statusChip.textContent = `${strategy} · 回退 ${fallbackCount}/${mapData.length}`;
+                }
             } catch (e) {
                 console.warn("加载世界地图数据失败", e);
                 mapChart.showLoading({text: "地图加载失败: " + e.message, textColor: '#f5222d'});
             }
         }
 
-        function apply() {
-            const region = document.getElementById('region').value;
-            const metric = document.getElementById('metric').value;
-            const year = document.getElementById('year').value;
-            const granularity = document.getElementById('granularity').value;
-            renderKPI(metric);
-            renderTrend(region, metric, year, granularity);
-            renderPie(region);
-            renderReport(region, year);
-            renderMap(region); // 调用渲染地图函数
+        async function apply() {
+            const state = getDashboardState();
+            const statusChip = document.querySelector('.status-chip');
+            if (statusChip) statusChip.textContent = '数据刷新中...';
+            await Promise.all([
+                renderKPI(state.region, state.metric, state.year),
+                renderTrend(state.region, state.metric, state.year, state.granularity),
+                Promise.resolve(renderPie(state.region)),
+                Promise.resolve(renderReport(state.region, state.year)),
+                renderMap(state)
+            ]);
+            if (statusChip) statusChip.textContent = `已更新 ${state.year}·${state.metric.toUpperCase()}`;
         }
 
-        document.getElementById('applyBtn').addEventListener('click', apply);
-        document.getElementById('resetBtn').addEventListener('click', () => {
+        document.getElementById('applyBtn').addEventListener('click', async () => {
+            await apply();
+        });
+        document.getElementById('resetBtn').addEventListener('click', async () => {
             document.getElementById('region').value = 'global';
             document.getElementById('year').value = '2024';
             document.getElementById('granularity').value = 'year';
             document.getElementById('metric').value = 'dalys';
-            apply();
+            await apply();
         });
-
-        function handleGlobalSearch(keyword) {
-            const key = keyword.trim().toLowerCase();
-            if (!key) return;
-
-            // 1. 尝试匹配大区
-            const regionMap = {
-                '全球': 'global', 'global': 'global',
-                '东亚': 'east_asia', 'east asia': 'east_asia', 'china': 'east_asia', '中国': 'east_asia',
-                '东南亚': 'southeast_asia', 'southeast asia': 'southeast_asia',
-                '欧洲': 'europe', 'europe': 'europe',
-                '北美': 'north_america', 'north america': 'north_america', 'us': 'north_america', 'usa': 'north_america', '美国': 'north_america'
-            };
-
-            for (const [k, v] of Object.entries(regionMap)) {
-                if (key.includes(k)) {
-                    document.getElementById('region').value = v;
-                    showToast(`已为您切换至 ${k} 区域视角`, 'success');
-                    apply();
-                    return;
-                }
-            }
-
-            // 2. 尝试匹配指标
-            const metricMap = {
-                'dalys': 'dalys', '负担': 'dalys',
-                '死亡': 'deaths', 'death': 'deaths',
-                '患病': 'prevalence', 'prevalence': 'prevalence',
-                'ylls': 'ylls', '早死': 'ylls',
-                'ylds': 'ylds', '伤残': 'ylds'
-            };
-
-            for (const [k, v] of Object.entries(metricMap)) {
-                if (key.includes(k)) {
-                    document.getElementById('metric').value = v;
-                    showToast(`已为您切换至 ${k} 指标视角`, 'success');
-                    apply();
-                    return;
-                }
-            }
-
-            // 3. 如果都没匹配上，提示用户
-            showToast(`未找到关于 "${keyword}" 的直接匹配维度，请尝试其他关键词`, 'warning');
-        }
 
         searchInput.addEventListener('input', e => renderNews(e.target.value));
-        
-        // 监听回车键进行全局搜索跳转/过滤
-        searchInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                handleGlobalSearch(e.target.value);
-            }
-        });
 
         syncNavState();
         renderNews();
@@ -847,14 +1042,6 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 确保点击登录按钮直接跳转，不被拦截
-            document.querySelectorAll('a[href="/use/login.html"]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    // 如果有阻止默认行为的逻辑，确保登录按钮可以正常跳转
-                    window.location.href = '/use/login.html';
-                });
-            });
-            
             // Update auth state in nav
             const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
             if (userStr) {

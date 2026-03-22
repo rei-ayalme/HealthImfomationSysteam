@@ -474,10 +474,12 @@
     <div class="user-actions">
       <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" placeholder="搜索数据、指标、国家..." aria-label="全局搜索">
+        <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
       </div>
-      <a href="login.html" class="nav-item">登录</a>
-      <a href="register.html" class="nav-item">注册</a>
+      <!-- 未登录时显示 -->
+      <a class="nav-item guest-only" href="login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
+      <a class="nav-item signup-btn guest-only" href="register.html" style="background: var(--primary-color); color: white; border: none;">注册</a>
+      <!-- 已登录时显示 -->
       <a href="account-center.html" class="nav-item active" data-nav="account-center.html">个人中心</a>
       <a href="/admin/dashboard.html" class="nav-item">管理端</a>
     </div>
@@ -1018,7 +1020,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">📁 浏览数据集</button>
-          <button onclick="aiNavigate('macro-analysis.html')" style="
+          <button onclick="aiNavigate('macro')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -1036,7 +1038,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">🏛️ 中观分析</button>
-          <button onclick="aiNavigate('micro-analysis.html')" style="
+          <button onclick="aiNavigate('micro')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -1045,7 +1047,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">👥 微观分析</button>
-          <button onclick="aiNavigate('prediction.html')" style="
+          <button onclick="aiNavigate('prediction')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -1086,10 +1088,6 @@
         });
       }
     });
-
-    function aiNavigate(url) {
-      window.location.href = url;
-    }
 
     (function syncNavState() {
       const current = location.pathname.split('/').pop() || 'index.html';

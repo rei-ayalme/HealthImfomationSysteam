@@ -47,7 +47,13 @@ class HealthDataCleaner:
             if col not in df_clean.columns:
                 continue
                 
-            series = df_clean[col]
+            # 确保列是数值类型，跳过包含字符串或无法转换的数据
+            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+            
+            series = df_clean[col].dropna()
+            if len(series) < 5:
+                continue
+
             if method == 'iqr':
                 Q1 = series.quantile(0.25)
                 Q3 = series.quantile(0.75)

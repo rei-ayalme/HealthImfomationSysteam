@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 # 导入配置与数据库
 from config.settings import SETTINGS
 from db.connection import SessionLocal
-from db.models import Base, AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
+from db.models import Base, HealthResource, AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
 from utils.logger import logger
 # 导入所有清洗器
 from modules.data.preprocessor import HealthDataPreprocessor
@@ -79,17 +79,26 @@ class HealthDataPipeline:
             gap_data = analyzer.compute_resource_gap(latest_year)
             logger.info(f"-> 缺口计算完成，共覆盖 {len(gap_data)} 个地区")
 
-            # 2.5 同步入库
+            # 2.5 同步入库（分阶段：先落清洗基础数据，再落缺口分析结果）
             logger.info("-> 同步清洗后的本地数据到数据库...")
             from db.crud import save_processed_data_to_db
+            self.db.query(HealthResource).delete()
+            self.db.commit()
+
+            save_processed_data_to_db(self.db, raw_df)
+
             gap_df = pd.DataFrame(gap_data).T.reset_index()
             if not gap_df.empty:
                 gap_df = gap_df.rename(columns={'index': 'region_name'})
-                # 为了防止缺少字段，合并回原始数据的一些列
                 if 'year' not in gap_df.columns:
                     gap_df['year'] = latest_year
-                save_processed_data_to_db(self.db, gap_df)
-                logger.info("✅ 成功入库本地卫生资源数据！")
+                latest_snapshot = raw_df[raw_df['year'] == latest_year].copy()
+                snapshot_cols = ['region_name', 'year', 'physicians_per_1000', 'nurses_per_1000', 'hospital_beds_per_1000', 'population']
+                available_cols = [col for col in snapshot_cols if col in latest_snapshot.columns]
+                latest_snapshot = latest_snapshot[available_cols].drop_duplicates('region_name')
+                merged_gap_df = gap_df.merge(latest_snapshot, on=['region_name', 'year'], how='left')
+                save_processed_data_to_db(self.db, merged_gap_df)
+                logger.info("✅ 成功入库本地卫生资源数据与缺口分析结果！")
 
             # 3. 运筹学优化
             logger.info("3. 执行运筹学资源再分配优化...")

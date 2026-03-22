@@ -456,8 +456,8 @@
                 <input type="text" placeholder="搜索数据集..." aria-label="搜索数据集">
             </div>
             <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html">登录</a>
-            <a class="nav-item guest-only" href="/use/register.html">注册</a>
+            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
+            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
             <!-- 已登录时显示 -->
             <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
             <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
@@ -1230,6 +1230,118 @@
     </script>
     <script>
         const DATASET_API_BASE = 'http://localhost:8000/api';
+        const datasetPageState = {
+            activeCategory: 'all',
+            rawItems: []
+        };
+
+        const categoryLabelMap = {
+            all: '全部数据集',
+            global: '全球健康数据',
+            disease: '疾病负担数据',
+            risk: '风险因素数据',
+            intervention: '干预措施数据',
+            demographic: '人口统计数据'
+        };
+
+        function normalizeDatasetCategory(itemType) {
+            const mapping = {
+                disease_burden: 'disease',
+                risk_factor: 'risk',
+                resource_efficiency: 'global',
+                global_overview: 'global',
+                intervention_policy: 'intervention',
+                demographic_stats: 'demographic'
+            };
+            return mapping[itemType] || 'global';
+        }
+
+        function aggregateDatasetItems(items) {
+            const grouped = {};
+            items.forEach(item => {
+                const category = normalizeDatasetCategory(item.type);
+                if (!grouped[category]) {
+                    grouped[category] = {
+                        id: `${category}_summary`,
+                        category,
+                        title: categoryLabelMap[category] || '数据集',
+                        recordCount: 0,
+                        regions: new Set(),
+                        years: [],
+                        sample: item,
+                        sourceSet: new Set()
+                    };
+                }
+                grouped[category].recordCount += 1;
+                if (item.country) grouped[category].regions.add(item.country);
+                if (item.year) grouped[category].years.push(Number(item.year));
+                if (item.unit) grouped[category].sourceSet.add(item.unit);
+            });
+
+            return Object.values(grouped).map(g => {
+                const yearMin = g.years.length ? Math.min(...g.years) : '-';
+                const yearMax = g.years.length ? Math.max(...g.years) : '-';
+                return {
+                    id: g.id,
+                    category: g.category,
+                    title: g.title,
+                    year_min: yearMin,
+                    year_max: yearMax,
+                    record_count: g.recordCount,
+                    region_coverage: g.regions.size,
+                    source: Array.from(g.sourceSet).join('/') || '-',
+                    sample: g.sample
+                };
+            });
+        }
+
+        function applyKeywordFilter(items, keyword) {
+            if (!keyword) return items;
+            return items.filter(item => {
+                const text = `${item.name || ''} ${item.country || ''} ${item.typeName || ''}`.toLowerCase();
+                return text.includes(keyword);
+            });
+        }
+
+        function renderDatasetCards(aggregatedItems) {
+            const grid = document.getElementById('datasetGrid');
+            if (!aggregatedItems.length) {
+                grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">当前分类暂无数据，请切换其他分类查看。</p></div></div>';
+                return;
+            }
+            grid.innerHTML = aggregatedItems.map(dataset => `
+                <div class="dataset-card" data-category="${dataset.category}">
+                    <div class="dataset-header">
+                        <span class="dataset-title">${dataset.title}</span>
+                        <span class="dataset-badge">${categoryLabelMap[dataset.category] || dataset.category}</span>
+                    </div>
+                    <div class="dataset-content">
+                        <p class="dataset-description">覆盖年份：${dataset.year_min} - ${dataset.year_max} ｜ 覆盖地区：${dataset.region_coverage}</p>
+                        <div class="data-preview">聚合记录：${dataset.record_count} ｜ 示例：${dataset.sample?.name || '暂无'}</div>
+                        <div class="dataset-actions">
+                            <button class="action-btn primary" onclick="viewDataset('${dataset.sample?.id || dataset.id}')"><i class="fas fa-eye"></i>查看详情</button>
+                            <button class="action-btn secondary" onclick="downloadDataset('${dataset.sample?.id || dataset.id}')"><i class="fas fa-download"></i>下载</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateCategoryButtons(activeCategory) {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-category') === activeCategory);
+            });
+        }
+
+        function attachCategoryEvents() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    datasetPageState.activeCategory = btn.getAttribute('data-category');
+                    updateCategoryButtons(datasetPageState.activeCategory);
+                    searchDatasets();
+                });
+            });
+        }
         function getSearchParams() {
             return {
                 q: document.getElementById('searchKeyword').value.trim(),
@@ -1286,35 +1398,29 @@
         }
         async function searchDatasets() {
             const grid = document.getElementById('datasetGrid');
+            const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
+            
             try {
-                // 直接使用我们真实的 /api/dataset 接口
-                const response = await fetch(`${DATASET_API_BASE}/dataset`);
+                const response = await fetch(`${DATASET_API_BASE}/dataset?limit=180`);
                 if (!response.ok) throw new Error('search failed');
                 const payload = await response.json();
-                const datasets = payload.items || [];
-                renderInsightBar(datasets);
+                datasetPageState.rawItems = Array.isArray(payload.items) ? payload.items : [];
+                let datasets = applyKeywordFilter(datasetPageState.rawItems, keyword);
+                if (datasetPageState.activeCategory !== 'all') {
+                    datasets = datasets.filter(item => normalizeDatasetCategory(item.type) === datasetPageState.activeCategory);
+                }
+
+                const aggregated = aggregateDatasetItems(datasets);
+                renderInsightBar(aggregated.map(item => ({
+                    record_count: item.record_count,
+                    year_max: item.year_max,
+                    region_coverage: item.region_coverage
+                })));
                 if (!datasets.length) {
                     grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">未找到匹配数据集，请调整筛选条件。</p></div></div>';
                     return;
                 }
-                
-                // 渲染真实数据
-                grid.innerHTML = datasets.map(dataset => `
-                    <div class="dataset-card" data-category="${dataset.type}">
-                        <div class="dataset-header">
-                            <span class="dataset-title">${dataset.name}</span>
-                            <span class="dataset-badge">${dataset.typeName}</span>
-                        </div>
-                        <div class="dataset-content">
-                            <p class="dataset-description">地区：${dataset.country} ｜ 年份：${dataset.year}</p>
-                            <div class="data-preview">当前数值：${dataset.value} ${dataset.unit}</div>
-                            <div class="dataset-actions">
-                                <button class="action-btn primary" onclick="viewDataset('${dataset.id}')"><i class="fas fa-eye"></i>查看详情</button>
-                                <button class="action-btn secondary" onclick="downloadDataset('${dataset.id}')"><i class="fas fa-download"></i>下载</button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                renderDatasetCards(aggregated);
             } catch (e) {
                 console.error("fetch error:", e);
                 grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">后端不可用，当前展示静态数据卡片。</p></div></div>';
@@ -1381,7 +1487,7 @@
         }
         async function downloadDataset(datasetId) {
             try {
-                const response = await fetch(`${DATASET_API_BASE}/datasets/${datasetId}/detail?limit=500`);
+                const response = await fetch(`${DATASET_API_BASE}/dataset/${datasetId}/detail?limit=500`);
                 if (!response.ok) throw new Error('download failed');
                 const payload = await response.json();
                 const rows = payload.preview || [];
@@ -1404,9 +1510,14 @@
             document.getElementById('searchMetric').value = '';
             document.getElementById('searchSource').value = '';
             document.getElementById('searchSort').value = 'updated_desc';
+            // 同步清空顶部搜索栏
+            const topSearchInput = document.querySelector('.search-box input');
+            if (topSearchInput) topSearchInput.value = '';
+            
             searchDatasets();
         }
         document.addEventListener('DOMContentLoaded', function () {
+            attachCategoryEvents();
             document.getElementById('searchBtn')?.addEventListener('click', searchDatasets);
             document.getElementById('resetBtn')?.addEventListener('click', resetAdvancedSearch);
             searchDatasets();
@@ -1414,6 +1525,27 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 确保点击登录按钮直接跳转，不被拦截
+            document.querySelectorAll('a[href="/use/login.html"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    window.location.href = '/use/login.html';
+                });
+            });
+            
+            // 绑定全局搜索栏事件
+            const topSearchInput = document.querySelector('.search-box input');
+            if (topSearchInput) {
+                topSearchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // 阻止默认提交
+                        const keyword = this.value.trim();
+                        // 无论是否为空，都同步到高级搜索并触发搜索，以便支持清空搜索
+                        document.getElementById('searchKeyword').value = keyword;
+                        searchDatasets();
+                    }
+                });
+            }
+            
             // Update auth state in nav
             const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
             if (userStr) {

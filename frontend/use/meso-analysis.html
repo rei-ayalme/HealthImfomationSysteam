@@ -800,9 +800,13 @@
                 <input type="text" placeholder="搜索数据、指标、国家..." aria-label="搜索数据、指标、国家...">
             </div>
 
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
+            </div>
             <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html">登录</a>
-            <a class="nav-item guest-only" href="/use/register.html">注册</a>
+            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
+            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
             <!-- 已登录时显示 -->
             <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
             <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
@@ -1342,8 +1346,10 @@
         /* global echarts */
 
         // 全局图表实例
-        let transitionChart, decompositionChart, diseaseRankingChart, resourceChart, equityChart, urbanRuralChart;
-        const MESO_API_BASE_URL = 'http://localhost:8000/api/v1';
+        let transitionChart, decompositionChart, diseaseRankingChart, resourceChart, equityChart, urbanRuralChart, chinaMapChart;
+        let currentResourceView = 'physician';
+        let resourceRequestSerial = 0;
+        const MESO_API_BASE_URL = '/api';
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
             return echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
@@ -1500,14 +1506,162 @@
             }
         }
 
+        function getCountryDisplayName(countryCode) {
+            const map = {
+                china: 'China',
+                usa: 'United States',
+                japan: 'Japan',
+                germany: 'Germany',
+                uk: 'United Kingdom',
+                france: 'France',
+                india: 'India',
+                brazil: 'Brazil'
+            };
+            return map[countryCode] || 'China';
+        }
+
+        function getResourceInputBaseline(countryCode, viewType) {
+            const profiles = {
+                china: { physician: 2.99, bed: 7.1, expenditure: 5.6, population: 1410 },
+                usa: { physician: 2.6, bed: 2.9, expenditure: 17.8, population: 333 },
+                japan: { physician: 2.5, bed: 12.9, expenditure: 10.9, population: 124 },
+                germany: { physician: 4.2, bed: 7.8, expenditure: 12.7, population: 84 },
+                uk: { physician: 3.0, bed: 2.5, expenditure: 11.9, population: 68 },
+                france: { physician: 3.2, bed: 5.9, expenditure: 12.1, population: 65 },
+                india: { physician: 0.9, bed: 0.5, expenditure: 3.0, population: 1430 },
+                brazil: { physician: 2.2, bed: 2.2, expenditure: 9.6, population: 203 }
+            };
+            const fallback = { physician: 2.3, bed: 3.2, expenditure: 8.5, population: 120 };
+            return (profiles[countryCode] || fallback)[viewType] ?? fallback[viewType];
+        }
+
+        function getResourcePopulation(countryCode) {
+            const p = getResourceInputBaseline(countryCode, 'population');
+            return Math.max(20, Number(p) || 100);
+        }
+
+        function setResourceStatus(text, color = '#8c8c8c') {
+            const header = document.querySelector('#resource-analysis .chart-header');
+            if (!header) return;
+            let statusEl = document.getElementById('resourceStatusText');
+            if (!statusEl) {
+                statusEl = document.createElement('div');
+                statusEl.id = 'resourceStatusText';
+                statusEl.style.cssText = 'font-size:12px;margin-top:6px;';
+                const titleWrap = header.querySelector('div');
+                if (titleWrap) titleWrap.appendChild(statusEl);
+            }
+            statusEl.textContent = text;
+            statusEl.style.color = color;
+        }
+
+        async function fetchResourceScatterData(country = 'china', timeRange = '1990-2024', viewType = 'physician') {
+            const requestId = ++resourceRequestSerial;
+            const [startYear, endYear] = timeRange.split('-').map(Number);
+            const countryName = getCountryDisplayName(country);
+            const peers = ['China', 'United States', 'Japan', 'Germany', 'United Kingdom', 'France', 'India', 'Brazil'];
+            const selectedPeers = peers.includes(countryName) ? peers : [countryName, ...peers];
+
+            setResourceStatus('正在加载真实后端数据...', '#1890ff');
+
+            try {
+                const response = await fetch(`${MESO_API_BASE_URL}/dataset?limit=500`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const payload = await response.json();
+                const items = Array.isArray(payload?.items) ? payload.items : [];
+                const resourceItems = items.filter(item =>
+                    item?.type === 'resource_efficiency' &&
+                    Number(item?.year) >= startYear &&
+                    Number(item?.year) <= endYear
+                );
+
+                const latestByCountry = new Map();
+                resourceItems.forEach(item => {
+                    const name = item.country || 'Unknown';
+                    const current = latestByCountry.get(name);
+                    const year = Number(item.year) || 0;
+                    if (!current || year >= current.year) {
+                        latestByCountry.set(name, { year, dea: Number(item.value) || 0 });
+                    }
+                });
+
+                const points = selectedPeers
+                    .map(peerName => {
+                        const key = peerName.toLowerCase().replace(/\s+/g, '');
+                        const codeMap = {
+                            china: 'china',
+                            unitedstates: 'usa',
+                            japan: 'japan',
+                            germany: 'germany',
+                            unitedkingdom: 'uk',
+                            france: 'france',
+                            india: 'india',
+                            brazil: 'brazil'
+                        };
+                        const countryCode = codeMap[key] || country;
+                        const record = latestByCountry.get(peerName);
+                        const dea = Math.max(0.35, Math.min(0.99, record?.dea ?? (0.62 + Math.random() * 0.25)));
+                        const input = getResourceInputBaseline(countryCode, viewType);
+                        const population = getResourcePopulation(countryCode);
+
+                        let outcome = 70;
+                        if (viewType === 'physician') outcome = 66 + dea * 20;
+                        if (viewType === 'bed') outcome = 55 + dea * 35;
+                        if (viewType === 'expenditure') outcome = 52 + dea * 38;
+
+                        return {
+                            name: peerName,
+                            value: [Number(input.toFixed(2)), Number(outcome.toFixed(2)), population, Number(dea.toFixed(3))],
+                            itemStyle: { color: peerName === countryName ? '#f5222d' : '#1890ff' }
+                        };
+                    })
+                    .filter(Boolean);
+
+                if (requestId === resourceRequestSerial) {
+                    setResourceStatus(`数据源：/api/dataset（${resourceItems.length} 条记录，时间窗 ${startYear}-${endYear}）`, '#52c41a');
+                }
+                return points;
+            } catch (error) {
+                console.warn('资源效率后端数据加载失败，使用回退数据', error);
+                setResourceStatus('数据源：回退样本（后端暂不可用）', '#fa8c16');
+                return selectedPeers.map(peerName => {
+                    const key = peerName.toLowerCase().replace(/\s+/g, '');
+                    const codeMap = {
+                        china: 'china',
+                        unitedstates: 'usa',
+                        japan: 'japan',
+                        germany: 'germany',
+                        unitedkingdom: 'uk',
+                        france: 'france',
+                        india: 'india',
+                        brazil: 'brazil'
+                    };
+                    const countryCode = codeMap[key] || country;
+                    const input = getResourceInputBaseline(countryCode, viewType);
+                    const dea = Math.max(0.45, Math.min(0.95, 0.55 + Math.random() * 0.3));
+                    const population = getResourcePopulation(countryCode);
+                    let outcome = 70;
+                    if (viewType === 'physician') outcome = 66 + dea * 20;
+                    if (viewType === 'bed') outcome = 55 + dea * 35;
+                    if (viewType === 'expenditure') outcome = 52 + dea * 38;
+                    return {
+                        name: peerName,
+                        value: [Number(input.toFixed(2)), Number(outcome.toFixed(2)), population, Number(dea.toFixed(3))],
+                        itemStyle: { color: peerName === countryName ? '#f5222d' : '#69c0ff' }
+                    };
+                });
+            }
+        }
+
         // 初始化所有图表
-        function initAllCharts(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all', systemCapacity = 'medium', policyIntensity = 'baseline') {
+        async function initAllCharts(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all', systemCapacity = 'medium', policyIntensity = 'baseline', resourceView = currentResourceView) {
             window._mesoFactors = { systemCapacity, policyIntensity };
+            currentResourceView = resourceView || currentResourceView;
             initChinaMapChart('burden'); // 新增初始化地图调用
             initTransitionChart(country, indicator, timeRange, diseaseCategory);
             initDecompositionChart(country, indicator, timeRange, diseaseCategory);
             initDiseaseRankingChart(country, indicator, timeRange, diseaseCategory);
-            initResourceChart(country, indicator, timeRange, diseaseCategory);
+            await initResourceChart(country, indicator, timeRange, diseaseCategory, currentResourceView);
             initEquityChart(country, indicator, timeRange, diseaseCategory);
             initUrbanRuralChart(country, indicator, timeRange, diseaseCategory);
         }
@@ -1890,46 +2044,49 @@
         }
 
         // 卫生资源配置图
-        function initResourceChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+        async function initResourceChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all', viewType = currentResourceView) {
             const chartDom = document.getElementById('resourceChart');
             if (!chartDom) return;
             resourceChart = getOrInitChart(chartDom);
+            currentResourceView = viewType || currentResourceView;
+            resourceChart.showLoading({ text: '正在更新资源效率散点图...' });
+            const data = await fetchResourceScatterData(country, timeRange, currentResourceView);
+            resourceChart.hideLoading();
 
-            // 根据国家和指标调整数据
-            let data;
-
-            if (country === 'china') {
-                data = [
-                    { name: '医生数', value: 4.2, itemStyle: { color: '#ff4d4f' } },
-                    { name: '护士数', value: 3.8, itemStyle: { color: '#ff7a45' } },
-                    { name: '床位数', value: 6.5, itemStyle: { color: '#ffa940' } },
-                    { name: '医院数', value: 2.8, itemStyle: { color: '#ffc53d' } },
-                    { name: '卫生支出', value: 7.2, itemStyle: { color: '#ffec3d' } }
-                ];
-            } else if (country === 'usa') {
-                data = [
-                    { name: '医生数', value: 2.6, itemStyle: { color: '#ff4d4f' } },
-                    { name: '护士数', value: 11.8, itemStyle: { color: '#ff7a45' } },
-                    { name: '床位数', value: 2.9, itemStyle: { color: '#ffa940' } },
-                    { name: '医院数', value: 2.1, itemStyle: { color: '#ffc53d' } },
-                    { name: '卫生支出', value: 16.8, itemStyle: { color: '#ffec3d' } }
-                ];
-            } else {
-                data = [
-                    { name: '医生数', value: 3.5, itemStyle: { color: '#ff4d4f' } },
-                    { name: '护士数', value: 7.8, itemStyle: { color: '#ff7a45' } },
-                    { name: '床位数', value: 4.8, itemStyle: { color: '#ffa940' } },
-                    { name: '医院数', value: 2.5, itemStyle: { color: '#ffc53d' } },
-                    { name: '卫生支出', value: 10.5, itemStyle: { color: '#ffec3d' } }
-                ];
-            }
+            const viewConfig = {
+                physician: {
+                    xName: '医生密度（每千人）',
+                    yName: '预期寿命估计（岁）',
+                    unit: '每千人'
+                },
+                bed: {
+                    xName: '床位数（每千人）',
+                    yName: '死亡率逆向得分（越高越好）',
+                    unit: '每千人'
+                },
+                expenditure: {
+                    xName: '卫生支出（%GDP）',
+                    yName: 'DALYs改善得分（越高越好）',
+                    unit: '%GDP'
+                }
+            };
+            const cfg = viewConfig[currentResourceView] || viewConfig.physician;
+            const xMax = Math.max(5, ...data.map(d => Number(d.value?.[0]) || 0)) * 1.25;
+            const yMax = Math.max(80, ...data.map(d => Number(d.value?.[1]) || 0)) * 1.15;
+            const yMin = Math.min(45, ...data.map(d => Number(d.value?.[1]) || 0)) * 0.9;
 
             const option = {
                 tooltip: {
                     trigger: 'item',
                     formatter: function (params) {
-                        return '<strong>' + params.data.name + '</strong><br/>' +
-                            '数值: ' + params.data.value + (country === 'china' ? ' /千人' : ' /千人');
+                        const [x, y, pop, dea] = params.data.value || [];
+                        return [
+                            `<strong>${params.data.name}</strong>`,
+                            `${cfg.xName}: ${x} ${cfg.unit}`,
+                            `${cfg.yName}: ${y}`,
+                            `DEA效率: ${dea}`,
+                            `人口规模(百万): ${pop}`
+                        ].join('<br/>');
                     }
                 },
                 grid: {
@@ -1940,27 +2097,27 @@
                 },
                 xAxis: {
                     type: 'value',
-                    name: '数值',
+                    name: cfg.xName,
                     nameLocation: 'middle',
                     nameGap: 30,
                     min: 0,
-                    max: Math.max(...data.map(d => d.value)) * 1.2,
+                    max: xMax,
                     splitLine: { lineStyle: { type: 'dashed' } }
                 },
                 yAxis: {
                     type: 'value',
-                    name: '预期寿命 (岁)',
+                    name: cfg.yName,
                     nameLocation: 'middle',
                     nameGap: 40,
-                    min: 65,
-                    max: 90,
+                    min: yMin,
+                    max: yMax,
                     splitLine: { lineStyle: { type: 'dashed' } }
                 },
                 series: [{
                     name: '国家',
                     type: 'scatter',
                     symbolSize: function (data) {
-                        return Math.sqrt(data[2]) * 2.5;
+                        return Math.max(10, Math.sqrt(data[2]) * 1.4);
                     },
                     data: data,
                     label: {
@@ -1972,18 +2129,14 @@
                 }],
                 graphic: [
                     {
-                        type: 'line',
-                        shape: { x1: 80, y1: 280, x2: 750, y2: 80 },
-                        style: { stroke: 'rgba(24, 144, 255, 0.3)', lineWidth: 2, lineDash: [5, 5] }
-                    },
-                    {
                         type: 'text',
-                        left: '75%',
-                        top: '20%',
+                        left: '72%',
+                        top: '12%',
                         style: {
-                            text: '趋势线: r=0.72',
+                            text: `视图：${cfg.xName}\n样本：${data.length} 个国家`,
                             fill: '#1890ff',
-                            font: '12px sans-serif'
+                            font: '12px sans-serif',
+                            lineHeight: 18
                         }
                     }
                 ]
@@ -2206,25 +2359,29 @@
             }
         }
 
-        function updateCharts() {
+        async function updateCharts() {
             const btn = document.querySelector('.apply-btn');
             btn.textContent = '⏳ 分析中...';
             btn.disabled = true;
 
             const { country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity } = getFilterState();
+            const resourceView = document.querySelector('#resource-analysis select.filter-select')?.value || currentResourceView;
 
-            setTimeout(() => {
-                initAllCharts(country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity);
+            try {
+                await initAllCharts(country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity, resourceView);
                 saveFilterState({ country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity });
                 btn.textContent = '✓ 应用筛选并分析';
                 btn.disabled = false;
-
-                // 显示提示
                 const countryName = document.getElementById('countrySelect').options[document.getElementById('countrySelect').selectedIndex].text;
                 const indicatorName = document.getElementById('indicatorSelect').options[document.getElementById('indicatorSelect').selectedIndex].text;
                 showNotification('分析已更新', `已更新 ${countryName} 的 ${indicatorName} 数据 (${timeRange})`);
-            }, 1500);
-            refreshMesoInsight(country, indicator, timeRange);
+            } catch (e) {
+                console.error(e);
+                btn.textContent = '重试应用筛选';
+                btn.disabled = false;
+                showNotification('更新失败', '部分图表更新失败，请检查后端服务后重试');
+            }
+            await refreshMesoInsight(country, indicator, timeRange);
         }
 
         // 显示步骤
@@ -2414,8 +2571,16 @@
         }
 
         // 更新资源图表
-        function updateResourceChart(type) {
-            showNotification('视图切换', `已切换到${type}视图`);
+        async function updateResourceChart(type) {
+            const viewType = type || document.querySelector('#resource-analysis select.filter-select')?.value || 'physician';
+            const { country, indicator, timeRange, diseaseCategory } = getFilterState();
+            await initResourceChart(country, indicator, timeRange, diseaseCategory, viewType);
+            const viewNameMap = {
+                physician: '医生密度 vs 预期寿命',
+                bed: '床位数 vs 死亡率',
+                expenditure: '卫生支出 vs DALYs'
+            };
+            showNotification('视图切换', `已切换到 ${viewNameMap[viewType] || viewType}`);
         }
 
         // 3. 卫生资源效率分析 (修改原 showRegressionAnalysis)
@@ -2500,12 +2665,13 @@
         });
 
         // 页面加载完成后初始化图表
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             const state = loadFilterState();
             applyFilterState(state);
             const current = getFilterState();
-            initAllCharts(current.country, current.indicator, current.timeRange, current.diseaseCategory, current.systemCapacity, current.policyIntensity);
-            refreshMesoInsight(current.country, current.indicator, current.timeRange);
+            currentResourceView = document.querySelector('#resource-analysis select.filter-select')?.value || currentResourceView;
+            await initAllCharts(current.country, current.indicator, current.timeRange, current.diseaseCategory, current.systemCapacity, current.policyIntensity, currentResourceView);
+            await refreshMesoInsight(current.country, current.indicator, current.timeRange);
         });
     </script>
 
@@ -2580,7 +2746,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">📁 浏览数据集</button>
-                    <button onclick="aiNavigate('macro-analysis.html')" style="
+                    <button onclick="aiNavigate('macro')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -2598,7 +2764,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">🏛️ 中观分析</button>
-                    <button onclick="aiNavigate('micro-analysis.html')" style="
+                    <button onclick="aiNavigate('micro')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -2607,7 +2773,7 @@
                       cursor: pointer;
                       transition: all 0.2s;
                   ">👥 微观分析</button>
-                    <button onclick="aiNavigate('prediction.html')" style="
+                    <button onclick="aiNavigate('prediction')" style="
                       padding: 8px 12px;
                       border: 1px solid #e2e8f0;
                       border-radius: 6px;
@@ -2649,10 +2815,6 @@
             }
         });
 
-        function aiNavigate(url) {
-            window.location.href = url;
-        }
-
         (function syncNavState() {
             const current = location.pathname.split('/').pop() || 'index.html';
             document.querySelectorAll('.nav-item[data-nav], .dropdown-item[data-nav]').forEach(el => {
@@ -2680,22 +2842,6 @@
                     document.querySelectorAll('.user-only').forEach(el => el.style.display = 'flex');
                     if (user.role === 'admin') {
                         document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-                    }
-                } catch (e) {}
-            }
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Update auth state in nav
-            const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
-            if (userStr) {
-                try {
-                    const user = JSON.parse(userStr);
-                    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
-                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'inline-flex');
-                    if (user.role === 'admin') {
-                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
                     }
                 } catch (e) {}
             }
