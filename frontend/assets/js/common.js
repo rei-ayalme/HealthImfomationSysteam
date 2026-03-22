@@ -2,10 +2,15 @@
  * 全局公共脚本
  */
 
-// 显示全局提示
+// 显示全局提示 (增加深色背景错误提示)
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast-message';
+    
+    // 如果是错误，添加 error 类以应用深色背景
+    if (type === 'error') {
+        toast.classList.add('error');
+    }
     
     // 根据类型设置图标或颜色，使用CSS变量
     let icon = '';
@@ -14,7 +19,7 @@ function showToast(message, type = 'info') {
         toast.style.borderLeft = '4px solid var(--success-color, #52c41a)';
     } else if (type === 'error') {
         icon = '❌ ';
-        toast.style.borderLeft = '4px solid var(--error-color, #f5222d)';
+        toast.style.borderLeft = '4px solid #fff'; // 错误时边框变白
     } else if (type === 'warning') {
         icon = '⚠️ ';
         toast.style.borderLeft = '4px solid var(--warning-color, #fa8c16)';
@@ -29,13 +34,47 @@ function showToast(message, type = 'info') {
     // 3秒后自动消失
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
+        toast.style.transform = 'translate(-50%, -10px)';
         setTimeout(() => {
             if (document.body.contains(toast)) {
                 document.body.removeChild(toast);
             }
         }, 300);
     }, 3000);
+}
+
+// 模拟骨架屏加载数据 (包装原有 fetch)
+async function fetchWithSkeleton(url, containerId, renderCallback) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        // 渲染骨架屏
+        container.innerHTML = `
+            <div style="padding: 20px;">
+                <div class="skeleton-box" style="height: 24px; width: 60%; margin-bottom: 16px;"></div>
+                <div class="skeleton-box" style="height: 120px; width: 100%; margin-bottom: 12px;"></div>
+                <div class="skeleton-box" style="height: 120px; width: 100%;"></div>
+            </div>
+        `;
+    }
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`API 请求失败: ${response.status}`);
+        }
+        const data = await response.json();
+        if (renderCallback && container) {
+            container.innerHTML = ''; // 清除骨架屏
+            renderCallback(data, container);
+        }
+        return data;
+    } catch (e) {
+        showToast(e.message, 'error');
+        if (container) {
+            container.innerHTML = `<div style="padding: 20px; color: var(--error-color); text-align: center;">数据加载失败</div>`;
+        }
+        throw e;
+    }
 }
 
 // 检查是否登录（示例方法，根据实际情况调整）

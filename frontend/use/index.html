@@ -186,60 +186,102 @@
            ========================================== */
         /* noinspection CssUnusedSymbol */
         .kpi-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 18px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-color);
+        }
+        
+        .kpi-source-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-color);
+            padding: 2px 6px;
+            border-radius: 10px;
         }
 
         /* noinspection CssUnusedSymbol */
         .kpi-name {
-            color: #8c8c8c;
+            color: var(--text-muted);
             font-size: 13px;
             margin-bottom: 8px;
+            font-weight: 600;
         }
 
         /* noinspection CssUnusedSymbol */
         .kpi-value {
-            font-size: 30px;
+            font-size: 32px;
             font-weight: 700;
-            color: #1a1a1a;
+            color: var(--text-color);
         }
 
         /* noinspection CssUnusedSymbol */
         .kpi-change {
             margin-top: 8px;
             font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* noinspection CssUnusedSymbol */
         .kpi-up {
-            color: #f5222d;
+            color: var(--error-color); /* 疾病指标通常上升是坏事 */
         }
 
         /* noinspection CssUnusedSymbol */
         .kpi-down {
-            color: #52c41a;
+            color: var(--success-color);
         }
 
         .chart-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
         }
 
         .card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 18px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .card-title {
             font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .chart {
@@ -326,8 +368,8 @@
             <div class="status-chip">数据源在线</div>
             <div class="search-box"><input placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标"></div>
             <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html">登录</a>
-            <a class="nav-item signup-btn guest-only" href="/use/register.html">免费注册</a>
+            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
+            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
             <!-- 已登录时显示 -->
             <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
             <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
@@ -471,7 +513,18 @@
             kpiMap[metric].forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'kpi-card';
-                card.innerHTML = `<div class="kpi-name">${item.n}</div><div class="kpi-value">${item.v}</div><div class="kpi-change ${item.up ? 'kpi-up' : 'kpi-down'}">${item.c}</div>`;
+                // 使用图标区分趋势并增加数据来源角标
+                const trendIcon = item.up ? '↑' : '↓';
+                const trendClass = item.up ? 'kpi-up' : 'kpi-down';
+                card.innerHTML = `
+                    <div class="kpi-source-tag">GBD 2019</div>
+                    <div class="kpi-name">${item.n}</div>
+                    <div class="kpi-value">${item.v}</div>
+                    <div class="kpi-change ${trendClass}">
+                        <span>${trendIcon}</span>
+                        <span>${item.c} (vs 上期)</span>
+                    </div>
+                `;
                 kpiGrid.appendChild(card);
             });
         }
@@ -729,7 +782,58 @@
             apply();
         });
 
+        function handleGlobalSearch(keyword) {
+            const key = keyword.trim().toLowerCase();
+            if (!key) return;
+
+            // 1. 尝试匹配大区
+            const regionMap = {
+                '全球': 'global', 'global': 'global',
+                '东亚': 'east_asia', 'east asia': 'east_asia', 'china': 'east_asia', '中国': 'east_asia',
+                '东南亚': 'southeast_asia', 'southeast asia': 'southeast_asia',
+                '欧洲': 'europe', 'europe': 'europe',
+                '北美': 'north_america', 'north america': 'north_america', 'us': 'north_america', 'usa': 'north_america', '美国': 'north_america'
+            };
+
+            for (const [k, v] of Object.entries(regionMap)) {
+                if (key.includes(k)) {
+                    document.getElementById('region').value = v;
+                    showToast(`已为您切换至 ${k} 区域视角`, 'success');
+                    apply();
+                    return;
+                }
+            }
+
+            // 2. 尝试匹配指标
+            const metricMap = {
+                'dalys': 'dalys', '负担': 'dalys',
+                '死亡': 'deaths', 'death': 'deaths',
+                '患病': 'prevalence', 'prevalence': 'prevalence',
+                'ylls': 'ylls', '早死': 'ylls',
+                'ylds': 'ylds', '伤残': 'ylds'
+            };
+
+            for (const [k, v] of Object.entries(metricMap)) {
+                if (key.includes(k)) {
+                    document.getElementById('metric').value = v;
+                    showToast(`已为您切换至 ${k} 指标视角`, 'success');
+                    apply();
+                    return;
+                }
+            }
+
+            // 3. 如果都没匹配上，提示用户
+            showToast(`未找到关于 "${keyword}" 的直接匹配维度，请尝试其他关键词`, 'warning');
+        }
+
         searchInput.addEventListener('input', e => renderNews(e.target.value));
+        
+        // 监听回车键进行全局搜索跳转/过滤
+        searchInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                handleGlobalSearch(e.target.value);
+            }
+        });
 
         syncNavState();
         renderNews();
@@ -743,6 +847,14 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 确保点击登录按钮直接跳转，不被拦截
+            document.querySelectorAll('a[href="/use/login.html"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 如果有阻止默认行为的逻辑，确保登录按钮可以正常跳转
+                    window.location.href = '/use/login.html';
+                });
+            });
+            
             // Update auth state in nav
             const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
             if (userStr) {

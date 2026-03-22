@@ -33,6 +33,52 @@ def get_db():
 # 1. 定义 API 接口 (必须放在静态目录挂载前)
 # ==========================================
 
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest, db: Session = Depends(get_db)):
+    from db.models import User
+    
+    user = db.query(User).filter(User.username == req.username).first()
+    
+    if not user or user.password != req.password:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="账号或密码错误")
+        
+    return {
+        "status": "success",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role
+        }
+    }
+
+@app.get("/api/admin/logs")
+async def get_system_logs(db: Session = Depends(get_db)):
+    from db.models import OWIDFetchLog
+    try:
+        # 获取最新的100条爬虫与系统日志
+        logs = db.query(OWIDFetchLog).order_by(OWIDFetchLog.fetch_time.desc()).limit(100).all()
+        log_list = []
+        for log in logs:
+            log_list.append({
+                "id": log.id,
+                "timestamp": log.fetch_time.strftime("%Y-%m-%d %H:%M:%S") if log.fetch_time else "",
+                "module": "OWID_API",
+                "action": f"抓取指标 {log.indicator_id}",
+                "status": "success" if log.status else "error",
+                "message": f"新增数据 {log.data_count} 条" if log.status else (log.error_msg or "抓取失败")
+            })
+        return {"status": "success", "data": log_list}
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/dataset")
 async def get_dataset(db: Session = Depends(get_db)):
     try:
@@ -274,7 +320,7 @@ async def get_disease_simulation(years: int = 17, region: str = "China"):
         logger.exception("预测模拟失败")
         return {"status": "error", "msg": str(e)}
 
-def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str):
+def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str, level: str = "community"):
     """后台运行实际的空间分析并写入缓存"""
     try:
         from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
@@ -282,19 +328,52 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str)
         import pandas as pd
         import json
         import os
+        import math
         
         # 1. 获取供给端和需求端数据
-        supply_df = fetch_hospital_pois(city=region, keyword="三甲医院")
+        # 分别获取三甲医院和社区医院，体现不同层级医疗资源的搜寻半径差异
+        df_3a = fetch_hospital_pois(city=region, keyword="三甲医院")
+        if not df_3a.empty:
+            df_3a['type'] = '三甲医院'
+            df_3a['search_radius'] = 30.0  # 约60分钟车程 (假设30km/h)
+            
+        df_comm = fetch_hospital_pois(city=region, keyword="社区卫生服务中心")
+        if not df_comm.empty:
+            df_comm['type'] = '社区医院'
+            df_comm['search_radius'] = 7.5   # 约15分钟车程 (假设30km/h)
+            
+        supply_df = pd.concat([df_3a, df_comm], ignore_index=True) if not df_3a.empty or not df_comm.empty else pd.DataFrame()
         demand_df = fetch_community_demand(city=region)
         
         if supply_df.empty or demand_df.empty:
             result_data = {"status": "error", "msg": f"未能获取 {region} 的微观地理数据"}
         else:
-            # 2. 调用 2SFCA 算法
-            access_scores = HealthMathModels.calculate_2sfca(
-                supply_df, demand_df, threshold_km=threshold_km, use_network_distance=True
+            # 2. 调用 E2SFCA 算法 (支持分段功率衰减和自定义半径)
+            access_scores = HealthMathModels.calculate_e2sfca(
+                supply_df, demand_df, 
+                radius_col='search_radius', 
+                default_radius_km=threshold_km,
+                decay_type='piecewise_power',
+                use_network_distance=True
             )
             demand_df['accessibility_score'] = access_scores
+            
+            # 2.5 聚合渲染机制：如果 level 为 district，后端预先对数据按行政区做 groupby 平均值处理
+            if level == "district":
+                # 尝试从 name 中提取行政区（如 xxx区，xxx县），若无法提取则使用默认值
+                def extract_district(name):
+                    for suffix in ['区', '县', '市']:
+                        if suffix in name:
+                            return name[:name.index(suffix)+1]
+                    return name
+                
+                demand_df['district_name'] = demand_df['name'].apply(extract_district)
+                # 按行政区聚合：计算平均可及性指数，以及平均经纬度作为中心点
+                demand_df = demand_df.groupby('district_name').agg({
+                    'accessibility_score': 'mean',
+                    'lon': 'mean',
+                    'lat': 'mean'
+                }).reset_index().rename(columns={'district_name': 'name'})
             
             # 3. 构造前端需要的图表数据（增加坐标点用于热力图/散点图展示）
             labels = demand_df['name'].tolist()
@@ -308,7 +387,10 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str)
             geo_points = []
             for _, row in demand_df.iterrows():
                 score = round(row['accessibility_score'], 4)
-                z_weight = round(0.1 + 0.9 * ((score - min_score) / range_score), 4)
+                # 改进 Z 轴权重与 3D 视觉遮挡：使用非线性函数（平方根）压缩极端高值，防止个别点遮挡后方
+                normalized_score = (score - min_score) / range_score if range_score > 0 else 0
+                z_weight = round(0.1 + 0.9 * math.sqrt(normalized_score), 4)
+                
                 geo_points.append({
                     "name": row['name'],
                     "value": [row['lon'], row['lat'], score],
@@ -318,10 +400,11 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str)
             result_data = {
                 "status": "success",
                 "region": region,
+                "level": level,
                 "chart_data": {
                     "labels": labels,
                     "datasets": [{
-                        "label": f"{region} 各区空间可及性指数 (2SFCA)",
+                        "label": f"{region} 空间可及性指数 (E2SFCA)",
                         "data": scores,
                         "backgroundColor": "#1890ff"
                     }],
@@ -344,15 +427,15 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str)
             json.dump(error_data, f, ensure_ascii=False)
 
 @app.get("/api/spatial_analysis")
-async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = "成都市", threshold_km: float = 10.0):
+async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = "成都市", threshold_km: float = 10.0, level: str = "district"):
     try:
         from config.settings import SETTINGS
         import os
         import json
         import time
         
-        # 增加本地缓存机制，减少高德API调用
-        cache_file = os.path.join(SETTINGS.DATA_DIR, "processed", f"spatial_cache_{region}.json")
+        # 增加本地缓存机制，减少高德API调用，并根据层级区分缓存
+        cache_file = os.path.join(SETTINGS.DATA_DIR, "processed", f"spatial_cache_{region}_{level}.json")
         try:
             if os.path.exists(cache_file):
                 file_mtime = os.path.getmtime(cache_file)
@@ -370,13 +453,14 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
             logger.warning(f"读取或清理空间分析缓存失败: {e}")
 
         # 如果没有缓存，则将繁重的计算任务放入 BackgroundTasks 后台执行
-        background_tasks.add_task(run_spatial_analysis_task, region, threshold_km, cache_file)
+        background_tasks.add_task(run_spatial_analysis_task, region, threshold_km, cache_file, level)
         
         # 立即返回接收状态，前端可以展示“正在分析中，请稍后刷新...”
         return {
             "status": "processing",
-            "msg": f"正在后台调度高德API及进行2SFCA路网计算，这可能需要几十秒时间，请稍后自动重试...",
-            "region": region
+            "msg": f"正在后台调度高德API及进行E2SFCA计算 ({level} 级聚合)，这可能需要几十秒时间，请稍后自动重试...",
+            "region": region,
+            "level": level
         }
         
     except Exception as e:

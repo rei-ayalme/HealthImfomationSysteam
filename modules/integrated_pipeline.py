@@ -41,27 +41,36 @@ class HealthDataPipeline:
         Base.metadata.create_all(bind=self.db.get_bind())
 
     def run_local_resource_analysis(self):
-        """阶段一：本地卫生资源配置缺口与优化 (原 run_analysis.py 逻辑)"""
+        """阶段一：本地卫生资源配置缺口与优化 (处理真实的年鉴数据)"""
         logger.info("\n" + "=" * 50)
-        logger.info("▶ 阶段一: 本地卫生资源配置缺口分析")
+        logger.info("▶ 阶段一: 本地卫生资源配置缺口分析 (基于真实卫生年鉴)")
         logger.info("=" * 50)
 
-        input_file = SETTINGS.RAW_DATA_FILE
+        # 变更为处理真实年鉴数据的目录
+        input_file = SETTINGS.YEARBOOK_DATA_PATH
         output_file = SETTINGS.CLEANED_DATA_FILE
 
         if not os.path.exists(input_file):
-            logger.warning(f"跳过本地分析: 未找到原始数据文件/目录 '{input_file}'")
+            logger.warning(f"跳过本地分析: 未找到真实的卫生年鉴目录 '{input_file}'")
             return
 
         try:
             # 1. 数据预处理
-            logger.info("1. 执行基础预处理...")
+            logger.info(f"1. 扫描并提取目录 {input_file} 下的真实年鉴数据...")
             preprocessor = HealthDataPreprocessor()
-            preprocessor.clean_health_data(input_file, output_file)
+            # 指定提取省级或市级的数据，这里默认提取"合计"层级
+            preprocessor.clean_health_data(input_file, output_file, hierarchy_level="合计")
 
             # 2. 核心分析
             logger.info("2. 执行核心指标分析...")
             raw_df = pd.read_excel(output_file)
+            
+            # 由于真实的年鉴数据量极大且可能存在空缺，我们在进入分析器前进行最后一次清洗
+            raw_df = raw_df.dropna(subset=['region_name', 'year'])
+            if raw_df.empty:
+                logger.warning("提取出的数据为空，请检查年鉴格式或映射配置")
+                return
+                
             analyzer = UnifiedHealthAnalyzer(raw_df)
 
             latest_year = analyzer.data['year'].max() if 'year' in analyzer.data.columns else 2020
@@ -270,33 +279,50 @@ class HealthDataPipeline:
             logger.info(f"-> 国际对比 DEA 计算完成，发现 {sum(efficiencies >= 0.99)} 个效率标杆地区。")
 
         # ---------------------------------------------------------
-        # 4. 2SFCA 空间可及性分析测试
+        # 4. E2SFCA 空间可及性分析测试
         # ---------------------------------------------------------
-        logger.info("\n4. 执行 2SFCA 微观空间可及性计算...")
+        logger.info("\n4. 执行 E2SFCA 微观空间可及性计算...")
         try:
             from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
-            logger.info("-> 正在通过高德 API 获取成都市三甲医院及社区人口数据...")
-            supply_df = fetch_hospital_pois(city="成都市", keyword="三甲医院")
+            logger.info("-> 正在通过高德 API 获取成都市医院及社区人口数据...")
+            
+            df_3a = fetch_hospital_pois(city="成都市", keyword="三甲医院")
+            if not df_3a.empty:
+                df_3a['type'] = '三甲医院'
+                df_3a['search_radius'] = 30.0  # 60分钟圈
+                
+            df_comm = fetch_hospital_pois(city="成都市", keyword="社区卫生服务中心")
+            if not df_comm.empty:
+                df_comm['type'] = '社区医院'
+                df_comm['search_radius'] = 7.5  # 15分钟圈
+                
+            supply_df = pd.concat([df_3a, df_comm], ignore_index=True) if not df_3a.empty or not df_comm.empty else pd.DataFrame()
             demand_df = fetch_community_demand(city="成都市")
             
             if not supply_df.empty and not demand_df.empty:
-                logger.info(f"-> 成功获取 {len(supply_df)} 家三甲医院，{len(demand_df)} 个社区节点，开始计算 2SFCA 指数...")
+                logger.info(f"-> 成功获取 {len(supply_df)} 家医疗机构，{len(demand_df)} 个社区节点，开始计算 E2SFCA 指数...")
                 
                 # 注意：不再使用 random 随机模拟人口等，如果缺失，抛出日志并放弃或使用真实均值填补
                 if 'population' not in demand_df.columns:
                     from utils.logger import log_missing_data
-                    log_missing_data("HealthMathModels", "2SFCA", 2024, "Chengdu", "缺失网格人口数据")
+                    log_missing_data("HealthMathModels", "E2SFCA", 2024, "Chengdu", "缺失网格人口数据")
                     # 记录完缺失后我们仍然给一个默认常量以保证流程能跑通，但不使用随机数造假
                     demand_df['population'] = 5000
                     
                 # 传入 use_network_distance=True 使用真实高德路网计算可及性
-                access_scores = HealthMathModels.calculate_2sfca(supply_df, demand_df, threshold_km=10.0, use_network_distance=True)
+                access_scores = HealthMathModels.calculate_e2sfca(
+                    supply_df, demand_df, 
+                    radius_col='search_radius',
+                    default_radius_km=10.0, 
+                    decay_type='piecewise_power',
+                    use_network_distance=True
+                )
                 demand_df['2sfca_access_score'] = access_scores
-                logger.info("-> 2SFCA 计算完成，部分社区可及性指数：\n" + str(demand_df[['name', '2sfca_access_score']].head()))
+                logger.info("-> E2SFCA 计算完成，部分社区可及性指数：\n" + str(demand_df[['name', '2sfca_access_score']].head()))
             else:
-                logger.warning("-> 获取微观地理数据失败，跳过 2SFCA 计算。")
+                logger.warning("-> 获取微观地理数据失败，跳过 E2SFCA 计算。")
         except Exception as e:
-            logger.exception("-> 2SFCA 计算异常")
+            logger.exception("-> E2SFCA 计算异常")
 
         # ---------------------------------------------------------
         # 5. 疾病风险归因分析测试

@@ -57,10 +57,16 @@ class Settings:
     CLEANED_DATA_FILE = os.path.join(PROCESSED_DATA_PATH, "cleaned_health_data.xlsx")
     GBD_DATA_FILE = os.path.join(RAW_DATA_PATH, "global_burden_of_disease_data.xlsx")
 
+    # 原始卫生年鉴数据目录
+    YEARBOOK_DATA_PATH = os.path.join(RAW_DATA_PATH, "卫生年鉴表")
+
     STANDARD_COLUMN_MAPPING = {
-        # 示例映射关系，需根据业务补充
-        "physicians": "physicians_per_1000",
-        "nurses": "nurses_per_1000"
+        # 针对年鉴数据的映射关系
+        "physicians": ["执业(助理)医师", "执业医师", "医师", "physicians", "doctor"],
+        "nurses": ["注册护士", "护士", "nurses", "nurse"],
+        "hospital_beds": ["床位数", "医疗卫生机构床位数", "医院床位数", "beds", "hospital_beds"],
+        "population": ["人口数", "年末人口数", "总人口", "population", "pop"],
+        "region_name": ["地区", "省份", "省市", "region", "location", "area"]
     }
     BASE_HEALTH_FACTORS = ["infant_mortality", "life_expectancy"]
     BASE_HEALTH_FACTORS_WHO = ["gho_infant_mortality", "gho_life_expectancy"]

@@ -6,7 +6,20 @@ from typing import Tuple, Dict
 from modules.core.interface import IPreprocessor
 from modules.data.cleaner import HealthDataCleaner
 import json
+import pandera.pandas as pa
 from config.settings import SETTINGS
+
+# 定义健康数据验证模式
+HealthDataSchema = pa.DataFrameSchema({
+    "year": pa.Column(int, pa.Check.ge(1900), pa.Check.le(2100), coerce=True),
+    "population": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "physicians": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "nurses": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "hospital_beds": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "physicians_per_1000": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "nurses_per_1000": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+    "hospital_beds_per_1000": pa.Column(float, pa.Check.ge(0.0), coerce=True, required=False),
+})
 
 class HealthDataPreprocessor(IPreprocessor):
     """
@@ -42,8 +55,8 @@ class HealthDataPreprocessor(IPreprocessor):
                     break
         return identified
 
-    def preprocess_health_data(self, file_path: str) -> Tuple[pd.DataFrame, Dict]:
-        """执行完整预处理流程"""
+    def preprocess_health_data(self, file_path: str, hierarchy_level: str = "合计") -> Tuple[pd.DataFrame, Dict]:
+        """执行完整预处理流程，支持选择提取特定层级数据（如合计、城市、农村）"""
         try:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"未找到原始文件: {file_path}")
@@ -55,7 +68,7 @@ class HealthDataPreprocessor(IPreprocessor):
                     for file in files:
                         full_path = os.path.join(root, file)
                         # 仅处理中国本地的年鉴及统计局数据
-                        if file.endswith(('.xlsx', '.xls', '.csv')) and any(k in file for k in ['年鉴', 'NBS', '中国卫生健康统计年鉴面板数据']):
+                        if file.endswith(('.xlsx', '.xls', '.csv')) and not file.startswith('~'):
                             try:
                                 if file.endswith('.csv'):
                                     temp_df = pd.read_csv(full_path)
@@ -74,7 +87,7 @@ class HealthDataPreprocessor(IPreprocessor):
                                     try:
                                         temp_df = pd.read_excel(full_path)
                                         # 如果是面板数据，可能有多层级或者需要简单清洗
-                                        if "面板数据" in file:
+                                        if "面板数据" in file or "提取自" in file:
                                             # 处理掉全是 NaN 的行
                                             temp_df = temp_df.dropna(how='all')
                                             
@@ -96,6 +109,16 @@ class HealthDataPreprocessor(IPreprocessor):
                                                         new_cols.append("Unknown")
                                                 temp_df.columns = new_cols
                                                 temp_df = temp_df.iloc[1:].reset_index(drop=True)
+                                                
+                                                # 过滤多级表头：提取符合 hierarchy_level 或没有层级区分的列
+                                                if hierarchy_level:
+                                                    filtered_cols = []
+                                                    for col in temp_df.columns:
+                                                        if '_' not in col or hierarchy_level in col:
+                                                            filtered_cols.append(col)
+                                                    temp_df = temp_df[filtered_cols]
+                                                    # 重命名列，去掉层级后缀
+                                                    temp_df.columns = [col.replace(f"_{hierarchy_level}", "") for col in temp_df.columns]
                                     except Exception as e:
                                         # 兼容一些以 .xls 结尾但实际上是 HTML 的文件
                                         if 'Excel file format cannot be determined' in str(e) or 'Expected BOF' in str(e):
@@ -161,6 +184,16 @@ class HealthDataPreprocessor(IPreprocessor):
                                     new_cols.append("Unknown")
                             df.columns = new_cols
                             df = df.iloc[1:].reset_index(drop=True)
+                            
+                            # 过滤多级表头：提取符合 hierarchy_level 或没有层级区分的列
+                            if hierarchy_level:
+                                filtered_cols = []
+                                for col in df.columns:
+                                    if '_' not in col or hierarchy_level in col:
+                                        filtered_cols.append(col)
+                                df = df[filtered_cols]
+                                # 重命名列，去掉层级后缀
+                                df.columns = [col.replace(f"_{hierarchy_level}", "") for col in df.columns]
 
             original_shape = df.shape
 
@@ -170,6 +203,12 @@ class HealthDataPreprocessor(IPreprocessor):
 
             # 3. 缺失值与基础清洗
             df = self.cleaner.handle_missing_values(df)
+
+            # 3.5 异常值深度清洗 (IQR / 3σ)
+            # 对数值型核心列进行离群点检测和截断，防止污染后续 DEA 或 GBD
+            cols_to_clean = [col for col in ['population', 'physicians', 'nurses', 'hospital_beds'] if col in df.columns]
+            if cols_to_clean:
+                df = self.cleaner.detect_and_handle_outliers(df, columns=cols_to_clean, method='iqr')
 
             # 4. 核心计算：绝对值 -> 千人比率 (解决严重逻辑错误)
             if 'population' in df.columns:
@@ -204,13 +243,28 @@ class HealthDataPreprocessor(IPreprocessor):
             # 6. 去重并剔除分母为0导致的无限大异常值
             df = df.replace([np.inf, -np.inf], 0)
             df = df.drop_duplicates(ignore_index=True)
-            
+
             # NBS 等数据可能存在需要melt的宽表格式(如 '2024年', '2023年' 为列)，需做宽转长处理
             # 检查是否有以年为列名的数据
             year_cols = [c for c in df.columns if str(c).endswith('年') and str(c)[:-1].isdigit()]
             if year_cols and 'region_name' in df.columns:
                 # 简单融合成长表
                 pass
+                
+            # 执行 Schema 校验
+            try:
+                # 过滤掉schema中不存在的列进行校验（如果schema只验证部分列）
+                cols_to_validate = [col for col in df.columns if col in HealthDataSchema.columns]
+                if cols_to_validate:
+                    # 我们只需要验证存在的列
+                    schema_to_validate = HealthDataSchema.select_columns(cols_to_validate)
+                    df = schema_to_validate.validate(df)
+            except pa.errors.SchemaError as e:
+                self.logger.warning(f"数据 schema 校验发现异常，部分数据可能不符合规范: {e}")
+                # 可选：剔除不符合规范的数据或记录日志
+                # df = e.failure_cases... 暂时仅做日志记录，防止阻断流程
+            except Exception as e:
+                self.logger.warning(f"Schema 校验时发生未知错误: {e}")
             
             # 确保 identified_columns 是包含字符串的列表，避免 np.concatenate 报错
             identified_columns_list = []
@@ -242,9 +296,9 @@ class HealthDataPreprocessor(IPreprocessor):
             self.logger.exception("预处理失败")
             return pd.DataFrame(), {"error": str(e)}
 
-    def clean_health_data(self, input_file: str, output_file: str) -> None:
+    def clean_health_data(self, input_file: str, output_file: str, hierarchy_level: str = "合计") -> None:
         """实现接口要求的持久化清洗方法"""
-        df, stats = self.preprocess_health_data(input_file)
+        df, stats = self.preprocess_health_data(input_file, hierarchy_level=hierarchy_level)
 
         if "error" in stats or df.empty:
             error_msg = stats.get("error", "文件无有效数据或全部清洗被过滤")

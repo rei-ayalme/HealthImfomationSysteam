@@ -86,6 +86,16 @@ class DeepSeekAnalysisResult(Base):
     create_time = Column(DateTime, default=datetime.now, index=True)
 
 
+class User(Base):
+    """用户表，支持简单的基于角色的访问控制"""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    password = Column(String(255), nullable=False)  # 简单起见存明文或简单哈希
+    role = Column(String(20), default="user", comment="角色: user 或 admin")
+    created_at = Column(DateTime, default=datetime.now)
+
 class AdvancedDiseaseTransition(Base):
     """问题1：疾病谱系时空变迁分析表"""
     __tablename__ = "adv_disease_transition"

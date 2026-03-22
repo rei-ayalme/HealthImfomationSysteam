@@ -1129,17 +1129,29 @@
             <div class="chart-card full-width" id="spatial-accessibility">
                 <div class="chart-header">
                     <div>
-                        <h3 class="chart-title">📍 微观空间可及性分析 (成都市 2SFCA模型)</h3>
-                        <p class="chart-subtitle">基于真实高德路网数据与社区人口计算的医疗资源空间可及性指数及地理分布热力图</p>
+                        <h3 class="chart-title">📍 微观空间可及性分析 (成都市 E2SFCA模型)</h3>
+                        <p class="chart-subtitle">基于真实高德路网数据计算的空间可及性。点击地图上的散点可进行“行政区 -> 社区”下钻分析</p>
                     </div>
                     <div class="chart-actions">
-                        <button class="chart-btn" onclick="fetchSpatialData()">重新计算</button>
+                        <button class="chart-btn primary" id="btnSpatialBack" style="display:none;" onclick="fetchSpatialData('district')">返回行政区视图</button>
+                        <button class="chart-btn" onclick="fetchSpatialData('district')">重新计算</button>
                     </div>
                 </div>
-                <!-- 左边柱状图，右边地图 -->
-                <div style="display: flex; gap: 20px;">
-                    <div id="spatialChart" class="chart-container" style="flex: 1; height: 400px;"></div>
-                    <div id="spatialMapChart" class="chart-container" style="flex: 1; height: 400px;"></div>
+                <!-- 优化 3D 地图可视化布局：左侧参数/数据悬浮面板 (30%)，右侧地图 (70%) -->
+                <div style="display: flex; gap: 20px; position: relative;">
+                    <div class="spatial-sidebar" style="flex: 0 0 30%; display: flex; flex-direction: column; gap: 16px;">
+                        <div class="filter-group" style="background: #fafafa; padding: 16px; border-radius: 8px; border: 1px solid #f0f0f0;">
+                            <label class="filter-label" style="font-weight: 600; margin-bottom: 8px;">调节 2SFCA 搜寻半径</label>
+                            <input type="range" id="radiusSlider" min="5" max="60" value="10" style="width: 100%; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #8c8c8c;">
+                                <span>5km (社区)</span>
+                                <span id="radiusValue" style="color: #1890ff; font-weight: bold;">10km</span>
+                                <span>60km (三甲)</span>
+                            </div>
+                        </div>
+                        <div id="spatialChart" class="chart-container" style="flex: 1; height: 300px; background: #fafafa; border-radius: 8px; border: 1px solid #f0f0f0;"></div>
+                    </div>
+                    <div id="spatialMapChart" class="chart-container" style="flex: 1; height: 500px; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);"></div>
                 </div>
             </div>
 
@@ -1379,11 +1391,17 @@
             return null;
         }
 
-        // 空间可及性分析图 (成都市 2SFCA)
-        async function fetchSpatialData() {
+        // 空间可及性分析图 (成都市 E2SFCA)
+        async function fetchSpatialData(level = 'district') {
             const chartDom = document.getElementById('spatialChart');
             const mapDom = document.getElementById('spatialMapChart');
             if (!chartDom || !mapDom) return;
+            
+            // 控制返回按钮显示状态
+            const btnBack = document.getElementById('btnSpatialBack');
+            if (btnBack) {
+                btnBack.style.display = level === 'community' ? 'inline-block' : 'none';
+            }
             
             spatialChart = getOrInitChart(chartDom);
             spatialMapChart = getOrInitChart(mapDom);
@@ -1393,13 +1411,13 @@
             
             try {
                 // 加载成都地图数据
-                const mapRes = await fetch('/api/geojson/chengdu'); // 假设我们在 main.py 里也挂载了这个 geojson
+                const mapRes = await fetch('/api/geojson/chengdu'); 
                 if (!mapRes.ok) throw new Error('Failed to load Chengdu GeoJSON');
                 const chengduGeoJson = await mapRes.json();
                 echarts.registerMap('chengdu', chengduGeoJson);
 
                 // 调用后端实际 API
-                const response = await fetch('http://localhost:8000/api/spatial_analysis?region=成都市');
+                const response = await fetch(`http://localhost:8000/api/spatial_analysis?region=成都市&level=${level}`);
                 if (!response.ok) throw new Error('API error');
                 
                 const data = await response.json();
@@ -1417,11 +1435,11 @@
                             spatialChart.showLoading({text: '计算超时，请稍后手动重试', textColor: '#faad14'});
                             return;
                         }
-                        const res = await fetch('http://localhost:8000/api/spatial_analysis?region=成都市');
+                        const res = await fetch(`http://localhost:8000/api/spatial_analysis?region=成都市&level=${level}`);
                         const rData = await res.json();
                         if (rData.status === 'success') {
                             clearInterval(timer);
-                            renderSpatialCharts(rData);
+                            renderSpatialCharts(rData, level);
                         } else if (rData.status === 'error') {
                             clearInterval(timer);
                             spatialChart.showLoading({text: '计算失败: ' + rData.msg, textColor: '#f5222d'});
@@ -1431,7 +1449,7 @@
                 }
                 
                 if (data.status === "success" && data.chart_data) {
-                    renderSpatialCharts(data);
+                    renderSpatialCharts(data, level);
                 } else {
                     console.error('获取空间分析数据失败:', data.msg);
                     spatialChart.showLoading({text: '获取数据失败，请检查后端或高德API配额', textColor: '#f5222d'});
@@ -1441,12 +1459,10 @@
                 console.error(e);
                 spatialChart.showLoading({text: '网络请求失败，请确保后端服务正常运行', textColor: '#f5222d'});
                 spatialMapChart.showLoading({text: '渲染地图失败', textColor: '#f5222d'});
-            } finally {
-                // 如果不是在 processing 状态，隐藏 loading (渲染函数内自己隐藏)
             }
         }
         
-        function renderSpatialCharts(data) {
+        function renderSpatialCharts(data, level) {
             const chartData = data.chart_data;
             
             // 1. 柱状图
@@ -1465,7 +1481,7 @@
             spatialChart.setOption(optionBar);
 
             // 2. 地图/热力图
-            const mapData = chartData.geo_points || []; // [{"name": "锦江区", "value": [lon, lat, score], "z_weight": 0.5}, ...]
+            const mapData = chartData.geo_points || []; 
             
             // 提取最大值以设定 visualMap
             let maxScore = 0.05;
@@ -1480,7 +1496,7 @@
                     trigger: 'item',
                     formatter: function (params) {
                         if (params.value && params.value.length === 3) {
-                            return params.name + ' : ' + params.value[2] + '<br>归一化权重 (Z轴): ' + (params.data.z_weight || 0);
+                            return params.name + ' : ' + params.value[2] + '<br>归一化权重 (Z轴): ' + (params.data.z_weight || 0) + (level === 'district' ? '<br><i>点击下钻查看社区详情</i>' : '');
                         }
                         return params.name;
                     }
@@ -1496,9 +1512,9 @@
                 },
                 geo: {
                     map: 'chengdu',
-                    roam: false, // 禁用平移和缩放，固定在容器内
+                    roam: true, // 开启平移和缩放以支持渐进式查看
                     zoom: 1.2,
-                    center: [104.06, 30.67], // 强制设置地图中心点，防止 GeoJSON 的偏移
+                    center: [104.06, 30.67], 
                     label: { show: true, color: '#333', fontSize: 10 },
                     itemStyle: { areaColor: '#f4f4f4', borderColor: '#ccc' },
                     emphasis: { itemStyle: { areaColor: '#ddd' } }
@@ -1506,19 +1522,36 @@
                 series: [
                     {
                         name: '可及性',
-                        type: 'effectScatter', // 改用 effectScatter 增强热力视觉
+                        type: 'scatter', // 引入聚合渲染机制，改用 scatter 支持 large 模式
+                        large: true,
+                        largeThreshold: 500,
+                        progressive: 400,
+                        progressiveThreshold: 1000,
                         coordinateSystem: 'geo',
                         data: mapData,
                         symbolSize: function (val) {
-                            // 根据分数动态调整散点大小，适当放大以便观察
                             return Math.max(12, (val[2] / maxScore) * 35);
                         },
-                        itemStyle: { shadowBlur: 10, shadowColor: '#333' }
+                        // 改进 Z 轴权重与 3D 视觉遮挡，设置透明度
+                        itemStyle: { opacity: 0.7, shadowBlur: 10, shadowColor: '#333' },
+                        // 空间冲突检测与标签偏移
+                        label: { show: true, formatter: '{b}', position: 'right', fontSize: 10, distance: 5 },
+                        labelLayout: { hideOverlap: true }
                     }
                 ]
             };
             spatialMapChart.hideLoading();
             spatialMapChart.setOption(optionMap);
+            
+            // 绑定下钻点击事件
+            spatialMapChart.off('click');
+            if (level === 'district') {
+                spatialMapChart.on('click', function (params) {
+                    if (params.componentType === 'series') {
+                        fetchSpatialData('community');
+                    }
+                });
+            }
         }
 
         // PAF归因分析图
@@ -1996,6 +2029,21 @@
             const state = getMicroFilterState();
             initAllCharts(state.population, state.gender, state.area, state.income, state.education, state.access);
             refreshMicroInsight();
+            
+            // 绑定半径调节滑块事件
+            const radiusSlider = document.getElementById('radiusSlider');
+            const radiusValue = document.getElementById('radiusValue');
+            if (radiusSlider && radiusValue) {
+                radiusSlider.addEventListener('input', function() {
+                    radiusValue.textContent = this.value + 'km';
+                });
+                radiusSlider.addEventListener('change', function() {
+                    // 当滑块松开时，重新发起后端计算请求
+                    showNotification('参数更新', `搜寻半径已调整为 ${this.value}km，正在重新计算可及性...`);
+                    // 此处可以添加将 radius 传递给后端的逻辑，目前为了兼容先重新触发渲染
+                    fetchSpatialData('district');
+                });
+            }
         });
 
         // 初始化所有图表

@@ -2,10 +2,18 @@
 import requests
 import pandas as pd
 import json
+import os
 from datetime import datetime
 from db.connection import SessionLocal
 from db.models import GlobalHealthMetric, WHOGlobalHealth, OWIDFetchLog
-from config.settings import OWID_INDICATORS  # 后续在settings里配置需要的OWID指标
+from config.settings import OWID_INDICATORS, SETTINGS  # 后续在settings里配置需要的OWID指标
+
+# -----------------------------------------------------------------------------
+# 外部数据获取与爬虫逻辑保存声明
+# 本模块包含了通过 Our World in Data (OWID) API 获取全球健康指标数据的核心爬取逻辑。
+# 根据系统规范，此爬虫代码与项目一同保存并上传，以确保后续环境可直接复现抓取过程。
+# 数据不仅会入库，还会将原始抓取数据备份为 CSV 文件，保存在 data/raw 目录下。
+# -----------------------------------------------------------------------------
 
 def create_owid_unique_index():
     """创建唯一索引，防止重复入库（country_code+year+indicator_name）"""
@@ -66,6 +74,21 @@ def get_owid_single_indicator(indicator_id: str, target_countries: list = None, 
         df = pd.DataFrame(all_data)
         # 去重：按country_code+year+indicator_id去重
         df = df.drop_duplicates(subset=["country_code", "year", "indicator_id"])
+        
+        # 将原始数据备份为 CSV，保存在 data/raw 目录下
+        if not df.empty:
+            os.makedirs(SETTINGS.RAW_DATA_PATH, exist_ok=True)
+            backup_file = os.path.join(SETTINGS.RAW_DATA_PATH, f"owid_indicator_{indicator_id}_backup.csv")
+            try:
+                # 若文件存在则追加，否则新建
+                if os.path.exists(backup_file):
+                    df.to_csv(backup_file, mode='a', header=False, index=False, encoding='utf-8')
+                else:
+                    df.to_csv(backup_file, index=False, encoding='utf-8')
+                print(f"✅ OWID指标 {indicator_id} 的原始爬取数据已备份至 {backup_file}")
+            except Exception as e:
+                print(f"⚠️ 备份 CSV 失败: {e}")
+
         return df
     except Exception as e:
         print(f"拉取OWID指标{indicator_id}失败：{e}")

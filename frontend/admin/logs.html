@@ -760,9 +760,19 @@
         ];
 
         // 渲染日志表格
-        function renderLogs() {
+        function renderLogs(keyword = '') {
             const tbody = document.getElementById('logsTableBody');
-            tbody.innerHTML = logData.map(log => `
+            
+            // 如果有关键字，则过滤日志
+            const filteredData = keyword 
+                ? logData.filter(log => 
+                    log.message.toLowerCase().includes(keyword.toLowerCase()) || 
+                    log.module.toLowerCase().includes(keyword.toLowerCase()) ||
+                    log.user.toLowerCase().includes(keyword.toLowerCase())
+                  )
+                : logData;
+                
+            tbody.innerHTML = filteredData.map(log => `
                 <tr>
                     <td><span class="log-level ${log.level}">${getLevelText(log.level)}</span></td>
                     <td>${log.time}</td>
@@ -772,6 +782,12 @@
                     <td><button class="action-btn" onclick="viewLogDetail(${log.id})">查看</button></td>
                 </tr>
             `).join('');
+            
+            // 更新分页记录数
+            const infoEl = document.querySelector('.pagination-info');
+            if (infoEl) {
+                infoEl.textContent = `检索到 ${filteredData.length} 条记录`;
+            }
         }
 
         // 获取级别文本
@@ -857,11 +873,41 @@
         }
 
         // 查询日志
-        function searchLogs() {
-            showNotification('正在查询日志...', 'info');
+        async function searchLogs() {
+            showToast('正在查询系统日志...', 'info');
+            const topSearch = document.querySelector('.search-input').value.trim();
+            const filterSearch = document.getElementById('keywordFilter').value.trim();
+            const keyword = topSearch || filterSearch;
+            
+            try {
+                const response = await fetch('/api/admin/logs');
+                if (response.ok) {
+                    const resData = await response.json();
+                    if (resData.status === 'success' && resData.data && resData.data.length > 0) {
+                        logData.length = 0;
+                        resData.data.forEach(item => {
+                            logData.push({
+                                id: item.id,
+                                level: item.status === 'error' ? 'error' : 'info',
+                                time: item.timestamp,
+                                module: item.module,
+                                message: item.message,
+                                user: 'system',
+                                ip: 'localhost',
+                                stack: item.action
+                            });
+                        });
+                        renderLogs(keyword);
+                        showToast('查询完成，已加载最新真实日志', 'success');
+                        return;
+                    }
+                }
+            } catch(e) {}
+            
+            // 降级使用原有逻辑
             setTimeout(() => {
-                renderLogs();
-                showNotification('查询完成', 'success');
+                renderLogs(keyword);
+                showToast('查询完成 (模拟数据)', 'success');
             }, 500);
         }
 
@@ -872,62 +918,73 @@
             document.getElementById('startTime').value = '';
             document.getElementById('endTime').value = '';
             document.getElementById('keywordFilter').value = '';
-            showNotification('筛选条件已重置', 'info');
+            showToast('筛选条件已重置', 'info');
+            searchLogs();
         }
 
         // 刷新日志
         function refreshLogs() {
-            showNotification('正在刷新日志...', 'info');
-            setTimeout(() => {
-                renderLogs();
-                showNotification('日志已刷新', 'success');
-            }, 1000);
+            searchLogs();
         }
 
         // 导出日志
         function exportLogs() {
-            showNotification('正在导出日志...', 'info');
+            showToast('正在导出日志...', 'info');
             setTimeout(() => {
-                showNotification('日志导出成功！', 'success');
+                showToast('日志导出成功！', 'success');
             }, 1500);
         }
 
         // 清理旧日志
         function clearLogs() {
             if (confirm('确定要清理30天前的日志吗？此操作不可恢复。')) {
-                showNotification('正在清理旧日志...', 'info');
+                showToast('正在清理旧日志...', 'info');
                 setTimeout(() => {
-                    showNotification('旧日志清理完成', 'success');
+                    showToast('旧日志清理完成', 'success');
                 }, 2000);
             }
         }
 
-        // 显示通知
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                color: white;
-                font-size: 14px;
-                z-index: 9999;
-                animation: slideIn 0.3s ease;
-                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1890ff'};
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
         // 页面加载完成后渲染日志
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
+            // 使用 common.js 中的统一通知
+            
+            // 绑定顶部搜索栏事件
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchLogs();
+                    }
+                });
+            }
+            
+            // 尝试从后端获取真实日志数据
+            try {
+                const response = await fetch('/api/admin/logs');
+                if (response.ok) {
+                    const resData = await response.json();
+                    if (resData.status === 'success' && resData.data && resData.data.length > 0) {
+                        // 替换静态模拟数据
+                        logData.length = 0;
+                        resData.data.forEach(item => {
+                            logData.push({
+                                id: item.id,
+                                level: item.status === 'error' ? 'error' : 'info',
+                                time: item.timestamp,
+                                module: item.module,
+                                message: item.message,
+                                user: 'system',
+                                ip: 'localhost',
+                                stack: item.action
+                            });
+                        });
+                    }
+                }
+            } catch(e) {
+                console.warn('获取真实系统日志失败，使用模拟数据', e);
+            }
+            
             renderLogs();
 
             // 设置默认时间

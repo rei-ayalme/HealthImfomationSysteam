@@ -9,17 +9,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用户登录 - 健康数据洞察平台</title>
     <style>
-        
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 设置背景图片并添加毛玻璃动感效果 */
+            background: url('/assets/images/login_bg.png') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
 
+        /* 毛玻璃遮罩层 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1;
+        }
+
+        .header {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 10;
+        }
         
+        .back-link {
+            color: #fff;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.3s;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+        }
 
         .auth-card {
             width: 100%;
             max-width: 420px;
-            background: #fff;
+            /* 登录框的半透明毛玻璃效果 */
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 14px;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-            padding: 28px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            padding: 32px;
+            z-index: 2;
+            position: relative;
+            /* 动感浮现动画 */
+            animation: floatUp 0.6s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .title {
@@ -65,19 +123,26 @@
 
         .btn {
             width: 100%;
-            padding: 10px;
-            background: #1890ff;
+            padding: 12px;
+            background: linear-gradient(135deg, #1890ff, #096dd9);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
+            transition: all 0.3s;
+            margin-top: 14px;
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
         }
 
         .btn:hover {
-            background: #40a9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
         }
 
         .notice {
@@ -113,7 +178,13 @@
 </head>
 <body>
     <div class="header">
-        <a href="/use/index.html" class="back-link">← 返回首页</a>
+        <a href="/use/index.html" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            返回首页
+        </a>
     </div>
     <div class="auth-card">
         <div class="title">用户登录</div>
@@ -144,7 +215,7 @@
             notice.textContent = message;
         }
 
-        document.getElementById('userLoginForm').addEventListener('submit', function (e) {
+        document.getElementById('userLoginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const account = document.getElementById('accountInput').value.trim();
@@ -155,22 +226,28 @@
                 return;
             }
 
-            const users = JSON.parse(localStorage.getItem('userAccounts') || '[]');
-            const found = users.find(item =>
-                (item.account === account || item.email === account) && item.password === password
-            );
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: account, password: password })
+                });
 
-            if (!found) {
-                showNotice('账号或密码错误，请重试');
-                return;
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    showNotice('登录成功，正在进入平台...');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/use/index.html';
+                    }, 600);
+                } else {
+                    const error = await response.json();
+                    showNotice(error.detail || '账号或密码错误，请重试');
+                }
+            } catch (error) {
+                showNotice('网络错误，无法连接到服务器');
             }
-
-            localStorage.setItem('currentUser', JSON.stringify(found));
-            showNotice('登录成功，正在进入个人管理端...');
-
-            setTimeout(() => {
-                window.location.href = '/use/account-center.html';
-            }, 600);
         });
     </script>
 </body>

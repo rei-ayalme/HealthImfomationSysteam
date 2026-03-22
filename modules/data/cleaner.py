@@ -22,7 +22,50 @@ class HealthDataCleaner:
     @staticmethod
     def handle_missing_values(df):
         """处理缺失值（搜索到的数据常有残缺）"""
-        return df.replace(['N/A', 'nan', ''], np.nan).ffill().bfill()
+        # 区分“真零”与“漏报”：对于人口、医生、床位等绝不可能为0的核心指标，将0视为缺失值
+        core_non_zero_cols = ['population', 'physicians', 'nurses', 'hospital_beds']
+        for col in core_non_zero_cols:
+            if col in df.columns:
+                df[col] = df[col].replace(0, np.nan)
+                
+        df = df.replace(['N/A', 'nan', ''], np.nan)
+        # 使用线性插值或前后向填充
+        df = df.interpolate(method='linear', limit_direction='both').ffill().bfill()
+        return df
+
+    @staticmethod
+    def detect_and_handle_outliers(df: pd.DataFrame, columns: list = None, method: str = 'iqr') -> pd.DataFrame:
+        """
+        深度异常值清洗：基于拉依达准则（3σ）或 IQR 的离群点检测
+        """
+        df_clean = df.copy()
+        if columns is None:
+            # 默认处理数值型列
+            columns = df_clean.select_dtypes(include=[np.number]).columns.tolist()
+            
+        for col in columns:
+            if col not in df_clean.columns:
+                continue
+                
+            series = df_clean[col]
+            if method == 'iqr':
+                Q1 = series.quantile(0.25)
+                Q3 = series.quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+            elif method == '3sigma':
+                mean = series.mean()
+                std = series.std()
+                lower_bound = mean - 3 * std
+                upper_bound = mean + 3 * std
+            else:
+                continue
+                
+            # 将异常值替换为边界值（Winsorization）或设为 NaN 后插值，这里选择 Winsorization
+            df_clean[col] = np.clip(series, lower_bound, upper_bound)
+            
+        return df_clean
 
     @staticmethod
     def quick_clean(df: pd.DataFrame):

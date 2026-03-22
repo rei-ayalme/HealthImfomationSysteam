@@ -94,29 +94,67 @@ class HealthMathModels:
         return R * c
 
     @staticmethod
-    def calculate_2sfca(supply_df: pd.DataFrame, demand_df: pd.DataFrame,
-                        threshold_km: float = 60.0, use_network_distance: bool = False) -> pd.Series:
+    def calculate_e2sfca(supply_df: pd.DataFrame, demand_df: pd.DataFrame,
+                         radius_col: str = 'search_radius', default_radius_km: float = 60.0,
+                         decay_type: str = 'piecewise_power', beta: float = 1.5,
+                         use_network_distance: bool = False) -> pd.Series:
         """
-        计算两步移动搜索法 (2SFCA - Two-Step Floating Catchment Area)
-        评估医疗资源的地理空间可及性 (廖博玮等, 2022)
+        计算增强型两步移动搜索法 (E2SFCA - Enhanced Two-Step Floating Catchment Area)
+        支持分段功率衰减函数，并允许用户针对不同级别的医院自定义搜寻半径
 
         参数:
-            supply_df: 必须包含 ['lat', 'lon', 'capacity'] (如医院经纬度与医生数)
-            demand_df: 必须包含 ['lat', 'lon', 'population'] (如居民区经纬度与人口)
-            threshold_km: 搜寻半径阈值 (公里)
-            use_network_distance: 是否使用高德API获取真实路网距离(如果超过配额则回退到直线距离)
+            supply_df: 必须包含 ['lat', 'lon', 'capacity']，可选包含 radius_col (搜寻半径)
+            demand_df: 必须包含 ['lat', 'lon', 'population']
+            radius_col: 供给点数据中定义搜寻半径的列名 (单位：公里)
+            default_radius_km: 若未提供自定义半径，则使用的默认搜寻半径
+            decay_type: 衰减函数类型 ('gaussian', 'power', 'piecewise_power')
+            beta: 功率衰减指数
+            use_network_distance: 是否使用真实路网距离(若无则回退到球面距离)
         返回:
             与 demand_df 索引对应的空间可及性指数序列
         """
         if supply_df.empty or demand_df.empty:
             from utils.logger import log_missing_data
-            log_missing_data("HealthMathModels", "2SFCA", 2024, "Chengdu", "供需节点数据为空")
+            log_missing_data("HealthMathModels", "E2SFCA", 2024, "Global", "供需节点数据为空")
             return pd.Series(np.zeros(len(demand_df)), index=demand_df.index)
-        from scipy.spatial.distance import cdist
 
-        # 高斯距离衰减函数
-        def gaussian_decay(d, d0):
-            return np.where(d <= d0, np.exp(-(d ** 2) / (2 * (d0 / 2) ** 2)), 0)
+        # 提取或设定搜寻半径 (形如 (n_supply, 1))
+        if radius_col and radius_col in supply_df.columns:
+            thresholds = supply_df[radius_col].values[:, np.newaxis]
+        else:
+            thresholds = np.full((len(supply_df), 1), default_radius_km)
+
+        # 定义多样化衰减函数
+        def apply_decay(d, d0, method='gaussian', p_beta=1.5):
+            if method == 'gaussian':
+                return np.where(d <= d0, np.exp(-(d ** 2) / (2 * (d0 / 2) ** 2)), 0)
+            elif method == 'power':
+                return np.where(d <= d0, 1.0 / (np.maximum(d, 1.0) ** p_beta), 0)
+            elif method == 'piecewise_power':
+                # 分段功率衰减：将搜寻半径分为3个时间带 (如 0-1/3, 1/3-2/3, 2/3-1)
+                z1 = d0 / 3.0
+                z2 = d0 * (2.0 / 3.0)
+                
+                # 计算各段的代表距离（如中点距离）以得出权重
+                m1 = np.maximum(z1 / 2.0, 1.0)
+                m2 = np.maximum(z1 + z1 / 2.0, 1.0)
+                m3 = np.maximum(z2 + z1 / 2.0, 1.0)
+                
+                w1 = 1.0 / (m1 ** p_beta)
+                w2 = 1.0 / (m2 ** p_beta)
+                w3 = 1.0 / (m3 ** p_beta)
+                
+                # 归一化使得最内层权重为 1.0
+                w2_norm = w2 / w1
+                w3_norm = w3 / w1
+                
+                weights = np.zeros_like(d)
+                weights = np.where(d <= z1, 1.0, weights)
+                weights = np.where((d > z1) & (d <= z2), w2_norm, weights)
+                weights = np.where((d > z2) & (d <= d0), w3_norm, weights)
+                return weights
+            else:
+                return np.where(d <= d0, 1.0, 0)
 
         # 提取坐标数组
         supply_coords = supply_df[['lat', 'lon']].values
@@ -124,13 +162,9 @@ class HealthMathModels:
 
         # 计算距离矩阵 (行: 供给点, 列: 需求点)
         if use_network_distance:
-            # 如果要求使用网络距离，这里为了避免 API 频率限制，可以做成批量请求或者使用距离矩阵预计算。
-            # 为了简化并保持向量化优势，在没有专门距离矩阵 API 时，这里依然回退为球面距离计算（可后续对接高德的 distance/matrix 接口）
             pass
 
-        # 统一使用球面距离计算两两距离，避免 iterrows 的极度低效
-        # 注意: cdist 默认是欧式距离，若要精确球面距离可以使用自定义 metric
-        # 为了高效，这里使用一个粗略的球面距离转换 (度转弧度后计算)
+        # 球面距离计算
         lat1 = np.radians(supply_coords[:, 0])[:, np.newaxis]
         lon1 = np.radians(supply_coords[:, 1])[:, np.newaxis]
         lat2 = np.radians(demand_coords[:, 0])[np.newaxis, :]
@@ -144,10 +178,10 @@ class HealthMathModels:
         R = 6371.0
         dist_matrix = R * c
 
-        # 步骤 1：计算供需比 (Supply-to-Demand Ratio) R_j
-        weights_matrix = gaussian_decay(dist_matrix, threshold_km)
+        # 步骤 1：计算供需比 R_j
+        weights_matrix = apply_decay(dist_matrix, thresholds, method=decay_type, p_beta=beta)
         demand_pop = demand_df['population'].values
-        # weighted_demand 的形状是 (n_supply,)
+        
         weighted_demand = np.sum(weights_matrix * demand_pop, axis=1)
         
         supply_capacity = supply_df['capacity'].values
@@ -155,11 +189,9 @@ class HealthMathModels:
         valid_idx = weighted_demand > 0
         R_j[valid_idx] = supply_capacity[valid_idx] / weighted_demand[valid_idx]
 
-        # 将 R_j 放回 supply_df（如果需要供后续分析或验证）
         supply_df['R_j'] = R_j
 
         # 步骤 2：计算空间可及性指数
-        # access_scores 的形状是 (n_demand,)
         access_scores = np.sum(weights_matrix * R_j[:, np.newaxis], axis=0)
 
         return pd.Series(access_scores, index=demand_df.index)

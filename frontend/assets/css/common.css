@@ -1,13 +1,34 @@
 /* 全局公共样式 */
 :root {
+    /* 医疗蓝与科研灰配色方案 */
     --primary-color: #1890ff;
+    --primary-hover: #40a9ff;
+    --primary-active: #096dd9;
     --success-color: #52c41a;
     --warning-color: #fa8c16;
     --error-color: #f5222d;
     --bg-color: #f0f2f5;
+    --card-bg: #ffffff;
     --text-color: #1a1a1a;
-    --nav-bg-start: #1a365d;
-    --nav-bg-end: #2c5282;
+    --text-secondary: #595959;
+    --text-muted: #8c8c8c;
+    --border-color: #e8e8e8;
+    
+    /* 导航栏配色 */
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --nav-text: #1a1a1a;
+    
+    /* 间距规范 (8px 倍数) */
+    --space-xs: 8px;
+    --space-sm: 16px;
+    --space-md: 24px;
+    --space-lg: 32px;
+    --space-xl: 48px;
+    
+    /* 边框圆角 */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
 }
 
 * {
@@ -23,34 +44,71 @@ body {
     line-height: 1.6;
 }
 
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700; /* 全局标题加粗 */
+    color: var(--text-color);
+}
+
 /* 隐藏元素的通用类 */
 .hidden {
     display: none !important;
 }
 
-/* 公共提示框样式 */
+/* 骨架屏动画 */
+@keyframes skeleton-loading {
+    0% { background-color: #f2f2f2; }
+    50% { background-color: #e6e6e6; }
+    100% { background-color: #f2f2f2; }
+}
+
+.skeleton-box {
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+    border-radius: var(--radius-sm);
+}
+
+/* 公共提示框样式 (暗色背景，专业感) */
 .toast-message {
     position: fixed;
-    top: 20px;
+    top: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #fff;
-    padding: 12px 24px;
-    border-radius: 4px;
+    background: #333;
+    color: #fff;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 9999;
     font-size: 14px;
-    color: #333;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-xs);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* 顶部导航 */
+.toast-message.error {
+    background: var(--error-color);
+}
+
+/* 按钮通用状态反馈 */
+button, .btn {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+button:hover, .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+button:active, .btn:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+/* 顶部导航 - 浅色透明风格 */
 .top-nav {
-    background: linear-gradient(135deg, var(--nav-bg-start) 0%, var(--nav-bg-end) 100%);
-    color: #fff;
-    padding: 0 24px;
+    background: var(--nav-bg);
+    backdrop-filter: blur(10px);
+    color: var(--nav-text);
+    padding: 0 var(--space-md);
     height: 64px;
     display: flex;
     align-items: center;
@@ -60,42 +118,45 @@ body {
     left: 0;
     right: 0;
     z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-xs);
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--primary-color);
 }
 
 .logo-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #4299e1, #63b3ed);
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 18px;
 }
 
 .main-nav, .nav-right {
     display: flex;
-    gap: 6px;
+    gap: var(--space-xs);
     align-items: center;
     flex-wrap: wrap;
 }
 
 .nav-item {
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     text-decoration: none;
-    color: #fff;
+    color: var(--text-secondary);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -104,11 +165,43 @@ body {
 }
 
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(24, 144, 255, 0.1);
+    color: var(--primary-color);
 }
 
 .nav-item.active {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(24, 144, 255, 0.15);
+    color: var(--primary-active);
+}
+
+/* 全局搜索框 */
+.global-search {
+    position: relative;
+    margin-right: var(--space-sm);
+}
+.global-search input {
+    width: 240px;
+    padding: 8px 16px 8px 36px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    font-size: 14px;
+    transition: all 0.3s;
+    color: var(--text-color);
+}
+.global-search input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+    width: 280px;
+    background: #fff;
+}
+.global-search .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
 }
 
 .nav-item.dropdown {
@@ -129,14 +222,15 @@ body {
     top: calc(100% + 8px);
     left: 0;
     min-width: 170px;
-    background: #fff;
-    border-radius: 8px;
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px);
     transition: all 0.25s;
     overflow: hidden;
+    border: 1px solid var(--border-color);
 }
 
 .nav-item.dropdown:hover .dropdown-menu {
@@ -148,18 +242,20 @@ body {
 .dropdown-item {
     display: block;
     text-decoration: none;
-    color: #333;
-    padding: 10px 12px;
-    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 10px var(--space-sm);
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .dropdown-item:hover {
-    background: #f5f5f5;
+    background: var(--bg-color);
+    color: var(--primary-color);
 }
 
 .dropdown-item.active {
-    background: #e6f7ff;
-    color: #1677ff;
+    background: rgba(24, 144, 255, 0.1);
+    color: var(--primary-active);
 }
 
 /* 侧边栏及主容器 */
@@ -171,9 +267,9 @@ body {
 
 .sidebar {
     width: 280px;
-    background: #fff;
-    border-right: 1px solid #e8e8e8;
-    padding: 20px;
+    background: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    padding: var(--space-md);
     position: fixed;
     height: calc(100vh - 64px);
     overflow-y: auto;
@@ -182,11 +278,12 @@ body {
 .content {
     flex: 1;
     margin-left: 280px;
-    padding: 24px;
+    padding: var(--space-md);
 }
 
 .page-title {
     font-size: 24px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin-bottom: var(--space-sm);
+    color: var(--text-color);
 }
