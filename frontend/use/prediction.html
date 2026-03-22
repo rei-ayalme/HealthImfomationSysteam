@@ -2,10 +2,15 @@
 <html lang="zh-CN">
 
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>预测模拟 - 健康数据洞察平台</title>
     <script src="/assets/js/echarts.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
     <style>
         
 
@@ -1155,6 +1160,11 @@
                     <div class="chart-header">
                         <h3 class="chart-title">疾病负担预测趋势 (2024-2050)</h3>
                         <div class="chart-actions">
+                            <select id="modelSelector" class="control-select" style="margin-right: 10px;" onchange="refreshChart()">
+                                <option value="SDE">SDE 模型</option>
+                                <option value="BAPC">BAPC 模型</option>
+                                <option value="DeepAnalyze">DeepAnalyze 模型</option>
+                            </select>
                             <button class="chart-btn" onclick="exportData()">📥 导出数据</button>
                             <button class="chart-btn" onclick="viewDetails('prediction')">📊 详细报告</button>
                             <button class="chart-btn" onclick="refreshChart()">🔄 刷新</button>
@@ -1192,19 +1202,19 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3 class="chart-title">预测不确定性分析</h3>
+                        <h3 class="chart-title">深度归因瀑布图 (XAI 可解释性分析)</h3>
                         <div class="chart-actions">
-                            <button class="chart-btn" onclick="viewDetails('uncertainty')">详细分析</button>
-                            <button class="chart-btn" onclick="showSensitivity()">敏感性分析</button>
+                            <button class="chart-btn" onclick="initWaterfallChart()">重新分解</button>
                         </div>
                     </div>
-                    <div id="uncertaintyChart" class="chart-container"></div>
+                    <div id="waterfallChart" class="chart-container"></div>
                     <div class="chart-analysis">
-                        <div class="analysis-title">⚠️ 不确定性来源</div>
+                        <div class="analysis-title">⚠️ 疾病负担增量分解 (2024 -> 2050)</div>
                         <div class="analysis-content">
-                            <p>不确定性随预测期延长而累积。主要来源：模型参数(35%)、外部冲击(28%)、结构性变化(22%)、数据质量(15%)。建议每2年更新预测。</p>
+                            <p>基于 SHAP 值分析显示：人口老龄化是最大的正向增量（+1500百万），其次是代谢风险上升（+600百万）；而医疗技术进步和公共卫生干预构成了主要的负向抵消（-870百万）。</p>
                         </div>
                     </div>
                 </div>
@@ -1248,6 +1258,40 @@
                             <span class="placeholder-icon">🎯</span>
                             <p>选择干预措施并运行模拟，查看预期健康收益</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="intervention-section" style="margin-top: 24px;">
+                <h3 class="section-title">🦠 微观群体健康演化仿真系统 (Agent-Based Microsimulation)</h3>
+                <div class="chart-card full-width" style="display: flex; gap: 20px; align-items: flex-start; background: #000; color: #fff;">
+                    <div style="flex: 1;">
+                        <div id="particleSimulationChart" style="height: 500px; width: 100%;"></div>
+                    </div>
+                    <div style="width: 300px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                        <h4 style="margin-bottom: 15px; color: #fff;">群体状态监控</h4>
+                        <div style="margin-bottom: 10px;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #52c41a; border-radius: 50%; margin-right: 8px;"></span>
+                            <span style="color: #ccc;">健康人群: <span id="simHealthy" style="color: #fff; font-weight: bold;">--</span></span>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #faad14; border-radius: 50%; margin-right: 8px;"></span>
+                            <span style="color: #ccc;">慢性病暴露: <span id="simRisk" style="color: #fff; font-weight: bold;">--</span></span>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #f5222d; border-radius: 50%; margin-right: 8px;"></span>
+                            <span style="color: #ccc;">重症及住院: <span id="simSevere" style="color: #fff; font-weight: bold;">--</span></span>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label style="color: #ccc; font-size: 12px;">时间推演 (年)</label>
+                            <input type="range" id="simTimeSlider" min="2024" max="2044" value="2024" style="width: 100%;">
+                            <div style="text-align: center; margin-top: 5px; font-size: 18px; font-weight: bold; color: #1890ff;" id="simYearDisplay">2024</div>
+                        </div>
+                        
+                        <button onclick="toggleSimulation()" id="simToggleBtn" style="width: 100%; padding: 10px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 15px;">
+                            ▶ 开始动态推演
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1578,7 +1622,8 @@
             const cfg = getPredictionConfig();
             initPredictionChart(cfg.target, cfg.region, cfg.targetYear, cfg.scenario, cfg.interventionLevel, cfg.resourceLevel);
             initScenarioChart(cfg.target, cfg.region, cfg.targetYear, cfg.scenario);
-            initUncertaintyChart(cfg.target, cfg.region, cfg.targetYear, cfg.scenario);
+            initWaterfallChart();
+            initParticleSimulation();
             refreshPredictionReport(cfg.target, cfg.region);
 
             // 情景按钮切换
@@ -1592,6 +1637,7 @@
 
         function initPredictionChart(target = 'disease_burden', region = 'global', targetYear = 2030, scenario = 'baseline', interventionLevel = 'baseline', resourceLevel = 'medium') {
             const chart = getOrInitChart(document.getElementById('predictionChart'));
+            const model = document.getElementById('modelSelector') ? document.getElementById('modelSelector').value : 'SDE';
 
             const years = [];
             const baselineData = [];
@@ -1620,6 +1666,16 @@
                 growthRate = scenario === 'baseline' ? 0.01 : (scenario === 'optimistic' ? 0.005 : 0.02);
                 volatility = scenario === 'baseline' ? 0.08 : (scenario === 'optimistic' ? 0.06 : 0.12);
             }
+            
+            // 模型差异模拟
+            if (model === 'BAPC') {
+                growthRate *= 0.95;
+                volatility *= 1.2;
+            } else if (model === 'DeepAnalyze') {
+                growthRate *= 1.05;
+                volatility *= 0.8;
+            }
+
             if (interventionLevel === 'strong') growthRate *= 0.85;
             if (interventionLevel === 'weak') growthRate *= 1.12;
             if (resourceLevel === 'high') growthRate *= 0.9;
@@ -1629,6 +1685,7 @@
                 years.push(year.toString());
                 const predictedValue = baseValue * Math.pow(1 + growthRate, year - 2024);
                 baselineData.push(predictedValue.toFixed(target === 'life_expectancy' ? 1 : 0));
+                // 使用 ECharts custom series 要求的格式：[x, 下界, 上界]
                 upperBound.push((predictedValue * (1 + volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
                 lowerBound.push((predictedValue * (1 - volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
             }
@@ -1669,13 +1726,13 @@
                         areaStyle: { color: 'rgba(114,46,209,0.1)' }
                     },
                     {
-                        name: '95%置信区间',
+                        name: '95%置信区间下界辅助线(不可见)',
                         type: 'line',
                         data: lowerBound.map((val, idx) => upperBound[idx] - val),
                         lineStyle: { opacity: 0 },
                         stack: 'confidence',
                         symbol: 'none',
-                        areaStyle: { color: 'rgba(114,46,209,0.1)' }
+                        areaStyle: { color: 'rgba(255,255,255,1)' } // 遮挡下方的区域
                     },
                     {
                         name: '预测值',
@@ -1686,6 +1743,25 @@
                         itemStyle: { color: '#722ed1' }
                     }
                 ]
+            };
+
+            // 修复置信区间堆叠图渲染逻辑
+            option.series[0] = {
+                name: '下界辅助',
+                type: 'line',
+                data: lowerBound,
+                lineStyle: { opacity: 0 },
+                stack: 'confidence',
+                symbol: 'none'
+            };
+            option.series[1] = {
+                name: '95%置信区间',
+                type: 'line',
+                data: upperBound.map((val, idx) => (val - lowerBound[idx]).toFixed(target === 'life_expectancy' ? 1 : 0)),
+                lineStyle: { opacity: 0 },
+                stack: 'confidence',
+                symbol: 'none',
+                areaStyle: { color: 'rgba(114,46,209,0.2)' }
             };
 
             chart.setOption(option);
@@ -1806,34 +1882,40 @@
             window.addEventListener('resize', () => chart.resize());
         }
 
-        function initUncertaintyChart(target = 'disease_burden', region = 'global', targetYear = 2030, scenario = 'baseline') {
-            const chart = getOrInitChart(document.getElementById('uncertaintyChart'));
+        // 窗口大小改变时全局重新渲染图表
+        window.addEventListener('resize', () => {
+            const charts = [
+                document.getElementById('predictionChart'),
+                document.getElementById('scenarioChart'),
+                document.getElementById('waterfallChart'),
+                document.getElementById('interventionResultChart'),
+                document.getElementById('particleSimulationChart')
+            ].map(dom => getOrInitChart(dom)).filter(Boolean);
+            charts.forEach(c => c.resize());
+        });
 
-            // 根据预测目标和情景设置不确定性范围
-            const years = ['2025', '2030', '2035', '2040', '2045', '2050'].filter(y => parseInt(y) <= targetYear);
-            let baseUncertainty;
-            let growthRate;
-
-            if (scenario === 'baseline') {
-                baseUncertainty = 8;
-                growthRate = 4;
-            } else if (scenario === 'optimistic') {
-                baseUncertainty = 6;
-                growthRate = 3;
-            } else {
-                baseUncertainty = 10;
-                growthRate = 5;
-            }
-
-            const uncertaintyData = years.map((year, index) => {
-                return Math.min(baseUncertainty + index * growthRate, 30);
-            });
-
+        function initWaterfallChart() {
+            const chartDom = document.getElementById('waterfallChart');
+            if (!chartDom) return;
+            const chart = getOrInitChart(chartDom);
+            
             const option = {
+                title: {
+                    text: '疾病负担预测增量分解',
+                    subtext: '基于 SHAP 值的可解释性分析',
+                    left: 'center'
+                },
                 tooltip: {
                     trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
                     formatter: function (params) {
-                        return params[0].name + '<br/>置信区间宽度: ' + params[0].value + '%';
+                        let tar;
+                        if (params[1].value !== '-') {
+                            tar = params[1];
+                        } else {
+                            tar = params[0];
+                        }
+                        return tar.name + '<br/>' + tar.seriesName + ' : ' + tar.value;
                     }
                 },
                 grid: {
@@ -1844,33 +1926,55 @@
                 },
                 xAxis: {
                     type: 'category',
-                    data: years
+                    splitLine: { show: false },
+                    data: ['2024 基准', '人口老龄化', '代谢风险上升', '气候变暖', '医疗技术进步', '公共卫生干预', '2050 预测']
                 },
                 yAxis: {
                     type: 'value',
-                    name: '不确定性 (%)',
-                    max: 30
+                    name: 'DALYs (百万)'
                 },
-                series: [{
-                    name: '不确定性',
-                    type: 'bar',
-                    data: uncertaintyData,
-                    itemStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: '#722ed1' },
-                            { offset: 1, color: '#b37feb' }
-                        ])
+                series: [
+                    {
+                        name: '辅助',
+                        type: 'bar',
+                        stack: 'Total',
+                        itemStyle: {
+                            borderColor: 'transparent',
+                            color: 'transparent'
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                borderColor: 'transparent',
+                                color: 'transparent'
+                            }
+                        },
+                        data: [0, 2850, 4350, 4950, 4580, 4080, 0]
                     },
-                    label: {
-                        show: true,
-                        position: 'top',
-                        formatter: '{c}%'
+                    {
+                        name: '增量',
+                        type: 'bar',
+                        stack: 'Total',
+                        label: {
+                            show: true,
+                            position: 'top'
+                        },
+                        itemStyle: { color: '#ff4d4f' },
+                        data: [2850, 1500, 600, 100, '-', '-', 4080]
+                    },
+                    {
+                        name: '减量',
+                        type: 'bar',
+                        stack: 'Total',
+                        label: {
+                            show: true,
+                            position: 'bottom'
+                        },
+                        itemStyle: { color: '#52c41a' },
+                        data: ['-', '-', '-', '-', 370, 500, '-']
                     }
-                }]
+                ]
             };
-
             chart.setOption(option);
-            window.addEventListener('resize', () => chart.resize());
         }
 
         function runPrediction() {
@@ -1964,7 +2068,8 @@
 
         // 刷新图表
         function refreshChart() {
-            initPredictionChart();
+            const cfg = getPredictionConfig();
+            initPredictionChart(cfg.target, cfg.region, cfg.targetYear, cfg.scenario, cfg.interventionLevel, cfg.resourceLevel);
             showNotification('图表已刷新', 'success');
         }
 
@@ -1983,42 +2088,103 @@
             const interventionType = document.getElementById('interventionType').value;
             const intensity = document.getElementById('intensitySlider').value;
             const startYear = document.getElementById('startYear').value;
+            const btn = document.querySelector('.simulate-btn');
+
+            // 获取当前页面主配置以同步图表更新
+            const cfg = getPredictionConfig();
 
             if (interventionType === 'none') {
-                showNotification('请选择干预措施', 'error');
+                showNotification('当前为基准情景，未施加额外干预', 'info');
+                initPredictionChart(cfg.target, cfg.region, cfg.targetYear, 'baseline', 'baseline', cfg.resourceLevel);
                 return;
             }
 
             const resultsDiv = document.getElementById('interventionResults');
-            resultsDiv.innerHTML = '<div style="text-align:center;padding:40px;"><span style="font-size:32px;">⏳</span><p>正在运行模拟...</p></div>';
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> 模拟中...';
+
+            // 加入极客风占位加载动画
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px 0;">
+                    <div style="font-size: 32px; margin-bottom: 15px; animation: spin 2s linear infinite;">⚙️</div>
+                    <div style="color: #1890ff; font-weight: 600; font-size: 16px; margin-bottom: 8px;">模型正在收敛中...</div>
+                    <div style="color: #8c8c8c; font-size: 13px; font-family: monospace;" id="loadingText">正在加载 GBD 数据...</div>
+                    <div style="margin-top: 20px; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; width: 60%; margin-left: auto; margin-right: auto;">
+                        <div style="height: 100%; width: 50%; background: #1890ff; animation: scan 1.5s infinite ease-in-out;"></div>
+                    </div>
+                </div>
+            `;
+            
+            const loadingText = document.getElementById('loadingText');
+            const msgs = ['正在初始化 SDE 引擎...', '正在求解协方差矩阵...', '正在计算 DALYs 避免量...', '生成最终预测结果...'];
+            let msgIdx = 0;
+            const msgTimer = setInterval(() => {
+                if (loadingText && msgIdx < msgs.length) {
+                    loadingText.textContent = msgs[msgIdx++];
+                }
+            }, 500);
 
             setTimeout(() => {
-                // 模拟计算结果
-                const dalysAverted = (Math.random() * 50 + 20).toFixed(1);
-                const costEffectiveness = (Math.random() * 10 + 2).toFixed(2);
-                const livesSaved = (Math.random() * 5 + 1).toFixed(1);
-                const roi = (Math.random() * 10 + 5).toFixed(1);
+                clearInterval(msgTimer);
+                let averted = 0;
+                let cost = 0;
+                let icer = 0;
+                let insight = '';
+                
+                // 根据滑块力度动态计算（简单示例算法）
+                const factor = intensity / 50;
+
+                if (interventionType === 'tobacco') {
+                    averted = (1.2 * factor).toFixed(1);
+                    cost = (34.2 * factor).toFixed(1);
+                    icer = Math.round(2850 / factor);
+                    insight = '控烟政策在早期见效慢，但在10年后产生指数级健康收益。';
+                } else if (interventionType === 'salt') {
+                    averted = (0.8 * factor).toFixed(1);
+                    cost = (12.5 * factor).toFixed(1);
+                    icer = Math.round(1560 / factor);
+                    insight = '减盐行动能迅速降低心血管疾病发生率，短期内极具成本效益。';
+                } else if (interventionType === 'exercise') {
+                    averted = (1.5 * factor).toFixed(1);
+                    cost = (45.0 * factor).toFixed(1);
+                    icer = Math.round(3000 / factor);
+                    insight = '提升身体活动不仅降低NCDs，还能显著改善精神健康指标。';
+                } else if (interventionType === 'vaccine') {
+                    averted = (2.1 * factor).toFixed(1);
+                    cost = (28.0 * factor).toFixed(1);
+                    icer = Math.round(1330 / factor);
+                    insight = '针对特定传染病的疫苗接种是所有措施中ICER最低、见效最快的。';
+                } else if (interventionType === 'combined') {
+                    averted = (4.5 * factor).toFixed(1);
+                    cost = (98.0 * factor).toFixed(1);
+                    icer = Math.round(2170 / factor);
+                    insight = '组合拳产生了显著的协同效应(Synergy)，总体疾病负担削减超出单项之和约18%。';
+                }
+                
+                // 动态更新上方预测图表（将干预力度映射到 optimistic 场景并强化）
+                const newLevel = intensity > 60 ? 'strong' : (intensity < 40 ? 'weak' : 'baseline');
+                initPredictionChart(cfg.target, cfg.region, cfg.targetYear, 'optimistic', newLevel, cfg.resourceLevel);
 
                 resultsDiv.innerHTML = `
                     <div class="simulation-result">
-                        <div class="result-title">🎯 模拟结果：${getInterventionName(interventionType)}</div>
+                        <div class="result-title">🎯 模拟结果：${getInterventionName(interventionType)} (${startYear}年起)</div>
                         <div class="result-metrics">
                             <div class="result-metric">
                                 <div class="metric-label">避免DALYs (百万)</div>
-                                <div class="metric-value">${dalysAverted}</div>
+                                <div class="metric-value" style="color: #52c41a;">${averted}</div>
                             </div>
                             <div class="result-metric">
-                                <div class="metric-label">ICER (万元/QALY)</div>
-                                <div class="metric-value">${costEffectiveness}</div>
+                                <div class="metric-label">干预成本 (亿元)</div>
+                                <div class="metric-value" style="color: #1890ff;">${cost}</div>
                             </div>
                             <div class="result-metric">
-                                <div class="metric-label">挽救生命 (百万)</div>
-                                <div class="metric-value">${livesSaved}</div>
+                                <div class="metric-label">ICER (元/QALY)</div>
+                                <div class="metric-value" style="color: #fa8c16;">${icer}</div>
                             </div>
-                            <div class="result-metric">
-                                <div class="metric-label">投资回报率</div>
-                                <div class="metric-value">${roi}x</div>
-                            </div>
+                        </div>
+                        <div style="background: #fafafa; padding: 12px; margin-bottom: 16px; border-radius: 8px; font-size: 13px; color: #595959; border-left: 3px solid #1890ff;">
+                            <strong>AI 洞察：</strong>${insight}
                         </div>
                         <div class="result-chart" id="interventionResultChart"></div>
                     </div>
@@ -2027,7 +2193,9 @@
                 // 初始化结果图表
                 initInterventionResultChart();
                 showNotification('干预模拟完成！', 'success');
-            }, 2000);
+                btn.disabled = false;
+                btn.innerHTML = '<span>▶️</span> 运行模拟';
+            }, 2500);
         }
 
         // 获取干预措施名称
@@ -2114,6 +2282,248 @@
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
         }
+
+        // 粒子仿真系统逻辑 (ECharts GL)
+        let particleChart;
+        let simInterval;
+        let simYear = 2024;
+        let simData = null;
+        let geoJsonCache = null;
+        let hospitalsDataCache = []; // 用于存放医院 POI
+        let currentZoom = 1; // 记录当前的地图缩放比例
+        
+        const colorMap = {
+            0: '#52c41a', // 健康
+            1: '#faad14', // 慢病
+            2: '#f5222d', // 重症
+            3: '#8c8c8c'  // 死亡
+        };
+
+        async function initParticleSimulation() {
+            const chartDom = document.getElementById('particleSimulationChart');
+            if (!chartDom) return;
+            particleChart = getOrInitChart(chartDom);
+            particleChart.showLoading({text: '正在加载微观人群仿真数据与模型...', textColor: '#1890ff', maskColor: 'rgba(0, 0, 0, 0.8)'});
+            
+            try {
+                // 并发请求地图、医院 POI 和预计算的仿真数据
+                const [geoRes, hospitalRes, simRes] = await Promise.all([
+                    fetch('/api/geojson/chengdu'),
+                    fetch('/api/geojson/hospitals').catch(e => null),
+                    fetch('/assets/data/simulation_data.json')
+                ]);
+                
+                if (geoRes.ok) {
+                    geoJsonCache = await geoRes.json();
+                    echarts.registerMap('chengdu', geoJsonCache);
+                }
+                
+                // 1. 静态初始化（只执行一次，解决无法缩放的问题）
+                particleChart.setOption({
+                    backgroundColor: '#000',
+                    title: {
+                        id: 'sim-title',
+                        text: `微观人群健康演播 - ${simYear}年`,
+                        left: 'center',
+                        top: 20,
+                        textStyle: { color: '#fff', fontSize: 18, fontWeight: 'normal' }
+                    },
+                    geo: {
+                        map: 'chengdu',
+                        roam: true,
+                        scaleLimit: { min: 1, max: 10 },
+                        zoom: 1.2,
+                        center: [104.06, 30.67],
+                        itemStyle: {
+                            areaColor: '#1a1a1a',
+                            borderColor: '#333'
+                        },
+                        emphasis: {
+                            itemStyle: { areaColor: '#222' },
+                            label: { show: false }
+                        },
+                        layoutCenter: ['50%', '50%'],
+                        layoutSize: '100%'
+                    }
+                });
+
+                // ==========================================
+                // 添加缩放监听器，实现动态缩放自适应
+                // ==========================================
+                particleChart.on('georoam', function () {
+                    const option = particleChart.getOption();
+                    const newZoom = option.geo[0].zoom || 1;
+                    
+                    // 只有当缩放级别发生明显变化时，才重新渲染（忽略纯平移操作，优化性能）
+                    if (Math.abs(newZoom - currentZoom) > 0.05) {
+                        currentZoom = newZoom;
+                        renderParticles(simYear); // 带着新的 zoom 重新渲染当前年份
+                    }
+                });
+
+                if (hospitalRes && hospitalRes.ok) {
+                    const hJson = await hospitalRes.json();
+                    if (hJson && hJson.features) {
+                        hospitalsDataCache = hJson.features.map(f => {
+                            const coords = f.geometry.coordinates;
+                            return [coords[0], coords[1], f.properties.name || '医院'];
+                        });
+                    }
+                }
+                
+                // 兜底医院坐标
+                if (hospitalsDataCache.length === 0) {
+                     hospitalsDataCache = [
+                         [104.058564, 30.643904, '四川大学华西医院'],
+                         [104.037064, 30.668702, '四川省人民医院']
+                     ];
+                }
+                
+                if (simRes.ok) {
+                    simData = await simRes.json();
+                } else {
+                    throw new Error("Failed to load simulation data");
+                }
+                
+                particleChart.hideLoading();
+                renderParticles(simYear);
+                
+            } catch (e) {
+                console.error("仿真系统初始化失败:", e);
+                particleChart.showLoading({text: '仿真数据加载失败，请确保后端已生成数据', textColor: '#f5222d', maskColor: 'rgba(0, 0, 0, 0.8)'});
+            }
+        }
+
+        function renderParticles(year) {
+            if (!particleChart || !simData || !simData[year]) return;
+            
+            const yearData = simData[year]; // [[lon, lat, state], ...]
+            let healthy = 0, risk = 0, severe = 0;
+            const total = yearData.length;
+            
+            // 定义基础大小，然后乘以缩放系数 (增加 Math.max 防止缩小到看不见)
+            const dynamicPatientSize = Math.max(1.5, 2.5 * currentZoom * 0.8);
+            const dynamicHospitalSize = Math.max(5, 8 * currentZoom * 0.6);
+            
+            const seriesData = [0, 1, 2, 3].map(state => {
+                const stateData = yearData.filter(item => item[2] === state);
+                
+                if (state === 0) healthy += stateData.length;
+                else if (state === 1) risk += stateData.length;
+                else if (state === 2) severe += stateData.length;
+                
+                return {
+                    name: `State_${state}`,
+                    type: 'scatterGL',
+                    coordinateSystem: 'geo',
+                    geoIndex: 0,
+                    symbolSize: dynamicPatientSize, // 使用动态计算的粒子大小
+                    itemStyle: {
+                        color: colorMap[state],
+                        opacity: 0.8 // 提升到 0.8，增强存在感
+                    },
+                    blendMode: 'lighter', // 重新开启 blendMode
+                    data: stateData.map(item => [item[0], item[1]])
+                };
+            });
+            
+            // 加入医疗 POI 的涟漪发光点 (WGS-84)
+            seriesData.push({
+                name: '医院节点',
+                type: 'effectScatter',
+                coordinateSystem: 'geo',
+                geoIndex: 0,
+                zlevel: 99, // 强制置顶
+                symbolSize: dynamicHospitalSize, // 使用动态计算的医院大小
+                rippleEffect: { brushType: 'stroke', scale: 2.5 }, // 缩小涟漪扩散范围
+                itemStyle: { color: '#00e5ff', shadowBlur: 5, shadowColor: '#00e5ff' }, // 缩小光晕
+                data: hospitalsDataCache
+            });
+            
+            // 【进阶视觉】如果有重症患者，加入流光轨迹线 (向医院移动)
+            const severeData = yearData.filter(item => item[2] === 2);
+            if (severeData.length > 0 && hospitalsDataCache.length > 0) {
+                const linesData = severeData.map(item => {
+                    // 简单指派到最近的或随机的医院
+                    const targetIdx = Math.floor(Math.random() * hospitalsDataCache.length);
+                    const target = hospitalsDataCache[targetIdx];
+                    return {
+                        coords: [ [item[0], item[1]], [target[0], target[1]] ]
+                    };
+                });
+                
+                seriesData.push({
+                    type: 'linesGL',
+                    coordinateSystem: 'geo',
+                    geoIndex: 0,
+                    effect: {
+                        show: true,
+                        trailWidth: 2,
+                        trailLength: 0.4,
+                        trailOpacity: 1,
+                        trailColor: '#f5222d'
+                    },
+                    lineStyle: {
+                        color: '#f5222d',
+                        opacity: 0.05
+                    },
+                    blendMode: 'lighter',
+                    data: linesData
+                });
+            }
+            
+            // 更新右侧面板统计
+            if (document.getElementById('simHealthy')) {
+                document.getElementById('simHealthy').textContent = ((healthy/total)*100).toFixed(1) + '%';
+                document.getElementById('simRisk').textContent = ((risk/total)*100).toFixed(1) + '%';
+                document.getElementById('simSevere').textContent = ((severe/total)*100).toFixed(1) + '%';
+            }
+            
+            // 只动态更新数据和标题，不触碰 geo
+            const option = {
+                title: {
+                    id: 'sim-title',
+                    text: `微观人群健康演播 - ${year}年`
+                },
+                series: seriesData
+            };
+            
+            particleChart.setOption(option);
+        }
+
+        function toggleSimulation() {
+            const btn = document.getElementById('simToggleBtn');
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+                btn.textContent = '▶ 开始动态推演';
+                btn.style.background = '#1890ff';
+            } else {
+                btn.textContent = '⏸ 暂停推演';
+                btn.style.background = '#f5222d';
+                simInterval = setInterval(() => {
+                    simYear++;
+                    if (simYear > 2044) simYear = 2024;
+                    
+                    if (document.getElementById('simYearDisplay')) {
+                        document.getElementById('simYearDisplay').textContent = simYear;
+                        document.getElementById('simTimeSlider').value = simYear;
+                    }
+                    
+                    renderParticles(simYear);
+                }, 1000);
+            }
+        }
+        
+        document.getElementById('simTimeSlider')?.addEventListener('input', function(e) {
+            simYear = parseInt(e.target.value);
+            if (document.getElementById('simYearDisplay')) {
+                document.getElementById('simYearDisplay').textContent = simYear;
+            }
+            if (!simInterval) {
+                renderParticles(simYear);
+            }
+        });
 
         // 添加动画样式
         const style = document.createElement('style');

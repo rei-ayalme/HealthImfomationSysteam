@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台</title>
@@ -608,47 +612,99 @@
         async function renderMap(region) {
             try {
                 // 加载世界地图数据（这里通过 API 或者直接通过 ECharts 的世界地图 json 获取）
+                mapChart.showLoading({text: "正在加载地图..."});
                 const geoJsonRes = await fetch('/api/geojson/world');
+                if (!geoJsonRes.ok) {
+                    throw new Error('网络响应不正常');
+                }
                 const geoJson = await geoJsonRes.json();
+                
+                if (geoJson.status === "error") {
+                    throw new Error(geoJson.msg);
+                }
+
                 echarts.registerMap('world', geoJson);
 
-                // 简单的地图配置，如果是特定地区则高亮
+                // 1. 在函数内部建立大区与包含国家的映射字典（注意国家名需匹配 geojson 中的标准英文名）
+                const regionCountries = {
+                    'east_asia': ['China', 'Japan', 'South Korea', 'Mongolia', 'North Korea', 'Taiwan'],
+                    'southeast_asia': ['Vietnam', 'Thailand', 'Indonesia', 'Malaysia', 'Philippines', 'Singapore', 'Myanmar'],
+                    'europe': ['France', 'Germany', 'United Kingdom', 'Italy', 'Spain', 'Russia', 'Ukraine', 'Poland', 'Switzerland'],
+                    'north_america': ['United States of America', 'Canada', 'Mexico']
+                };
+
+                // 2. 重新构建数据映射逻辑
                 const mapData = geoJson.features.map(f => {
-                    return {
-                        name: f.properties.name,
-                        value: (region === 'global' || f.properties.name.toLowerCase().includes(region)) ? 100 : 10
+                    const countryName = f.properties.name;
+                    let val = 0; // 默认值
+
+                    if (region === 'global') {
+                        // 【修正1】全球模式下，应该展示存在差异的数据以形成热力渐变
+                        // 建议这里后续替换为从后端接口获取的真实 healthData，目前暂时用随机数模拟差异（20~100）
+                        val = Math.floor(Math.random() * 80) + 20;
+                    } else {
+                        // 【修正2】区域模式下，判断该国家是否属于所选的大区列表
+                        if (regionCountries[region] && regionCountries[region].includes(countryName)) {
+                            // 属于该大区的国家赋予较高数值
+                            val = Math.floor(Math.random() * 40) + 60;
+                        } else {
+                            // 不属于该大区的国家暗化处理
+                            val = 10;
+                        }
                     }
+
+                    return {
+                        name: countryName,
+                        value: val
+                    };
                 });
 
+                mapChart.hideLoading();
                 mapChart.setOption({
                     tooltip: {
                         trigger: 'item',
-                        formatter: '{b}'
+                        formatter: '{b}: {c}' // 鼠标放上去显示：国家名: 数值
                     },
                     visualMap: {
                         min: 0,
                         max: 100,
-                        text: ['High', 'Low'],
+                        text: ['高', '低'],
                         realtime: false,
                         calculable: true,
                         inRange: {
-                            color: ['#e0f3f8', '#313695']
+                            // 增加颜色的层次感，从浅蓝到深蓝
+                            color: ['#e0f3f8', '#74add1', '#4575b4', '#313695']
                         },
-                        show: false
+                        show: true // 建议开启图例，页面看起来更专业
                     },
                     series: [
                         {
                             name: 'World Health',
                             type: 'map',
                             map: 'world',
-                            roam: true,
+                            roam: false, // 禁用平移和缩放，固定在容器内
+                            select: {
+                                disabled: true // 禁用点击选中导致的全部高亮/异样样式
+                            },
+                            // 3. 新增：鼠标悬浮高亮配置
+                            emphasis: {
+                                itemStyle: {
+                                    areaColor: '#fadb14', // 鼠标指上去时变成明黄色
+                                    borderColor: '#fff',
+                                    borderWidth: 1
+                                },
+                                label: {
+                                    show: true,
+                                    color: '#000' // 显示国家名字
+                                }
+                            },
                             data: mapData
                         }
                     ]
                 });
             } catch (e) {
                 console.warn("加载世界地图数据失败", e);
-                mapChart.showLoading({text: "地图加载失败"});
+                mapChart.showLoading({text: "地图加载失败: " + e.message, textColor: '#f5222d'});
             }
         }
 

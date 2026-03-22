@@ -457,14 +457,28 @@ async def get_health_news():
         logger.exception("获取健康资讯失败")
         return {"status": "error", "msg": str(e)}
 
+@app.get("/api/geojson/hospitals")
+async def get_hospitals_geojson():
+    import os
+    from config.settings import SETTINGS
+    # 直接指向医院 POI 文件
+    file_path = os.path.join(SETTINGS.BASE_DIR, "data", "geojson", "chengdu_hospitals.geojson")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/json")
+    return {"status": "error", "msg": "Hospitals GeoJSON file not found"}
+
 @app.get("/api/geojson/chengdu")
 async def get_chengdu_geojson():
     import os
     from config.settings import SETTINGS
-    # 在 settings 中最好补充 GEOJSON_PATH_CHENGDU，这里硬编码先作为演示
-    file_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "chengdu.geojson")
+    file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_CHENGDU)
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="application/json")
+    
+    fallback_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "chengdu_hospitals.geojson")
+    if os.path.exists(fallback_path):
+        return FileResponse(fallback_path, media_type="application/json")
+        
     return {"status": "error", "msg": "Chengdu GeoJSON file not found"}
 
 @app.get("/api/admin/settings")
@@ -480,10 +494,20 @@ async def get_sys_settings():
 async def get_world_geojson():
     import os
     from config.settings import SETTINGS
-    file_path = SETTINGS.GEOJSON_PATH_WORLD
+    file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_WORLD)
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="application/json")
-    return {"status": "error", "msg": "GeoJSON file not found"}
+    
+    # 兼容回退策略，如果配置的路径未找到，尝试直接到 data/geojson 目录寻找
+    fallback_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "ne_10m_admin_0_countries.geojson")
+    if os.path.exists(fallback_path):
+        return FileResponse(fallback_path, media_type="application/json")
+        
+    # 如果真的没有，返回一个非常基础的全球轮廓（这里仅为了防止前端图表直接抛出 JSON parse error）
+    return {
+        "type": "FeatureCollection",
+        "features": []
+    }
 
 @app.get("/api/geojson/continents")
 async def get_continents_geojson():
@@ -498,9 +522,14 @@ async def get_continents_geojson():
 async def get_china_geojson():
     import os
     from config.settings import SETTINGS
-    file_path = SETTINGS.GEOJSON_PATH_CHINA
+    file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_CHINA)
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="application/json")
+        
+    fallback_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "中华人民共和国.geojson")
+    if os.path.exists(fallback_path):
+        return FileResponse(fallback_path, media_type="application/json")
+        
     return {"status": "error", "msg": "GeoJSON file not found"}
 
 @app.get("/api/config/public-routes")

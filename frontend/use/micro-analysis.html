@@ -2,6 +2,10 @@
 <html lang="zh-CN">
 
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>微观分析 - 健康数据洞察平台</title>
@@ -1492,7 +1496,7 @@
                 },
                 geo: {
                     map: 'chengdu',
-                    roam: true,
+                    roam: false, // 禁用平移和缩放，固定在容器内
                     zoom: 1.2,
                     center: [104.06, 30.67], // 强制设置地图中心点，防止 GeoJSON 的偏移
                     label: { show: true, color: '#333', fontSize: 10 },

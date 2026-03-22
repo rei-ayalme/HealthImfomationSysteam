@@ -336,7 +336,13 @@ def show():
                 center_lat, center_lon = 35.86, 104.19
                 m = folium.Map(location=[center_lat, center_lon], zoom_start=4, tiles="CartoDB positron")
 
-                with open("data/geojson/china.json", "r", encoding="utf-8") as f:
+                from config.settings import SETTINGS
+                geojson_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_CHINA)
+                if not os.path.exists(geojson_path):
+                    # 回退到我们已知的存在文件
+                    geojson_path = os.path.join(SETTINGS.BASE_DIR, "data", "geojson", "中华人民共和国.geojson")
+                    
+                with open(geojson_path, "r", encoding="utf-8") as f:
                     geo_data = json.load(f)
 
                 # 将边界添加到地图上

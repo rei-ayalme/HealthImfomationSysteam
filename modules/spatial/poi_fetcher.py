@@ -3,6 +3,8 @@ import pandas as pd
 import json
 import time
 import os
+import math
+from coord_convert.transform import gcj2wgs
 from config.settings import SETTINGS
 
 def fetch_hospital_pois(city="成都市", keyword="三甲医院"):
@@ -33,10 +35,13 @@ def fetch_hospital_pois(city="成都市", keyword="三甲医院"):
                 pois = data['pois']
                 for poi in pois:
                     location = poi['location'].split(',')
+                    # 高德返回的是 GCJ-02 坐标，我们需要使用 coord-convert 转成 WGS-84
+                    wgs84_lon, wgs84_lat = gcj2wgs(float(location[0]), float(location[1]))
+                    
                     hospitals.append({
                         'name': poi['name'],
-                        'lon': float(location[0]),
-                        'lat': float(location[1]),
+                        'lon': wgs84_lon,
+                        'lat': wgs84_lat,
                         'address': poi.get('address', ''),
                         'capacity': 1000  # 模拟默认床位数或医生数
                     })
