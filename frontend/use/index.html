@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<!--
+[参赛作品说明]
+本项目为学生参赛作品，旨在通过数据可视化展示公共卫生分析模型的结果。
+前端主要采用原生 HTML/JS/CSS，结合 ECharts 实现多维交互。
+-->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
@@ -1019,6 +1025,8 @@
 
         document.getElementById('applyBtn').addEventListener('click', async () => {
             await apply();
+            // 平滑滚动到顶部或主图表区
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
         document.getElementById('resetBtn').addEventListener('click', async () => {
             document.getElementById('region').value = 'global';

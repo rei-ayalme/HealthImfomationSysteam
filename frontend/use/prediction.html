@@ -2,6 +2,12 @@
 <html lang="zh-CN">
 
 <head>
+<!--
+[参赛作品说明]
+本项目为学生参赛作品，旨在通过数据可视化展示公共卫生分析模型的结果。
+前端主要采用原生 HTML/JS/CSS，结合 ECharts 实现多维交互。
+-->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
@@ -1456,7 +1462,7 @@
     <script>
         /* global echarts */
 
-        const PREDICTION_API_BASE_URL = 'http://localhost:8000/api/v1';
+        const PREDICTION_API_BASE_URL = '/api';
         let latestPredictionReport = null;
 
         function getOrInitChart(chartDom) {
@@ -1667,7 +1673,7 @@
                 volatility = scenario === 'baseline' ? 0.08 : (scenario === 'optimistic' ? 0.06 : 0.12);
             }
             
-            // 模型差异模拟
+            // 模型差异模拟（加入非线性时间波动，避免多模型线性变化相同）
             if (model === 'BAPC') {
                 growthRate *= 0.95;
                 volatility *= 1.2;
@@ -1683,9 +1689,17 @@
 
             for (let year = 2024; year <= targetYear; year++) {
                 years.push(year.toString());
-                const predictedValue = baseValue * Math.pow(1 + growthRate, year - 2024);
+                const t = year - 2024;
+                // 加入与模型相关的非线性项，避免简单直线
+                let nonLinearFactor = 1.0;
+                if (model === 'BAPC') {
+                    nonLinearFactor = 1 + Math.sin(t * 0.5) * 0.02;
+                } else if (model === 'DeepAnalyze') {
+                    nonLinearFactor = 1 + Math.log(1 + t) * 0.03;
+                }
+                
+                const predictedValue = baseValue * Math.pow(1 + growthRate, t) * nonLinearFactor;
                 baselineData.push(predictedValue.toFixed(target === 'life_expectancy' ? 1 : 0));
-                // 使用 ECharts custom series 要求的格式：[x, 下界, 上界]
                 upperBound.push((predictedValue * (1 + volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
                 lowerBound.push((predictedValue * (1 - volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
             }
@@ -2310,7 +2324,7 @@
                 const [geoRes, hospitalRes, simRes] = await Promise.all([
                     fetch('/api/geojson/chengdu'),
                     fetch('/api/geojson/hospitals').catch(e => null),
-                    fetch('/assets/data/simulation_data.json')
+                    fetch('/use/simulation_data.json').catch(e => fetch('/assets/data/simulation_data.json'))
                 ]);
                 
                 if (geoRes.ok) {
@@ -2379,10 +2393,16 @@
                      ];
                 }
                 
-                if (simRes.ok) {
+                if (simRes && simRes.ok) {
                     simData = await simRes.json();
                 } else {
-                    throw new Error("Failed to load simulation data");
+                    // Try an absolute fallback if relative paths fail
+                    const fallbackRes = await fetch('/assets/data/simulation_data.json');
+                    if (fallbackRes.ok) {
+                        simData = await fallbackRes.json();
+                    } else {
+                        throw new Error("Failed to load simulation data from all paths");
+                    }
                 }
                 
                 particleChart.hideLoading();

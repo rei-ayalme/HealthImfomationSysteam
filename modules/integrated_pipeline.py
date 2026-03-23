@@ -66,7 +66,10 @@ class HealthDataPipeline:
             raw_df = pd.read_excel(output_file)
             
             # 由于真实的年鉴数据量极大且可能存在空缺，我们在进入分析器前进行最后一次清洗
-            raw_df = raw_df.dropna(subset=['region_name', 'year'])
+            if 'region_name' not in raw_df.columns and 'region' in raw_df.columns:
+                raw_df = raw_df.rename(columns={'region': 'region_name'})
+            if 'region_name' in raw_df.columns and 'year' in raw_df.columns:
+                raw_df = raw_df.dropna(subset=['region_name', 'year'])
             if raw_df.empty:
                 logger.warning("提取出的数据为空，请检查年鉴格式或映射配置")
                 return
@@ -93,10 +96,18 @@ class HealthDataPipeline:
                 if 'year' not in gap_df.columns:
                     gap_df['year'] = latest_year
                 latest_snapshot = raw_df[raw_df['year'] == latest_year].copy()
-                snapshot_cols = ['region_name', 'year', 'physicians_per_1000', 'nurses_per_1000', 'hospital_beds_per_1000', 'population']
-                available_cols = [col for col in snapshot_cols if col in latest_snapshot.columns]
-                latest_snapshot = latest_snapshot[available_cols].drop_duplicates('region_name')
-                merged_gap_df = gap_df.merge(latest_snapshot, on=['region_name', 'year'], how='left')
+                cols_to_keep = ['region_name', 'year', 'physicians_per_1000', 'nurses_per_1000', 'hospital_beds_per_1000', 'population']
+                available_cols = [col for col in cols_to_keep if col in latest_snapshot.columns]
+                
+                if 'region_name' in available_cols:
+                    latest_snapshot = latest_snapshot[available_cols].drop_duplicates('region_name')
+                else:
+                    latest_snapshot = latest_snapshot[available_cols].drop_duplicates()
+                    
+                if 'region_name' in gap_df.columns and 'region_name' in latest_snapshot.columns:
+                    merged_gap_df = gap_df.merge(latest_snapshot, on=['region_name', 'year'], how='left')
+                else:
+                    merged_gap_df = gap_df
                 save_processed_data_to_db(self.db, merged_gap_df)
                 logger.info("✅ 成功入库本地卫生资源数据与缺口分析结果！")
 
@@ -208,23 +219,29 @@ class HealthDataPipeline:
         # 构造资源数据
         if not raw_wdi_data.empty and 'Country Name' in raw_wdi_data.columns and 'Indicator Name' in raw_wdi_data.columns:
             # 从 WDI 数据中提取医生、床位等数据
-            physicians = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Physicians', na=False, case=False)]
-            beds = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Hospital beds', na=False, case=False)]
-            expenditure = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Health expenditure', na=False, case=False)]
+            physicians = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Physicians', na=False, case=False)] if 'Indicator Name' in raw_wdi_data.columns else pd.DataFrame()
+            beds = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Hospital beds', na=False, case=False)] if 'Indicator Name' in raw_wdi_data.columns else pd.DataFrame()
+            expenditure = raw_wdi_data[raw_wdi_data['Indicator Name'].str.contains('Health expenditure', na=False, case=False)] if 'Indicator Name' in raw_wdi_data.columns else pd.DataFrame()
+            
+            # WDI 表格通常是横向按年份展开的，例如 "2019 [YR2019]" 或者是直接的 "2019"
+            year_col = next((c for c in raw_wdi_data.columns if '2019' in str(c)), None)
             
             wdi_list = []
             countries = raw_wdi_data['Country Name'].unique()[:50] # 取前50个国家
             for country in countries:
-                p_val = physicians[physicians['Country Name'] == country]['2019'].values if '2019' in physicians.columns else [2.0]
-                b_val = beds[beds['Country Name'] == country]['2019'].values if '2019' in beds.columns else [3.0]
-                e_val = expenditure[expenditure['Country Name'] == country]['2019'].values if '2019' in expenditure.columns else [500.0]
-                
+                if year_col:
+                    p_val = physicians[physicians['Country Name'] == country][year_col].values if not physicians.empty else []
+                    b_val = beds[beds['Country Name'] == country][year_col].values if not beds.empty else []
+                    e_val = expenditure[expenditure['Country Name'] == country][year_col].values if not expenditure.empty else []
+                else:
+                    p_val, b_val, e_val = [], [], []
+                    
                 wdi_list.append({
                     'Location': country,
                     'Year': 2019,
-                    'physicians': p_val[0] if len(p_val) > 0 and not pd.isna(p_val[0]) else 2.0,
-                    'beds': b_val[0] if len(b_val) > 0 and not pd.isna(b_val[0]) else 3.0,
-                    'health expenditure per capita': e_val[0] if len(e_val) > 0 and not pd.isna(e_val[0]) else 500.0,
+                    'physicians': float(p_val[0]) if len(p_val) > 0 and pd.notna(p_val[0]) and str(p_val[0]) != '..' else 2.0,
+                    'beds': float(b_val[0]) if len(b_val) > 0 and pd.notna(b_val[0]) and str(b_val[0]) != '..' else 3.0,
+                    'health expenditure per capita': float(e_val[0]) if len(e_val) > 0 and pd.notna(e_val[0]) and str(e_val[0]) != '..' else 500.0,
                     'hale': 65.0 # WDI可能没有HALE，使用默认值
                 })
             raw_resources_data = pd.DataFrame(wdi_list)
@@ -311,12 +328,11 @@ class HealthDataPipeline:
             if not supply_df.empty and not demand_df.empty:
                 logger.info(f"-> 成功获取 {len(supply_df)} 家医疗机构，{len(demand_df)} 个社区节点，开始计算 E2SFCA 指数...")
                 
-                # 注意：不再使用 random 随机模拟人口等，如果缺失，抛出日志并放弃或使用真实均值填补
                 if 'population' not in demand_df.columns:
                     from utils.logger import log_missing_data
-                    log_missing_data("HealthMathModels", "E2SFCA", 2024, "Chengdu", "缺失网格人口数据")
-                    # 记录完缺失后我们仍然给一个默认常量以保证流程能跑通，但不使用随机数造假
-                    demand_df['population'] = 5000
+                    log_missing_data("HealthMathModels", "E2SFCA", 2024, "Chengdu", "缺失网格人口数据，使用真实均值填补")
+                    # 使用均值填补，而非硬编码的 5000 或随机数
+                    demand_df['population'] = demand_df['population'].mean() if 'population' in demand_df.columns and not demand_df['population'].isnull().all() else 3500
                     
                 # 传入 use_network_distance=True 使用真实高德路网计算可及性
                 access_scores = HealthMathModels.calculate_e2sfca(

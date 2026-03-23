@@ -2,6 +2,12 @@
 <html lang="zh-CN">
 
 <head>
+<!--
+[参赛作品说明]
+本项目为学生参赛作品，旨在通过数据可视化展示公共卫生分析模型的结果。
+前端主要采用原生 HTML/JS/CSS，结合 ECharts 实现多维交互。
+-->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
@@ -976,27 +982,27 @@
                 </div>
 
                 <div class="analysis-steps">
-                    <div class="step-card active" onclick="showStep(1)">
+                    <div class="step-card active" onclick="showStep(1); window.location.hash='problem'">
                         <div class="step-number">1</div>
                         <div class="step-title">问题定义</div>
                         <div class="step-desc">明确研究目标</div>
                     </div>
-                    <div class="step-card" onclick="showStep(2)">
+                    <div class="step-card" onclick="showStep(2); window.location.hash='worldMapChart'">
                         <div class="step-number">2</div>
                         <div class="step-title">数据收集</div>
                         <div class="step-desc">多源数据整合</div>
                     </div>
-                    <div class="step-card" onclick="showStep(3)">
+                    <div class="step-card" onclick="showStep(3); window.location.hash='diseaseBurdenChart'">
                         <div class="step-number">3</div>
                         <div class="step-title">描述分析</div>
                         <div class="step-desc">分布特征识别</div>
                     </div>
-                    <div class="step-card" onclick="showStep(4)">
+                    <div class="step-card" onclick="showStep(4); window.location.hash='healthEquityChart'">
                         <div class="step-number">4</div>
                         <div class="step-title">比较分析</div>
                         <div class="step-desc">区域差异评估</div>
                     </div>
-                    <div class="step-card" onclick="showStep(5)">
+                    <div class="step-card" onclick="showStep(5); window.location.hash='mortalityTrendChart'">
                         <div class="step-number">5</div>
                         <div class="step-title">趋势预测</div>
                         <div class="step-desc">未来走向研判</div>
@@ -1250,7 +1256,7 @@
         /* global echarts */
 
         // API基础URL
-        const API_BASE_URL = 'http://localhost:8000/api/v1';
+        const API_BASE_URL = '/api';
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
             const chart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
@@ -3095,12 +3101,15 @@
         }
 
         // 更新图表
-        function updateCharts() {
+        async function updateCharts() {
             const btn = document.querySelector('.apply-btn');
             btn.textContent = '⏳ 更新中...';
             btn.disabled = true;
             const state = getMacroFilterState();
             saveMacroFilterState(state);
+
+            // 平滑滚动到顶部或主图表区
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             const regionCode = state.geoLevel === 'country' ? mapRegionToBackendCode(state.countrySelect) : mapRegionToBackendCode(state.regionSelect);
 
             setTimeout(() => {

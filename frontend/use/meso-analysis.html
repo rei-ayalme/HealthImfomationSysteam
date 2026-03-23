@@ -2,6 +2,12 @@
 <html lang="zh-CN">
 
 <head>
+<!--
+[参赛作品说明]
+本项目为学生参赛作品，旨在通过数据可视化展示公共卫生分析模型的结果。
+前端主要采用原生 HTML/JS/CSS，结合 ECharts 实现多维交互。
+-->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
@@ -797,11 +803,6 @@
         <div class="user-actions">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索数据、指标、国家..." aria-label="搜索数据、指标、国家...">
-            </div>
-
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
                 <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
             </div>
             <!-- 未登录时显示 -->
@@ -956,11 +957,11 @@
                         <div class="problem-title">核心研究问题</div>
                         <div class="problem-desc">中国及主要国家的疾病谱系转型进程如何？传染性疾病向非传染性疾病的转型速度、阶段特征及区域差异是什么？</div>
                     </div>
-                    <div class="problem-card warning">
+                    <div class="problem-card warning" onclick="window.location.hash='resource-analysis'" style="cursor: pointer;">
                         <div class="problem-title">卫生资源配置效率</div>
                         <div class="problem-desc">卫生资源投入（医生密度、床位数、卫生支出）与健康产出（预期寿命、DALYs）之间的弹性关系如何？资源配置是否存在优化空间？</div>
                     </div>
-                    <div class="problem-card danger">
+                    <div class="problem-card danger" onclick="window.location.hash='equity-analysis'" style="cursor: pointer;">
                         <div class="problem-title">健康公平性挑战</div>
                         <div class="problem-desc">不同收入群体、城乡之间、地区之间的健康差距有多大？健康不公平性的主要驱动因素是什么？</div>
                     </div>
@@ -2363,6 +2364,9 @@
             const btn = document.querySelector('.apply-btn');
             btn.textContent = '⏳ 分析中...';
             btn.disabled = true;
+
+            // 平滑滚动到顶部或主图表区
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
             const { country, indicator, timeRange, diseaseCategory, systemCapacity, policyIntensity } = getFilterState();
             const resourceView = document.querySelector('#resource-analysis select.filter-select')?.value || currentResourceView;

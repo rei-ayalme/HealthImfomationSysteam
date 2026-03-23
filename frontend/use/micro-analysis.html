@@ -2,6 +2,12 @@
 <html lang="zh-CN">
 
 <head>
+<!--
+[参赛作品说明]
+本项目为学生参赛作品，旨在通过数据可视化展示公共卫生分析模型的结果。
+前端主要采用原生 HTML/JS/CSS，结合 ECharts 实现多维交互。
+-->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
@@ -1338,7 +1344,7 @@
         let populationViewMode = 'bmi'; // bmi | demography
         let trendAnimationTimer = null;
         let trendAnimationRunning = false;
-        const MICRO_API_BASE_URL = 'http://localhost:8000/api/v1';
+        const MICRO_API_BASE_URL = '/api';
 
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
@@ -1428,7 +1434,7 @@
                 echarts.registerMap('chengdu', chengduGeoJson);
 
                 // 调用后端实际 API，加入 threshold_km 参数
-                const response = await fetch(`http://localhost:8000/api/spatial_analysis?region=成都市&level=${level}&threshold_km=${radius}`);
+                const response = await fetch(`/api/spatial_analysis?region=成都市&level=${level}&threshold_km=${radius}`);
                 if (!response.ok) throw new Error('API error');
                 
                 const data = await response.json();
@@ -1446,7 +1452,7 @@
                             spatialChart.showLoading({text: '计算超时，请稍后手动重试', textColor: '#faad14'});
                             return;
                         }
-                        const res = await fetch(`http://localhost:8000/api/spatial_analysis?region=成都市&level=${level}&threshold_km=${radius}`);
+                        const res = await fetch(`/api/spatial_analysis?region=成都市&level=${level}&threshold_km=${radius}`);
                         const rData = await res.json();
                         if (rData.status === 'success') {
                             clearInterval(timer);

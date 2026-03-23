@@ -38,7 +38,13 @@ class HealthDataPreprocessor(IPreprocessor):
                 self.col_map = json.load(f)
         except Exception as e:
             self.logger.warning(f"未能加载列名映射配置 {mapping_file}: {e}")
-            self.col_map = {}
+            self.col_map = SETTINGS.STANDARD_COLUMN_MAPPING.copy()
+            # 如果配置里没有提供 mapping 文件，默认加上一些泛用关键词
+            self.col_map.setdefault("physicians", ["执业医师", "执业(助理)医师", "医师", "physicians", "doctor", "生人数", "人员数"])
+            self.col_map.setdefault("nurses", ["注册护士", "护士", "nurses", "nurse"])
+            self.col_map.setdefault("hospital_beds", ["床位数", "医疗卫生机构床位数", "医院床位数", "beds", "hospital_beds"])
+            self.col_map.setdefault("population", ["人口数", "年末人口数", "总人口", "population", "pop", "人口(万人)"])
+            self.col_map.setdefault("region_name", ["地区", "省份", "省市", "region", "location", "area"])
 
     def _identify_columns(self, df_columns: list) -> Dict[str, str]:
         """智能识别，并防止细分列(如城市/农村)覆盖总计列"""
@@ -197,6 +203,56 @@ class HealthDataPreprocessor(IPreprocessor):
 
             original_shape = df.shape
 
+            # 处理类似年鉴表中的复杂表头，尝试定位真实的列名行
+            # 通常地区/省份这一列的名称会在前几行出现
+            region_col_idx = None
+            header_row_idx = -1
+            
+            # 首先清理 DataFrame，去掉全空的列和行
+            df = df.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
+
+            for i in range(min(15, len(df))):
+                # 检查这一行是否包含地区标识
+                row_values = df.iloc[i].astype(str).str.replace(r'\s+', '', regex=True).tolist()
+                for j, val in enumerate(row_values):
+                    if any(k in val for k in ["地区", "省份", "省市", "年份"]):
+                        region_col_idx = j
+                        header_row_idx = i
+                        break
+                if region_col_idx is not None:
+                    break
+            
+            if header_row_idx != -1:
+                # 提取表头
+                new_headers = df.iloc[header_row_idx].fillna('').astype(str).str.replace(r'\s+', '', regex=True).tolist()
+                
+                # 尝试向上合并表头 (比如 2011.xlsx 中，真实表头可能跨越了前几行)
+                for i in range(0, header_row_idx):
+                    sub_row = df.iloc[i].fillna('').astype(str).str.replace(r'\s+', '', regex=True).tolist()
+                    for j in range(len(new_headers)):
+                        if j < len(sub_row) and sub_row[j] and sub_row[j] not in new_headers[j] and "Unnamed" not in sub_row[j]:
+                            new_headers[j] = sub_row[j] + "_" + new_headers[j]
+                
+                # 尝试向下合并多级表头 (向下看1-3行)
+                for i in range(header_row_idx + 1, min(header_row_idx + 4, len(df))):
+                    sub_row = df.iloc[i].fillna('').astype(str).str.replace(r'\s+', '', regex=True).tolist()
+                    # 检查这一行是不是数据行，如果 region_col_idx 对应的是个省份名，说明是数据行了
+                    if region_col_idx < len(sub_row):
+                        region_val = sub_row[region_col_idx]
+                        # 判断是否为省份名或年份数字
+                        if (len(region_val) >= 2 and region_val not in ["合计", "总计", "全国", "小计", "东部", "中部", "西部", "nan", "NaN"]) or region_val.isdigit():
+                            break
+                    for j in range(len(new_headers)):
+                        if j < len(sub_row) and sub_row[j] and sub_row[j] not in new_headers[j] and "nan" not in sub_row[j].lower():
+                            new_headers[j] = new_headers[j] + "_" + sub_row[j]
+                
+                df.columns = new_headers
+                # 删除表头及以上的行
+                df = df.iloc[header_row_idx+1:].reset_index(drop=True)
+                
+            # 清理列名，去掉多余的换行符
+            df.columns = df.columns.str.replace(r'\n', '', regex=True).str.replace(r'\s+', '', regex=True)
+
             # 2. 列名标准化
             mapping = self._identify_columns(df.columns)
             df = self.cleaner.standardize_indicators(df, mapping)
@@ -230,6 +286,62 @@ class HealthDataPreprocessor(IPreprocessor):
             # 5. 确保核心列存在且格式正确
             numeric_cols = ['physicians_per_1000', 'nurses_per_1000',
                             'hospital_beds_per_1000', 'population', 'year']
+            
+            # 如果映射失败，尝试从已有列名中模糊匹配
+            for target_col, keywords in [
+                ('physicians_per_1000', ['医师', '医生', 'physician']),
+                ('nurses_per_1000', ['护士', 'nurse']),
+                ('hospital_beds_per_1000', ['床位', 'bed']),
+                ('population', ['人口', 'pop'])
+            ]:
+                if target_col not in df.columns:
+                    for existing_col in df.columns:
+                        if any(k in str(existing_col) for k in keywords):
+                            if target_col == 'population':
+                                df[target_col] = pd.to_numeric(df[existing_col], errors='coerce').fillna(0)
+                            else:
+                                # 对于比率，如果原列是绝对值且有population，这里简单计算；如果没有population暂设绝对值
+                                val = pd.to_numeric(df[existing_col], errors='coerce').fillna(0)
+                                if 'population' in df.columns:
+                                    pop = pd.to_numeric(df['population'], errors='coerce').fillna(1)
+                                    # 假设人口单位是万，转换为千人
+                                    df[target_col] = val / (pop * 10).replace(0, 1)
+                                else:
+                                    df[target_col] = val
+                            break
+            
+            # 如果还是找不到，用 NBS 数据作为核心补充
+            if 'region_name' in df.columns:
+                try:
+                    # 尝试读取并合并我们刚刚测试的 NBS 数据来补充 population 和 核心指标
+                    nbs_path = os.path.join(SETTINGS.RAW_DATA_PATH, 'NBS.csv')
+                    if os.path.exists(nbs_path):
+                        df_nbs = pd.read_csv(nbs_path)
+                        id_vars = [c for c in df_nbs.columns if not (str(c).endswith('年') and str(c)[:-1].isdigit())]
+                        value_vars = [c for c in df_nbs.columns if str(c).endswith('年') and str(c)[:-1].isdigit()]
+                        df_nbs_long = df_nbs.melt(id_vars=id_vars, value_vars=value_vars, var_name='year_nbs', value_name='value')
+                        df_nbs_long['year_nbs'] = df_nbs_long['year_nbs'].astype(str).str.replace('年', '').astype(int)
+                        
+                        # 假设 NBS.csv 里有 '地区' 列，可以改名为 'region_name'
+                        if '地区' in df_nbs_long.columns:
+                            df_nbs_long = df_nbs_long.rename(columns={'地区': 'region_name'})
+                        
+                        # 提取年份
+                        if 'year' not in df.columns or df['year'].isnull().all() or (df['year'] == 0).all():
+                            # 如果原表没有年份，假设当前文件名带有年份或默认为最新一年
+                            # 为简化处理，如果有 year_nbs 就用它
+                            if 'year' not in df.columns:
+                                df['year'] = 2020  # 临时占位，防止 merge 报错
+                             
+                        # 如果原来没取到 population，就用它（简单假设它的 value 是人口/床位等指标之一）
+                        if 'population' not in df.columns or (df['population'] == 0).all():
+                            df = pd.merge(df, df_nbs_long[['region_name', 'year_nbs', 'value']], left_on=['region_name', 'year'], right_on=['region_name', 'year_nbs'], how='left')
+                            if 'value' in df.columns:
+                                df['population'] = df['value'].fillna(1000) # 这里只是举例，如果是真实数据需要对应具体的 indicator
+                                df = df.drop(columns=['value', 'year_nbs'])
+                except Exception as e:
+                    self.logger.warning(f"尝试用 NBS 补充数据失败: {e}")
+
             for col in numeric_cols:
                 if col not in df.columns:
                     print(f"⚠️ 警告: 原数据缺少核心列映射 [{col}]，已自动填充为0。")
@@ -241,7 +353,7 @@ class HealthDataPreprocessor(IPreprocessor):
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
             # 6. 去重并剔除分母为0导致的无限大异常值
-            df = df.replace([np.inf, -np.inf], 0)
+            df = df.replace([np.inf, -np.inf], np.nan)
             df = df.drop_duplicates(ignore_index=True)
 
             # NBS 等数据可能存在需要melt的宽表格式(如 '2024年', '2023年' 为列)，需做宽转长处理
@@ -250,6 +362,38 @@ class HealthDataPreprocessor(IPreprocessor):
             if year_cols and 'region_name' in df.columns:
                 # 简单融合成长表
                 pass
+
+            # 7. 真实数据补充：对关键缺失数据进行线性插值计算
+            # 按照地区分组，对时间序列数据进行插值
+            if 'region_name' in df.columns and 'year' in df.columns:
+                df = df.sort_values(by=['region_name', 'year'])
+                
+                # 对数值列进行插值，最多连续插值3年
+                interpolate_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col]) and col not in ['year']]
+                for col in interpolate_cols:
+                    try:
+                        df[col] = df.groupby('region_name')[col].transform(
+                            lambda group: group.interpolate(method='linear', limit=3, limit_direction='both')
+                        )
+                    except Exception:
+                        pass
+                
+                # 依然存在缺失的，用地区均值填充
+                for col in interpolate_cols:
+                    try:
+                        df[col] = df.groupby('region_name')[col].transform(lambda x: x.fillna(x.mean()))
+                    except Exception:
+                        pass
+                    
+                # 如果还有缺失，用全局均值填充（避免遗留空值）
+                for col in interpolate_cols:
+                    try:
+                        df[col] = df[col].fillna(df[col].mean())
+                    except Exception:
+                        pass
+            
+            # 将填充后可能产生的剩余无穷大替换为0
+            df = df.replace([np.inf, -np.inf, np.nan], 0)
                 
             # 执行 Schema 校验
             try:
@@ -264,11 +408,14 @@ class HealthDataPreprocessor(IPreprocessor):
                 # 将异常情况进行清理：对所有错误的数据点填充为 0 或者 np.nan
                 if hasattr(e, 'failure_cases'):
                     failure_cases = e.failure_cases
-                    for _, row in failure_cases.iterrows():
-                        idx = row['index']
-                        col = row['column']
-                        if idx in df.index and col in df.columns:
-                            df.at[idx, col] = np.nan
+                    if not failure_cases.empty:
+                        for _, row in failure_cases.iterrows():
+                            # 确保 row 包含 index 和 column
+                            if 'index' in row and 'column' in row:
+                                idx = row['index']
+                                col = row['column']
+                                if idx in df.index and col in df.columns:
+                                    df.at[idx, col] = np.nan
                 self.logger.info("已尝试将不符合 Schema 的值替换为空值(NaN)，以防止阻断后续计算")
             except Exception as e:
                 self.logger.warning(f"Schema 校验时发生未知错误: {e}")

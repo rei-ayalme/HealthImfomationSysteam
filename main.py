@@ -12,7 +12,12 @@ from modules.analysis.disease import DiseaseRiskAnalyzer
 from db.connection import SessionLocal, init_db, seed_db
 from db.models import GlobalHealthMetric, HealthResource, User
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 app = FastAPI(title="健康数据分析平台 API")
+
+# 增加 GZip 压缩中间件，降低 GeoJSON 等大文件的传输体积
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # 配置 CORS（允许跨域请求）
 app.add_middleware(
@@ -1123,11 +1128,17 @@ async def get_world_geojson():
     import os
     from config.settings import SETTINGS
     file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_WORLD)
+    # 开启强缓存并使用 gzip 压缩
+    headers = {
+        "Cache-Control": "public, max-age=2592000, immutable",
+        "Vary": "Accept-Encoding"
+    }
+
     if os.path.exists(file_path):
         return FileResponse(
             file_path, 
             media_type="application/json",
-            headers={"Cache-Control": "public, max-age=2592000"}
+            headers=headers
         )
     
     # 兼容回退策略，如果配置的路径未找到，尝试直接到 data/geojson 目录寻找
@@ -1136,7 +1147,7 @@ async def get_world_geojson():
         return FileResponse(
             fallback_path, 
             media_type="application/json",
-            headers={"Cache-Control": "public, max-age=2592000"}
+            headers=headers
         )
         
     # 如果真的没有，返回一个非常基础的全球轮廓（这里仅为了防止前端图表直接抛出 JSON parse error）
