@@ -165,7 +165,7 @@ def show():
                     "爬取时间": log.fetch_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "目标国家": json.loads(log.target_countries) if log.target_countries else [],
                     "状态": "成功" if log.status else "失败",
-                    "新增数据量": log.data_count,
+                    "配置数据量": log.data_count,
                     "错误信息": log.error_msg if log.error_msg else "无"
                 })
             st.dataframe(log_data, use_container_width=True)

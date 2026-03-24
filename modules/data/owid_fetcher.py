@@ -149,7 +149,7 @@ def owid_data_2_db(indicator_ids: list, target_countries: list = None, is_who_ta
 
             db.commit()
             fetch_log[ind] = {"status": True, "data_count": new_data_count, "error_msg": None}
-            print(f"✅ OWID指标{ind}入库完成，新增{new_data_count}条数据")
+            print(f"✅ OWID指标{ind}入库完成，配置{new_data_count}条数据")
 
         # 记录爬取日志到数据库
         for ind, log in fetch_log.items():

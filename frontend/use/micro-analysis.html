@@ -768,7 +768,7 @@
         <div class="user-actions">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索数据、指标、人群..." aria-label="搜索数据、指标、人群...">
+                <input type="text" id="globalSearchInput" placeholder="搜索数据、指标、人群..." aria-label="搜索数据、指标、人群..." onkeypress="handleGlobalSearch(event)">
             </div>
 
             <!-- 未登录时显示 -->
@@ -1414,6 +1414,19 @@
         let trendAnimationRunning = false;
         const MICRO_API_BASE_URL = '/api';
 
+        // 统一的搜索交互逻辑
+        function handleGlobalSearch(event) {
+            if (event.key === 'Enter') {
+                const keyword = document.getElementById('globalSearchInput').value.trim();
+                if (!keyword) return;
+                showNotification('搜索已触发', `正在全站搜索关于 "${keyword}" 的数据指标...`);
+                // 模拟跳转到数据集页面并带上搜索参数
+                setTimeout(() => {
+                    window.location.href = `/use/datasets.html?q=${encodeURIComponent(keyword)}`;
+                }, 800);
+            }
+        }
+
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
             return echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
@@ -1601,13 +1614,49 @@
                 }
             }
 
+            // 构建坐标数据，用于热力图和服务圈
+            const coordData = mapData.map(item => {
+                let lon, lat, score, name;
+                if (item && Array.isArray(item.value)) {
+                    lon = item.value[0]; lat = item.value[1]; score = Number(item.value[2]);
+                    name = item.name;
+                } else if (Array.isArray(item)) {
+                    lon = item[0]; lat = item[1]; score = Number(item[2]);
+                    name = item[3] || '';
+                } else if (item) {
+                    lon = item.lon || (item.coord && item.coord[0]); 
+                    lat = item.lat || (item.coord && item.coord[1]);
+                    score = Number(item.value);
+                    name = item.name;
+                }
+                if (lon && lat && Number.isFinite(score)) {
+                    return { lon, lat, score, name };
+                }
+                return null;
+            }).filter(Boolean);
+
+            const blindSpotData = coordData.map(d => [d.lon, d.lat, Math.max(0, maxScore - d.score)]);
+            const serviceCircleData = coordData.filter(d => d.score > maxScore * 0.6).map(d => ({ name: d.name || '医疗节点', value: [d.lon, d.lat, d.score] }));
+
             // 成都市中心经纬度大约为 104.06, 30.67
             const optionMap = {
                 title: { text: '成都市各区空间可及性分布', left: 'center', textStyle: { fontSize: 14 } },
+                legend: {
+                    data: ['可及性', '高斯衰减热力图', '1小时医疗服务圈'],
+                    left: 'left',
+                    top: 'top',
+                    orient: 'vertical',
+                    selectedMode: 'multiple',
+                    textStyle: { fontSize: 12 }
+                },
                 tooltip: {
                     trigger: 'item',
                     formatter: function (params) {
-                        if (params.value !== undefined) {
+                        if (params.seriesName === '高斯衰减热力图') {
+                            return `盲区热力值: ${params.value[2] ? params.value[2].toFixed(4) : 0}`;
+                        } else if (params.seriesName === '1小时医疗服务圈') {
+                            return `${params.name}<br/>可及性评分: ${params.value[2] ? params.value[2].toFixed(4) : 0}<br/>1小时医疗服务圈范围`;
+                        } else if (params.value !== undefined) {
                             const score = Array.isArray(params.value) ? params.value[2] : params.value;
                             const zWeight = params.data && params.data.z_weight ? params.data.z_weight : 0;
                             return params.name + ' : ' + score + '<br>归一化权重 (Z轴): ' + zWeight + (level === 'district' ? '<br><i>点击下钻查看社区详情</i>' : '');
@@ -1615,15 +1664,27 @@
                         return params.name;
                     }
                 },
-                visualMap: {
-                    min: minScore,
-                    max: maxScore,
-                    calculable: true,
-                    inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] },
-                    text: ['高', '低'],
-                    left: 'right',
-                    top: 'bottom'
-                },
+                visualMap: [
+                    {
+                        seriesIndex: 0,
+                        min: minScore,
+                        max: maxScore,
+                        calculable: true,
+                        inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] },
+                        text: ['高', '低'],
+                        left: 'right',
+                        top: 'bottom'
+                    },
+                    {
+                        seriesIndex: 1, // 给高斯衰减热力图使用
+                        show: false,
+                        min: 0,
+                        max: maxScore,
+                        inRange: {
+                            color: ['rgba(255,255,255,0)', 'rgba(253,174,97,0.4)', 'rgba(244,109,67,0.7)', 'rgba(215,48,39,0.8)', 'rgba(165,0,38,1)']
+                        }
+                    }
+                ],
                 geo: {
                     map: 'chengdu',
                     roam: true, // 开启平移和缩放以支持渐进式查看
@@ -1634,8 +1695,8 @@
                     emphasis: { itemStyle: { areaColor: '#ddd' } },
                     show: level !== 'district' // 区块热力图模式下隐藏底层，避免重叠
                 },
-                series: level === 'district' ? [
-                    {
+                series: [
+                    level === 'district' ? {
                         name: '可及性',
                         type: 'map', // 使用 map 类型实现区块染色
                         // ECharts Map 系列使用 `map` 指定注册的地图名
@@ -1670,9 +1731,7 @@
                             label: { show: true, color: '#000', fontSize: 13 },
                             itemStyle: { areaColor: '#fadb14' }
                         }
-                    }
-                ] : [
-                    {
+                    } : {
                         name: '可及性',
                         type: 'scatter', // 社区级依然使用散点图
                         large: true,
@@ -1690,6 +1749,35 @@
                         itemStyle: { opacity: 0.8, shadowBlur: 5, shadowColor: '#333' },
                         label: { show: true, formatter: '{b}', position: 'right', fontSize: 10, distance: 5 },
                         labelLayout: { hideOverlap: true }
+                    },
+                    {
+                        name: '高斯衰减热力图',
+                        type: 'heatmap',
+                        coordinateSystem: 'geo',
+                        data: blindSpotData,
+                        pointSize: 22,
+                        blurSize: 35,
+                        zlevel: 1
+                    },
+                    {
+                        name: '1小时医疗服务圈',
+                        type: 'effectScatter',
+                        coordinateSystem: 'geo',
+                        data: serviceCircleData,
+                        symbolSize: 45, // 模拟大范围的服务圈
+                        showEffectOn: 'render',
+                        rippleEffect: {
+                            brushType: 'stroke',
+                            scale: 3,
+                            period: 4
+                        },
+                        itemStyle: {
+                            color: '#52c41a', // 绿色表示良好的服务覆盖
+                            opacity: 0.5,
+                            shadowBlur: 10,
+                            shadowColor: '#52c41a'
+                        },
+                        zlevel: 2
                     }
                 ]
             };
@@ -2433,7 +2521,7 @@
         function updateSidebarMetrics() {
             const cardIds = ['card-dalys', 'card-top-disease', 'card-dea', 'card-prediction'];
             // 前端兜底逻辑，当数据库为空或API失败时展示模拟数据
-            const mockData = {
+            const fallbackData = {
                 dalys: { value: 31542, trend: -1.2, sparkline: [32000, 31800, 31542, 31200, 31000] },
                 top_disease: { name: "心血管疾病", ratio: 35.2 },
                 dea: { value: 0.82, trend: 2.1, sparkline: [0.75, 0.78, 0.82, 0.84, 0.85] },
@@ -2449,44 +2537,44 @@
 
             const dalysCard = document.getElementById('card-dalys');
             if (dalysCard) {
-                document.getElementById('metric-dalys').innerText = mockData.dalys.value.toLocaleString();
+                document.getElementById('metric-dalys').innerText = fallbackData.dalys.value.toLocaleString();
                 const trendEl = document.getElementById('metric-dalys-trend');
                 if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dalys.trend)}%`;
-                    trendEl.parentElement.className = mockData.dalys.trend > 0 ? 'trend up' : 'trend down';
-                    trendEl.previousElementSibling.innerHTML = mockData.dalys.trend > 0 ? '↑' : '↓';
+                    trendEl.innerText = `${Math.abs(fallbackData.dalys.trend)}%`;
+                    trendEl.parentElement.className = fallbackData.dalys.trend > 0 ? 'trend up' : 'trend down';
+                    trendEl.previousElementSibling.innerHTML = fallbackData.dalys.trend > 0 ? '↑' : '↓';
                 }
                 if (window.echarts) {
-                    renderSparkline('sparkline-dalys', mockData.dalys.sparkline, mockData.dalys.trend > 0 ? '#f5222d' : '#52c41a');
+                    renderSparkline('sparkline-dalys', fallbackData.dalys.sparkline, fallbackData.dalys.trend > 0 ? '#f5222d' : '#52c41a');
                 }
             }
 
             const diseaseCard = document.getElementById('card-top-disease');
             if (diseaseCard) {
-                document.getElementById('metric-disease-name').innerText = mockData.top_disease.name;
+                document.getElementById('metric-disease-name').innerText = fallbackData.top_disease.name;
                 const ratioEl = document.getElementById('metric-disease-ratio');
-                if (ratioEl) ratioEl.innerText = `${mockData.top_disease.ratio}%`;
+                if (ratioEl) ratioEl.innerText = `${fallbackData.top_disease.ratio}%`;
             }
 
             const deaCard = document.getElementById('card-dea');
             if (deaCard) {
-                document.getElementById('metric-dea').innerText = mockData.dea.value.toFixed(3);
+                document.getElementById('metric-dea').innerText = fallbackData.dea.value.toFixed(3);
                 const trendEl = document.getElementById('metric-dea-trend');
                 if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dea.trend)}%`;
-                    trendEl.parentElement.className = mockData.dea.trend > 0 ? 'trend down' : 'trend up';
-                    trendEl.previousElementSibling.innerHTML = mockData.dea.trend > 0 ? '↑' : '↓';
+                    trendEl.innerText = `${Math.abs(fallbackData.dea.trend)}%`;
+                    trendEl.parentElement.className = fallbackData.dea.trend > 0 ? 'trend down' : 'trend up';
+                    trendEl.previousElementSibling.innerHTML = fallbackData.dea.trend > 0 ? '↑' : '↓';
                 }
                 if (window.echarts) {
-                    renderSparkline('sparkline-dea', mockData.dea.sparkline, mockData.dea.trend > 0 ? '#52c41a' : '#f5222d');
+                    renderSparkline('sparkline-dea', fallbackData.dea.sparkline, fallbackData.dea.trend > 0 ? '#52c41a' : '#f5222d');
                 }
             }
 
             const predCard = document.getElementById('card-prediction');
             if (predCard) {
-                document.getElementById('metric-pred-rate').innerText = `${mockData.prediction.growth_rate}%`;
+                document.getElementById('metric-pred-rate').innerText = `${fallbackData.prediction.growth_rate}%`;
                 const targetEl = document.getElementById('metric-pred-target');
-                if (targetEl) targetEl.innerText = mockData.prediction.target;
+                if (targetEl) targetEl.innerText = fallbackData.prediction.target;
             }
         }
 

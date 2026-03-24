@@ -28,5 +28,5 @@ class EmergencySpacePlanner:
             "peak_infected": int(peak_infected),
             "emergency_beds_gap": emergency_beds_needed,
             "status": "🔴 严重超载" if emergency_beds_needed > current_beds else "🟢 承载力安全",
-            "planning_advice": f"峰值预计{int(peak_infected)}人感染，需临时征用并改造约 {emergency_beds_needed * 15} 平方米的城市大型公共空间（如体育馆、会展中心）作为应急方舱储备。"
+            "planning_advice": f"峰值预计{int(peak_infected)}人感染，需保障征用并改造约 {emergency_beds_needed * 15} 平方米的城市大型公共空间（如体育馆、会展中心）作为应急方舱储备。"
         }

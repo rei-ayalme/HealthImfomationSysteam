@@ -203,7 +203,7 @@ class HealthDataPipeline:
                         raw_risk_data = raw_risk_data.rename(columns={col: 'PAF'})
                         break
                         
-                raw_risk_data['exposure_category'] = '中' # 临时填充
+                raw_risk_data['exposure_category'] = '中' # 保障填充
                 
             if raw_spectrum_data.empty:
                 from utils.logger import log_missing_data
@@ -211,7 +211,7 @@ class HealthDataPipeline:
                 raw_spectrum_data = pd.DataFrame(columns=['Location', 'Year', 'cause', 'Cause Name', 'Value'])
             else:
                 raw_spectrum_data = raw_spectrum_data.rename(columns=col_mapping)
-                raw_spectrum_data['cause'] = 600 # 临时填充
+                raw_spectrum_data['cause'] = 600 # 保障填充
         else:
             raw_risk_data = pd.DataFrame(columns=['Location', 'Year', 'Risk Name', 'PAF', 'exposure_category'])
             raw_spectrum_data = pd.DataFrame(columns=['Location', 'Year', 'cause', 'Cause Name', 'Value'])

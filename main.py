@@ -159,6 +159,41 @@ def startup_event():
     finally:
         db.close()
 
+from modules.core.orchestrator import get_quality_report
+
+@app.get("/quality/report")
+async def quality_report():
+    """
+    数据质量日报接口
+    """
+    return get_quality_report()
+
+from modules.analysis.global_risk import get_global_risk_map
+from modules.analysis.global_life_expectancy import get_global_life_expectancy
+from modules.analysis.china_provincial_health import get_china_provincial_health
+from modules.analysis.chengdu_e2sfca import get_chengdu_e2sfca
+from modules.analysis.microsimulation import get_microsimulation_data
+
+@app.get("/api/map/global-risk")
+async def api_global_risk():
+    return await get_global_risk_map()
+
+@app.get("/api/map/global-life-expectancy")
+async def api_global_life_expectancy():
+    return await get_global_life_expectancy()
+
+@app.get("/api/map/china-provincial-health")
+async def api_china_provincial_health():
+    return await get_china_provincial_health()
+
+@app.get("/api/map/chengdu-e2sfca")
+async def api_chengdu_e2sfca():
+    return await get_chengdu_e2sfca()
+
+@app.get("/api/simulation/micro-population")
+async def api_microsimulation():
+    return await get_microsimulation_data()
+
 # ==========================================
 # 1. 定义 API 接口 (必须放在静态目录挂载前)
 # ==========================================
@@ -202,7 +237,7 @@ async def get_system_logs(db: Session = Depends(get_db)):
                 "module": "OWID_API",
                 "action": f"抓取指标 {log.indicator_id}",
                 "status": "success" if log.status else "error",
-                "message": f"新增数据 {log.data_count} 条" if log.status else (log.error_msg or "抓取失败")
+                "message": f"配置数据 {log.data_count} 条" if log.status else (log.error_msg or "抓取失败")
             })
         return {"status": "success", "data": log_list}
     except Exception as e:

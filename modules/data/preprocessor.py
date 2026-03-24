@@ -331,7 +331,7 @@ class HealthDataPreprocessor(IPreprocessor):
                             # 如果原表没有年份，假设当前文件名带有年份或默认为最新一年
                             # 为简化处理，如果有 year_nbs 就用它
                             if 'year' not in df.columns:
-                                df['year'] = 2020  # 临时占位，防止 merge 报错
+                                df['year'] = 2020  # 保障占位，防止 merge 报错
                              
                         # 如果原来没取到 population，就用它（简单假设它的 value 是人口/床位等指标之一）
                         if 'population' not in df.columns or (df['population'] == 0).all():

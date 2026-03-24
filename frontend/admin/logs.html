@@ -15,67 +15,26 @@
         
 
         /* 主布局 */
-        .main-container {
-            display: flex;
-            min-height: 100vh;
-        }
+        
 
         /* 侧边栏 */
-        .sidebar {
-            width: 240px;
-            background: #1a365d;
-            color: white;
-            padding: 24px 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
+        
 
-        .sidebar-header {
-            padding: 0 24px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        
 
-        .logo-text {
-            font-size: 18px;
-            font-weight: 600;
-        }
+        
 
-        .nav-menu {
-            margin-top: 24px;
-        }
+        
 
-        .sidebar-menu li {
-            margin: 2px 0;
-        }
+        
 
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 24px;
-            color: rgba(255,255,255,0.65);
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
+        
 
-        .sidebar-menu a:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-        }
+        
 
-        .sidebar-menu a.active {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            border-left-color: #4299e1;
-        }
+        
 
-        .menu-icon {
-            width: 20px;
-            text-align: center;
-        }
+        
 
         /* 内容区 */
         .content {
@@ -88,12 +47,7 @@
             margin-bottom: 24px;
         }
 
-        .page-title {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-        }
+        
 
         .page-subtitle {
             font-size: 14px;
@@ -509,9 +463,7 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
+            
 
             .content {
                 margin-left: 0;
@@ -527,12 +479,13 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
+    <link rel="stylesheet" href="/assets/css/admin-layout.css">
     <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
     <div class="admin-container">
-        <div class="sidebar">
+                <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">🏥</div>
@@ -541,29 +494,35 @@
             </div>
             
             <div class="nav-menu">
+                <div class="nav-group-title">核心监控</div>
                 <a href="/admin/dashboard.html" class="nav-item">
                     <span class="nav-icon">📊</span>
                     <span class="nav-text">仪表盘</span>
                 </a>
+                
+                <div class="nav-group-title">数据与分析</div>
                 <a href="/admin/data-management.html" class="nav-item">
                     <span class="nav-icon">💾</span>
                     <span class="nav-text">数据管理</span>
-                </a>
-                <a href="/admin/user-management.html" class="nav-item">
-                    <span class="nav-icon">👥</span>
-                    <span class="nav-text">用户管理</span>
-                </a>
-                <a href="/admin/system-settings.html" class="nav-item">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-text">系统设置</span>
+                    <span class="nav-badge">待处理</span>
                 </a>
                 <a href="/admin/reports.html" class="nav-item">
                     <span class="nav-icon">📋</span>
-                    <span class="nav-text">报表管理</span>
+                    <span class="nav-text">模型管理</span>
                 </a>
-                <a href="/admin/logs.html" class="nav-item active">
+                
+                <div class="nav-group-title">系统运维</div>
+                <a href="/admin/user-management.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户审计</span>
+                </a>
+                <a href="/admin/logs.html" class="nav-item">
                     <span class="nav-icon">📝</span>
                     <span class="nav-text">系统日志</span>
+                </a>
+                <a href="/admin/system-settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统配置</span>
                 </a>
                 <a href="/admin/help.html" class="nav-item">
                     <span class="nav-icon">❓</span>
@@ -571,17 +530,16 @@
                 </a>
             </div>
         </div>
-        
         <div class="main-content">
-            <div class="top-bar">
+                        <div class="top-bar">
                 <div class="top-bar-left">
                     <button class="toggle-btn">☰</button>
-                    <h1 class="page-title">系统日志</h1>
+                    <h1 class="page-title" id="dynamicPageTitle">管理后台</h1>
                 </div>
                 <div class="top-bar-right">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                       <input type="text" class="search-input" placeholder="搜索..." aria-label="全局搜索">
+                        <input type="text" class="search-input" placeholder="搜索..." aria-label="全局搜索">
                     </div>
                     <div class="user-menu" onclick="window.location.href='/use/index.html'" style="cursor:pointer;">
                         <div class="user-info">
@@ -592,7 +550,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="content">
                 <div class="page-header">
                     <p class="page-subtitle">查看系统运行日志、错误记录和操作审计，支持实时监控和历史查询</p>
@@ -1002,13 +959,20 @@
             }
         });
     </script>
+    
     <script>
         (function syncAdminNavState() {
-            const current = location.pathname.split('/').pop();
-            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+            const current = location.pathname.split('/').pop() || 'index.html';
+            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
                 link.classList.remove('active');
                 const href = link.getAttribute('href');
-                if (href && href === current) link.classList.add('active');
+                if (href && href.endsWith(current)) {
+                    link.classList.add('active');
+                    const pageTitle = document.getElementById('dynamicPageTitle');
+                    if (pageTitle) {
+                        pageTitle.textContent = link.querySelector('.nav-text').textContent;
+                    }
+                }
             });
         })();
     </script>

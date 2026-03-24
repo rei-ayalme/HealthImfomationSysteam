@@ -20,184 +20,57 @@
 
         
 
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 240px;
-            background: #001529; /* 深色主题提醒高权限环境 */
-            color: rgba(255, 255, 255, 0.65);
-            padding: 24px 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            transition: all 0.3s;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .sidebar-header {
-            padding: 0 24px 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #fff;
-        }
-
-        .logo-text {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .nav-menu {
-            margin-top: 16px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            padding: 14px 24px;
-            color: rgba(255, 255, 255, 0.65);
-            text-decoration: none;
-            transition: all 0.3s;
-            gap: 12px;
-        }
-
-        .nav-item:hover {
-            color: #fff;
-            background: #1890ff;
-        }
-
-        .nav-item.active {
-            color: #fff;
-            background: #1890ff;
-        }
-
-        .nav-group-title {
-            padding: 16px 24px 8px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 1px;
         
-            font-size: 16px;
-            width: 20px;
-            text-align: center;
-        }
 
-        .nav-text {
-            font-size: 14px;
-        }
+        
 
-        .nav-badge {
-            margin-left: auto;
-            background: #f56565;
-            color: white;
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
+        
 
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-        }
+        
 
-        .top-bar {
-            background: white;
-            padding: 16px 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        
 
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        
 
-        .toggle-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #666;
-        }
+        
 
-        .page-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
+        
 
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        
 
-        .search-box {
-            position: relative;
-        }
+        
 
-        .search-input {
-            padding: 8px 12px 8px 32px;
-            border: 1px solid #d9d9d9;
-            border-radius: 20px;
-            font-size: 14px;
-            width: 200px;
-        }
+        
 
-        .search-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
+        
 
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
+        
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #4299e1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
+        
 
-        .user-info {
-            text-align: right;
-        }
+        
 
-        .user-name {
-            font-size: 14px;
-            font-weight: 500;
-        }
+        
 
-        .user-role {
-            font-size: 12px;
-            color: #999;
-        }
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
 
         .data-content {
             padding: 24px;
@@ -539,14 +412,9 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar {
-                width: 0;
-                overflow: hidden;
-            }
+            
 
-            .main-content {
-                margin-left: 0;
-            }
+            
 
             .data-filters {
                 flex-direction: column;
@@ -554,19 +422,20 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
+    <link rel="stylesheet" href="/assets/css/admin-layout.css">
     <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
     <div class="admin-container">
-        <div class="sidebar">
+                <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">🏥</div>
                     <div class="logo-text">健康数据平台</div>
                 </div>
             </div>
-
+            
             <div class="nav-menu">
                 <div class="nav-group-title">核心监控</div>
                 <a href="/admin/dashboard.html" class="nav-item">
@@ -575,9 +444,9 @@
                 </a>
                 
                 <div class="nav-group-title">数据与分析</div>
-                <a href="/admin/data-management.html" class="nav-item active">
+                <a href="/admin/data-management.html" class="nav-item">
                     <span class="nav-icon">💾</span>
-                    <span class="nav-text">数据清洗</span>
+                    <span class="nav-text">数据管理</span>
                     <span class="nav-badge">待处理</span>
                 </a>
                 <a href="/admin/reports.html" class="nav-item">
@@ -598,14 +467,17 @@
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-text">系统配置</span>
                 </a>
+                <a href="/admin/help.html" class="nav-item">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-text">帮助中心</span>
+                </a>
             </div>
         </div>
-
         <div class="main-content">
-            <div class="top-bar">
+                        <div class="top-bar">
                 <div class="top-bar-left">
                     <button class="toggle-btn">☰</button>
-                    <h1 class="page-title">数据管理</h1>
+                    <h1 class="page-title" id="dynamicPageTitle">管理后台</h1>
                 </div>
                 <div class="top-bar-right">
                     <div class="search-box">
@@ -621,7 +493,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="data-content">
                 <div class="content-header">
                     <div class="header-left">
@@ -635,7 +506,7 @@
                         </button>
                         <button class="btn btn-primary" onclick="openAddModal()">
                             <span>➕</span>
-                            <span>新增数据</span>
+                            <span>配置数据</span>
                         </button>
                     </div>
                 </div>
@@ -829,7 +700,7 @@
     <div class="modal" id="addModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">新增健康指标数据</h3>
+                <h3 class="modal-title">配置健康指标数据</h3>
                 <button class="close-btn" onclick="closeAddModal()">&times;</button>
             </div>
             <form id="addForm">
@@ -936,12 +807,12 @@
             // 这里可以添加标签内容切换逻辑
         }
 
-        // 打开新增数据模态框
+        // 打开配置数据模态框
         function openAddModal() {
             document.getElementById('addModal').style.display = 'block';
         }
 
-        // 关闭新增数据模态框
+        // 关闭配置数据模态框
         function closeAddModal() {
             document.getElementById('addModal').style.display = 'none';
         }
@@ -998,7 +869,7 @@
             }
         }
 
-        // 表单提交 - 新增数据
+        // 表单提交 - 配置数据
         document.getElementById('addForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
@@ -1092,13 +963,20 @@
             }
         });
     </script>
+    
     <script>
         (function syncAdminNavState() {
-            const current = location.pathname.split('/').pop();
-            document.querySelectorAll('.sidebar-menu a, .nav-menu .nav-item').forEach(link => {
+            const current = location.pathname.split('/').pop() || 'index.html';
+            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
                 link.classList.remove('active');
                 const href = link.getAttribute('href');
-                if (href && href === current) link.classList.add('active');
+                if (href && href.endsWith(current)) {
+                    link.classList.add('active');
+                    const pageTitle = document.getElementById('dynamicPageTitle');
+                    if (pageTitle) {
+                        pageTitle.textContent = link.querySelector('.nav-text').textContent;
+                    }
+                }
             });
         })();
     </script>

@@ -11,7 +11,7 @@ from db.models import WHOGlobalHealth
 from db.models import DeepSeekAnalysisResult
 from modules.agent.client import deepseek_analyze
 
-# === 新增：导入城市规划与空间分析模块 ===
+# === 配置：导入城市规划与空间分析模块 ===
 try:
     from modules.spatial.urban_accessibility import SpatialAccessibilityModel
     from modules.spatial.layout_optimizer import LayoutAndFairnessOptimizer

@@ -15,38 +15,11 @@
         
 
         /* ---------------- 管理端通用布局框架 ---------------- */
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 240px;
-            background: #1a365d;
-            color: white;
-            padding: 24px 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar-header {
-            padding: 0 24px 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
         
 
         
 
-        .logo-text {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .nav-menu {
-            margin-top: 24px;
-        }
+        
 
         
 
@@ -54,108 +27,43 @@
 
         
 
-        .nav-icon {
-            font-size: 16px;
-            width: 20px;
-            text-align: center;
-        }
+        
 
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-        }
+        
 
-        .top-bar {
-            background: white;
-            padding: 16px 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        
 
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        
 
-        .toggle-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #666;
-        }
+        
 
-        .page-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin: 0;
-        }
+        
 
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        
 
-        .search-box {
-            position: relative;
-        }
+        
 
-        .search-input {
-            padding: 8px 12px 8px 32px;
-            border: 1px solid #d9d9d9;
-            border-radius: 20px;
-            font-size: 14px;
-            width: 200px;
-        }
+        
 
-        .search-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
+        
 
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
+        
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #4299e1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
+        
 
-        .user-info {
-            text-align: right;
-        }
+        
 
-        .user-name {
-            font-size: 14px;
-            font-weight: 500;
-        }
+        
 
-        .user-role {
-            font-size: 12px;
-            color: #999;
-        }
+        
+
+        
+
+        
+
+        
+
+        
 
         /* ---------------- 帮助中心专属样式 ---------------- */
         .help-content {
@@ -243,51 +151,57 @@
 
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
+    <link rel="stylesheet" href="/assets/css/admin-layout.css">
     <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
     <div class="admin-container">
-        <div class="sidebar">
+                <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">🏥</div>
                     <div class="logo-text">健康数据平台</div>
                 </div>
             </div>
-
+            
             <div class="nav-menu">
+                <div class="nav-group-title">核心监控</div>
                 <a href="/admin/dashboard.html" class="nav-item">
                     <span class="nav-icon">📊</span>
                     <span class="nav-text">仪表盘</span>
                 </a>
+                
+                <div class="nav-group-title">数据与分析</div>
                 <a href="/admin/data-management.html" class="nav-item">
                     <span class="nav-icon">💾</span>
                     <span class="nav-text">数据管理</span>
-                </a>
-                <a href="/admin/user-management.html" class="nav-item">
-                    <span class="nav-icon">👥</span>
-                    <span class="nav-text">用户管理</span>
-                </a>
-                <a href="/admin/system-settings.html" class="nav-item">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-text">系统设置</span>
+                    <span class="nav-badge">待处理</span>
                 </a>
                 <a href="/admin/reports.html" class="nav-item">
                     <span class="nav-icon">📋</span>
-                    <span class="nav-text">报表管理</span>
+                    <span class="nav-text">模型管理</span>
+                </a>
+                
+                <div class="nav-group-title">系统运维</div>
+                <a href="/admin/user-management.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户审计</span>
                 </a>
                 <a href="/admin/logs.html" class="nav-item">
                     <span class="nav-icon">📝</span>
                     <span class="nav-text">系统日志</span>
                 </a>
-                <a href="/admin/help.html" class="nav-item active">
+                <a href="/admin/system-settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统配置</span>
+                </a>
+                <a href="/admin/help.html" class="nav-item">
                     <span class="nav-icon">❓</span>
                     <span class="nav-text">帮助中心</span>
                 </a>
             </div>
         </div>
-
         <div class="main-content">
             <div class="top-bar">
                 <div class="top-bar-left">

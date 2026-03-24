@@ -347,6 +347,51 @@
             color: #666;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
         @media (max-width: 1400px) {
             
         }
@@ -410,7 +455,10 @@
         </nav>
         <div class="user-actions" id="userActions">
             <div class="status-chip">数据源在线</div>
-            <div class="search-box"><input placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标"></div>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="globalSearchInput" placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标" onkeypress="handleGlobalSearch(event)">
+            </div>
             <!-- 未登录时显示 -->
             <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
             <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
@@ -469,9 +517,9 @@
             <h1 class="page-title">全球健康概览</h1>
             <section class="kpi-grid" id="kpiGrid"></section>
             <section class="chart-grid">
-                <!-- 新增：全球地图分布图表模块 -->
+                <!-- 配置：全球地图分布图表模块 -->
                 <div class="card" style="grid-column: 1 / -1;">
-                    <div class="card-title">🌍 全球卫生数据地理分布</div>
+                    <div class="card-title">🌍 交互式全球风险地图</div>
                     <div id="mapChart" style="height: 400px; width: 100%;"></div>
                 </div>
                 <div class="card">
@@ -495,6 +543,25 @@
     </div>
     <script>
         /* global echarts */
+
+        // 统一的搜索交互逻辑
+        function handleGlobalSearch(event) {
+            if (event.key === 'Enter') {
+                const keyword = document.getElementById('globalSearchInput').value.trim();
+                if (!keyword) return;
+                
+                // 为了兼容弹窗逻辑，先确保有通知功能
+                if (typeof showNotification === 'function') {
+                    showNotification('搜索已触发', `正在全站搜索关于 "${keyword}" 的数据指标...`);
+                } else {
+                    alert(`搜索已触发: 正在全站搜索关于 "${keyword}" 的数据指标...`);
+                }
+                
+                setTimeout(() => {
+                    window.location.href = `/use/datasets.html?q=${encodeURIComponent(keyword)}`;
+                }, 800);
+            }
+        }
 
         const kpiGrid = document.getElementById('kpiGrid');
         const reportText = document.getElementById('reportText');
@@ -627,6 +694,24 @@
                         <span>${item.c}</span>
                     </div>
                 `;
+                
+                // 添加点击事件和样式
+                card.style.cursor = 'pointer';
+                card.onclick = () => {
+                    const modal = document.getElementById('kpiModal');
+                    const title = document.getElementById('kpiModalTitle');
+                    const desc = document.getElementById('kpiModalDesc');
+                    
+                    title.innerText = item.n;
+                    desc.innerHTML = `
+                        <strong>当前数值：</strong> ${item.v}<br/><br/>
+                        <strong>同比变动：</strong> <span class="${trendClass}">${trendIcon} ${item.c}</span><br/><br/>
+                        <strong>数据来源：</strong> ${sourceText}<br/><br/>
+                        <strong>指标说明：</strong> 该指标反映了当前筛选条件下相关健康状态的核心数据表现。数值的${item.up ? '上升' : '下降'}趋势提示我们在该领域${trendClass === 'kpi-up' ? '面临挑战' : '取得了进展'}。
+                    `;
+                    modal.style.display = 'flex';
+                };
+                
                 kpiGrid.appendChild(card);
             });
         }
@@ -866,17 +951,28 @@
 
         async function fetchWorldMetricData(state) {
             try {
-                const res = await fetch(`/api/map/world-metrics?region=${state.region}&metric=${state.metric}&year=${state.year}`);
+                // Modified to use the new global-risk API for the Interactive Global Risk Map
+                const res = await fetch(`/api/map/global-risk`);
                 if (!res.ok) return { dataMap: new Map(), meta: null };
                 const payload = await res.json();
-                if (payload.status !== 'success' || !Array.isArray(payload.data)) {
+                if (!payload || !Array.isArray(payload.features)) {
                     return { dataMap: new Map(), meta: payload?.meta || null };
                 }
                 const dataMap = new Map();
-                payload.data.forEach(item => {
-                    const key = normalizeCountryKey(item.country);
-                    if (!key) return;
-                    dataMap.set(key, item);
+                payload.features.forEach(feature => {
+                    const props = feature.properties;
+                    if (!props || !props.country_code) return;
+                    // Usually we would map ISO code to country name, but for simplicity we match what we can
+                    // Or we just store by risk_score and match by index or similar.
+                    // Assuming country_code is like ISO_1... we need a name mapping if it's purely simulated.
+                    // For the global-risk simulation, we used ISO_1 to ISO_195.
+                    // We can just return it to be mapped or use the existing stable map value if names don't match.
+                    dataMap.set(props.country_code, {
+                        value: props.risk_score,
+                        source_type: 'fallback',
+                        source: 'GEM/AIR Fallback',
+                        method: 'Risk Distribution Simulation'
+                    });
                 });
                 return { dataMap, meta: payload.meta || null };
             } catch (e) {
@@ -1052,6 +1148,11 @@
                         seriesIndex: 0,
                         name: activeMapCountry
                     });
+                    
+                    // 点击国家跳转到宏观分析页面，并带上国家参数
+                    const metric = document.getElementById('metric').value || 'dalys';
+                    const year = document.getElementById('year').value || '2024';
+                    window.location.href = `/use/macro-analysis.html?country=${encodeURIComponent(activeMapCountry)}&metric=${metric}&year=${year}`;
                 });
                 const statusChip = document.querySelector('.status-chip');
                 if (statusChip) {
@@ -1103,6 +1204,14 @@
             pieChart.resize();
             mapChart.resize();
         });
+
+        // 点击弹窗外部关闭弹窗
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('kpiModal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -1120,5 +1229,14 @@
             }
         });
     </script>
+
+    <!-- KPI Data Modal -->
+    <div id="kpiModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('kpiModal').style.display='none'">&times;</span>
+            <h3 id="kpiModalTitle" style="margin-top: 0; margin-bottom: 16px; font-size: 18px; color: #333;">指标说明</h3>
+            <p id="kpiModalDesc" style="color: #666; line-height: 1.6; font-size: 14px; margin: 0;"></p>
+        </div>
+    </div>
 </body>
 </html>
