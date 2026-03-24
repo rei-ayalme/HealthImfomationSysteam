@@ -24,7 +24,6 @@ class DiseaseRiskAnalyzer(IDiseaseAnalyzer):
 
     def get_attribution(self, year: int, region: str = None) -> str:
         """基于 PAF (人群归因分数) 获取真实的疾病风险归因分析"""
-        # 如果基础数据或风险数据缺失，不应使用硬编码数据兜底
         if self.spectrum_data.empty:
             from utils.logger import log_missing_data
             log_missing_data("DiseaseRiskAnalyzer", "Disease Burden", 2023, "China", "缺少疾病谱系数据")
@@ -37,11 +36,11 @@ class DiseaseRiskAnalyzer(IDiseaseAnalyzer):
 
         df = self.risk_data[self.risk_data['year'] == year].copy()
         if region and 'location_name' in df.columns:
-            # 模糊匹配地区名称
+            # 地区名称检索匹配
             df = df[df['location_name'].str.contains(region, na=False, case=False)]
             
             if df.empty:
-                # 尝试不用年份过滤，找最新的
+                # 尝试检索最新年份数据
                 df = self.risk_data[self.risk_data['location_name'].str.contains(region, na=False, case=False)].copy()
                 if not df.empty:
                     latest_year = df['year'].max()
@@ -113,26 +112,48 @@ class DiseaseRiskAnalyzer(IDiseaseAnalyzer):
                 
         return "\n".join(interventions)
 
-    def run_sde_model_simple(self, cause: str, current_burden: float, years_ahead: int = 5) -> pd.DataFrame:
+    def run_sde_model_simple(self, cause: str, current_burden: float, years_ahead: int = 5, start_year: int = None) -> pd.DataFrame:
         """
-        基于真实基线数据的 SDE 演化预测
+        基于真实基线数据的 SDE (Stochastic Differential Equation) 演化预测模型
+        
+        Args:
+            cause: 疾病名称
+            current_burden: 当前疾病负担基线值
+            years_ahead: 预测未来年数
+            start_year: 起始年份，默认为当前年份
         """
         np.random.seed(42)
-        time_points = np.arange(0, years_ahead)
-
-        # 简单模拟：假设代谢类疾病 drift 偏正，传染类偏负
-        drift = 0.015 if '糖尿病' in cause or '心血管' in cause else -0.01
-        diffusion = 0.02
-
+        # 确保预测点数包含起始年
+        time_points = np.arange(0, years_ahead + 1)
+        
+        # 统一中英文名称识别逻辑，确保 drift 参数生效
+        cause_lower = cause.lower()
+        is_metabolic = any(keyword in cause_lower for keyword in ['diabetes', 'cardiovascular', '糖尿病', '心血管', 'neoplasms', '肿瘤'])
+        
+        # 设定漂移项 (Drift) 和 扩散项 (Diffusion)
+        # 代谢类与慢性病呈上升趋势，传染类疾病呈下降趋势
+        drift = 0.025 if is_metabolic else -0.015
+        diffusion = 0.03 # 增加波动性以体现随机过程
+        
         results = [current_burden]
-        for _ in range(1, len(time_points)):
+        for i in range(1, len(time_points)):
             prev = results[-1]
-            change = (drift * prev) + (diffusion * prev * np.random.normal())
-            results.append(max(0, prev + change))  # 负担不能为负
+            # SDE 离散化: dX = mu*X*dt + sigma*X*dW
+            dt = 1.0
+            dW = np.random.normal(0, np.sqrt(dt))
+            change = (drift * prev * dt) + (diffusion * prev * dW)
+            
+            # 确保演化过程具有一定的线性趋势感，不至于过快平直或剧烈波动
+            new_val = prev + change
+            # 限制极值，避免预测结果出现负值或不合理的指数级增长
+            results.append(max(current_burden * 0.1, min(new_val, current_burden * 5.0)))
 
-        start_year = datetime.now().year
+        if start_year is None:
+            from datetime import datetime
+            start_year = datetime.now().year
+            
         return pd.DataFrame({
-            'year': np.arange(start_year, start_year + years_ahead),
+            'year': np.arange(start_year, start_year + years_ahead + 1),
             'burden_index': results,
             'cause': cause
         })

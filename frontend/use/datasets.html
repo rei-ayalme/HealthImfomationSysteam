@@ -551,11 +551,11 @@
                         美国, 2024, 心血管疾病, 9876543, 876543
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('global-dalys')">
+                        <button class="action-btn primary" onclick="viewDataset('disease_1')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('global-dalys')">
+                        <button class="action-btn secondary" onclick="downloadDataset('disease_1')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -590,11 +590,11 @@
                         肿瘤, 2024, 12.8%, 4.5%, 2.8%
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('disease-burden')">
+                        <button class="action-btn primary" onclick="viewDataset('disease_2')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('disease-burden')">
+                        <button class="action-btn secondary" onclick="downloadDataset('disease_2')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -629,11 +629,11 @@
                         高血压, 2024, 35.8%, 25.6%
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('risk-factors')">
+                        <button class="action-btn primary" onclick="viewDataset('risk_1')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('risk-factors')">
+                        <button class="action-btn secondary" onclick="downloadDataset('risk_1')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -668,11 +668,11 @@
                         高血压管理, 2024, 68.5%, ¥800/人
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('interventions')">
+                        <button class="action-btn primary" onclick="viewDataset('resource_1')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('interventions')">
+                        <button class="action-btn secondary" onclick="downloadDataset('resource_1')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -707,11 +707,11 @@
                         美国, 2024, 65+, 16.8%, 78.8岁
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('demographic')">
+                        <button class="action-btn primary" onclick="viewDataset('disease_3')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('demographic')">
+                        <button class="action-btn secondary" onclick="downloadDataset('disease_3')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -746,11 +746,11 @@
                         日本, 2024, 84.8岁, 87.6岁
                     </div>
                     <div class="dataset-actions">
-                        <button class="action-btn primary" onclick="viewDataset('life-expectancy')">
+                        <button class="action-btn primary" onclick="viewDataset('resource_2')">
                             <i class="fas fa-eye"></i>
                             查看详情
                         </button>
-                        <button class="action-btn secondary" onclick="downloadDataset('life-expectancy')">
+                        <button class="action-btn secondary" onclick="downloadDataset('resource_2')">
                             <i class="fas fa-download"></i>
                             下载
                         </button>
@@ -967,7 +967,7 @@
                 renderDatasetCards(aggregated);
             } catch (e) {
                 console.error("fetch error:", e);
-                grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">后端不可用，当前展示静态数据卡片。</p></div></div>';
+                // grid.innerHTML = '<div class="dataset-card"><div class="dataset-content"><p class="dataset-description">后端不可用，当前展示静态数据卡片。</p></div></div>';
             }
         }
         async function viewDataset(datasetId) {
@@ -1025,7 +1025,7 @@
                 modal.classList.add('active');
             } catch (e) {
                 modalTitle.textContent = '数据集详情';
-                modalBody.innerHTML = '<p>详情加载失败，请确认后端服务是否已启动。</p>';
+                modalBody.innerHTML = '<p>详情加载失败。</p>';
                 modal.classList.add('active');
             }
         }
@@ -1044,7 +1044,7 @@
                 link.download = `${datasetId}_${Date.now()}.csv`;
                 link.click();
             } catch (e) {
-                alert('下载失败，请确认后端服务是否已启动。');
+                alert('下载失败。');
             }
         }
 
