@@ -1438,22 +1438,38 @@
                 // 1. 请求中国地图 GeoJSON 数据
                 const geoJsonRes = await fetch('/api/geojson/china');
                 const geoJson = await geoJsonRes.json();
+                if (geoJson && Array.isArray(geoJson.features)) {
+                    geoJson.features.forEach(f => {
+                        const props = f?.properties;
+                        if (!props) return;
+                        if (!props.name) props.name = props.NAME || props.ADMIN || props.NAME_LONG || props['省份'] || '';
+                    });
+                }
                 echarts.registerMap('china', geoJson);
 
                 // 2. 提取 GeoJSON 中的所有省份名称，并赋予模拟数据
                 const mapData = geoJson.features.map(f => {
-                    const provinceName = f.properties.name; // 例如 "四川省", "北京市"
+                    const props = f?.properties || {};
+                    // 不同 GeoJSON 来源的省份字段名可能不同，这里做兜底。
+                    const provinceName =
+                        (typeof props.name === 'string' && props.name) ||
+                        (typeof props.NAME === 'string' && props.NAME) ||
+                        (typeof props.province === 'string' && props.province) ||
+                        (typeof props.prov_name === 'string' && props.prov_name) ||
+                        (typeof props['省份'] === 'string' && props['省份']) ||
+                        (typeof props.admin_name === 'string' && props.admin_name) ||
+                        '';
                     
                     // 模拟数据：如果是疾病负担，数值越大颜色越深（红）；如果是效率，数值越大颜色越深（蓝）
                     let val = Math.floor(Math.random() * 60) + 40;
                     
                     // 强行给四川省（你的微观分析样本）一个特殊的高亮数值，引起评委注意
-                    if (provinceName.includes('四川')) {
+                    if (provinceName && provinceName.includes('四川')) {
                         val = metricType === 'burden' ? 95 : 85;
                     }
 
                     return {
-                        name: provinceName,
+                        name: provinceName || '未知省份',
                         value: val
                     };
                 });

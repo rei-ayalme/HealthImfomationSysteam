@@ -1741,6 +1741,13 @@
                     const response = await fetch('/api/geojson/continents');
                     if (response.ok) {
                         const geoJson = await response.json();
+                        if (geoJson && Array.isArray(geoJson.features)) {
+                            geoJson.features.forEach(f => {
+                                const props = f?.properties;
+                                if (!props) return;
+                                if (!props.name) props.name = props.NAME || props.ADMIN || props.NAME_LONG || '';
+                            });
+                        }
                         echarts.registerMap('continents', geoJson);
                         continentsGeoJsonLoaded = true;
                     }
@@ -1750,6 +1757,13 @@
                     const response = await fetch('/api/geojson/world');
                     if (response.ok) {
                         const geoJson = await response.json();
+                        if (geoJson && Array.isArray(geoJson.features)) {
+                            geoJson.features.forEach(f => {
+                                const props = f?.properties;
+                                if (!props) return;
+                                if (!props.name) props.name = props.NAME || props.ADMIN || props.NAME_LONG || '';
+                            });
+                        }
                         echarts.registerMap('world', geoJson);
                         geoJsonLoaded = true;
                     }
@@ -1910,7 +1924,8 @@
                 series: [{
                     name: config.name,
                     type: 'map',
-                    mapType: currentMapType,
+                    // ECharts Map 系列使用 `map` 指定注册的地图名，`mapType` 在部分版本会导致渲染失败
+                    map: currentMapType,
                     roam: false, // 禁用平移和缩放，固定在容器内
                     select: {
                         disabled: true

@@ -869,7 +869,8 @@
 
         // 复制日志详情
         function copyLogDetail() {
-            showNotification('日志详情已复制到剪贴板', 'success');
+            // 管理端共用公共脚本仅提供 showToast，不提供 showNotification
+            showToast('日志详情已复制到剪贴板', 'success');
         }
 
         // 查询日志

@@ -948,10 +948,6 @@
                 <span class="search-icon">🔍</span>
                 <input type="text" placeholder="搜索模型、指标..." aria-label="搜索模型、指标...">
             </div>
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
-            </div>
             <!-- 未登录时显示 -->
             <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
             <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
@@ -1727,7 +1723,7 @@
                 yAxis: {
                     type: 'value',
                     name: 'DALYs (百万)',
-                    min: 2500
+                    // 不固定 min，避免后端种子值单位不一致导致折线被“钳死”成平直
                 },
                 series: [
                     {
@@ -1781,22 +1777,35 @@
             chart.setOption(option);
             fetchPredictionSeed(target, region).then(seed => {
                 if (!Number.isFinite(seed)) return;
+
+                // 种子值单位可能与页面坐标轴单位不一致（例如后端返回“十亿”为单位而本页按“百万”绘制）
+                let scaledSeed = seed;
+                if (target === 'disease_burden' && scaledSeed < 100) scaledSeed *= 1000;
+                if (target === 'prevalence' && scaledSeed < 5) scaledSeed *= 10;
+                if (target === 'life_expectancy' && scaledSeed < 50) scaledSeed *= 10;
+                if (target === 'mortality' && scaledSeed < 2) scaledSeed *= 10;
+
                 const years2 = [];
                 const baselineData2 = [];
                 const upperBound2 = [];
                 const lowerBound2 = [];
                 for (let year = 2024; year <= targetYear; year++) {
                     years2.push(year.toString());
-                    const predictedValue = seed * Math.pow(1 + growthRate, year - 2024);
+                    const predictedValue = scaledSeed * Math.pow(1 + growthRate, year - 2024);
                     baselineData2.push(predictedValue.toFixed(target === 'life_expectancy' ? 1 : 0));
                     upperBound2.push((predictedValue * (1 + volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
                     lowerBound2.push((predictedValue * (1 - volatility)).toFixed(target === 'life_expectancy' ? 1 : 0));
                 }
+
+                // 与上面初始化时的置信区间堆叠结构保持一致：
+                // series[0] 负责下界（lowerBound），series[1] 负责上界-下界差值（upper-lower）
+                const ciDiff2 = upperBound2.map((u, idx) => Number(u) - Number(lowerBound2[idx]));
+
                 chart.setOption({
                     xAxis: { data: years2 },
                     series: [
-                        { data: upperBound2 },
-                        { data: lowerBound2.map((val, idx) => upperBound2[idx] - val) },
+                        { data: lowerBound2 },
+                        { data: ciDiff2 },
                         { data: baselineData2 }
                     ]
                 });
@@ -1894,6 +1903,24 @@
 
             chart.setOption(option);
             window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 预测页“敏感性/不确定性”可视化模块的兜底实现
+        // 注意：页面目前未提供对应 DOM 容器时，直接降级为 no-op，
+        // 以避免 ReferenceError 终止其它图表/报告渲染。
+        function initUncertaintyChart() {
+            const dom = document.getElementById('uncertaintyChart');
+            if (!dom) return;
+            // 若未来补齐容器，可在这里实现真实不确定性图。
+            const chart = getOrInitChart(dom);
+            if (!chart) return;
+            chart.clear();
+            chart.setOption({
+                title: { text: '不确定性分析：未配置图表容器（降级兜底）', left: 'center' },
+                xAxis: { show: false },
+                yAxis: { show: false },
+                series: []
+            });
         }
 
         // 窗口大小改变时全局重新渲染图表
@@ -2329,6 +2356,13 @@
                 
                 if (geoRes.ok) {
                     geoJsonCache = await geoRes.json();
+                    if (geoJsonCache && Array.isArray(geoJsonCache.features)) {
+                        geoJsonCache.features.forEach(f => {
+                            const props = f?.properties;
+                            if (!props) return;
+                            if (!props.name) props.name = props.NAME || props.ADMIN || props.NAME_LONG || '';
+                        });
+                    }
                     echarts.registerMap('chengdu', geoJsonCache);
                 }
                 
@@ -2507,8 +2541,20 @@
                 },
                 series: seriesData
             };
-            
-            particleChart.setOption(option);
+
+            // 如果当前环境未成功加载 echarts-gl，scatterGL/linesGL 会导致 setOption 报错。
+            // 兜底：降级到 scatter/lines 保证图表仍可渲染。
+            try {
+                particleChart.setOption(option);
+            } catch (e) {
+                console.warn('scatterGL/linesGL 渲染失败，已降级为 scatter/lines', e);
+                const fallbackSeries = (seriesData || []).map(s => {
+                    if (s?.type === 'scatterGL') return { ...s, type: 'scatter' };
+                    if (s?.type === 'linesGL') return { ...s, type: 'lines' };
+                    return s;
+                });
+                particleChart.setOption({ ...option, series: fallbackSeries });
+            }
         }
 
         function toggleSimulation() {

@@ -1047,6 +1047,13 @@
                 alert('下载失败，请确认后端服务是否已启动。');
             }
         }
+
+        function closeModal() {
+            const modal = document.getElementById('datasetModal');
+            const modalBody = document.getElementById('modalBody');
+            if (modal) modal.classList.remove('active');
+            if (modalBody) modalBody.innerHTML = '';
+        }
         function resetAdvancedSearch() {
             document.getElementById('searchKeyword').value = '';
             document.getElementById('searchCategory').value = 'all';

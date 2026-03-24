@@ -1431,6 +1431,13 @@
                 const mapRes = await fetch('/api/geojson/chengdu'); 
                 if (!mapRes.ok) throw new Error('Failed to load Chengdu GeoJSON');
                 const chengduGeoJson = await mapRes.json();
+                if (chengduGeoJson && Array.isArray(chengduGeoJson.features)) {
+                    chengduGeoJson.features.forEach(f => {
+                        const props = f?.properties;
+                        if (!props) return;
+                        if (!props.name) props.name = props.NAME || props.ADMIN || props.NAME_LONG || '';
+                    });
+                }
                 echarts.registerMap('chengdu', chengduGeoJson);
 
                 // 调用后端实际 API，加入 threshold_km 参数
@@ -1482,14 +1489,23 @@
         function renderSpatialCharts(data, level) {
             const chartData = data.chart_data;
             
+            // 清理 labels/value，避免 NaN 导致首尾数据异常或图表渲染不完整
+            const rawLabels = Array.isArray(chartData.labels) ? chartData.labels : [];
+            const rawValues = Array.isArray(chartData.datasets?.[0]?.data) ? chartData.datasets[0].data : [];
+            const pairs = rawLabels
+                .map((label, idx) => ({ label, value: Number(rawValues[idx]) }))
+                .filter(p => Number.isFinite(p.value));
+            const barLabels = pairs.length ? pairs.map(p => p.label) : rawLabels;
+            const barValues = pairs.length ? pairs.map(p => p.value) : rawValues;
+
             // 1. 柱状图
             const optionBar = {
                 tooltip: { trigger: 'axis', formatter: '{b} <br/> 可及性指数: {c}' },
                 grid: { left: '10%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
-                xAxis: { type: 'category', data: chartData.labels, axisLabel: { interval: 0, rotate: 30 } },
+                xAxis: { type: 'category', data: barLabels, axisLabel: { interval: 0, rotate: 30 } },
                 yAxis: { type: 'value', name: '空间可及性指数' },
                 series: [{
-                    name: '可及性', type: 'bar', data: chartData.datasets[0].data,
+                    name: '可及性', type: 'bar', data: barValues,
                     itemStyle: { color: chartData.datasets[0].backgroundColor || '#1890ff', borderRadius: [4, 4, 0, 0] },
                     label: { show: true, position: 'top', formatter: '{c}' }
                 }]
@@ -1505,12 +1521,11 @@
             let minScore = 0;
             
             if (mapData.length > 0) {
-                // 判断是数组(散点模式)还是对象(热力区块模式)
-                const scores = mapData.map(item => {
-                    return Array.isArray(item.value) ? item.value[2] : item.value;
-                });
+                const scores = mapData
+                    .map(item => (Array.isArray(item?.value) ? item.value[2] : item?.value))
+                    .filter(v => Number.isFinite(Number(v)));
                 maxScore = Math.max(...scores) || 0.0001;
-                minScore = Math.min(...scores);
+                minScore = Number.isFinite(minScore) ? minScore : (scores.length ? Math.min(...scores) : 0);
                 
                 // 为了显示效果，如果最大值和最小值完全一样，人为拉开一点差距
                 if (maxScore === minScore) {
@@ -1555,16 +1570,22 @@
                     {
                         name: '可及性',
                         type: 'map', // 使用 map 类型实现区块染色
-                        mapType: 'chengdu',
+                        // ECharts Map 系列使用 `map` 指定注册的地图名
+                        map: 'chengdu',
                         roam: true,
                         zoom: 1.2,
                         center: [104.06, 30.67],
                         // 将 [lon, lat, score] 数据转换为 {name, value: score} 供地图染色
-                        data: mapData.map(item => ({
-                            name: item.name,
-                            value: item.value[2],
-                            z_weight: item.z_weight
-                        })),
+                        data: mapData
+                            .map(item => {
+                                const score = Array.isArray(item?.value) ? Number(item.value[2]) : Number(item?.value);
+                                return {
+                                    name: item?.name || '',
+                                    value: score,
+                                    z_weight: item?.z_weight ?? 0
+                                };
+                            })
+                            .filter(d => d.name && Number.isFinite(d.value)),
                         label: {
                             show: true, // 显示区块名字
                             color: 'rgba(0, 0, 0, 0.8)', // 文字颜色，半透明黑，避免太突兀
@@ -1593,9 +1614,10 @@
                         coordinateSystem: 'geo',
                         data: mapData,
                         symbolSize: function (val) {
-                            const score = val[2] || 0;
+                            const score = Array.isArray(val) ? Number(val[2]) : Number(val);
+                            const safeScore = Number.isFinite(score) ? score : 0;
                             const baseSize = 12;
-                            return Math.max(baseSize, (score / maxScore) * (baseSize * 2.5));
+                            return Math.max(baseSize, (safeScore / maxScore) * (baseSize * 2.5));
                         },
                         itemStyle: { opacity: 0.8, shadowBlur: 5, shadowColor: '#333' },
                         label: { show: true, formatter: '{b}', position: 'right', fontSize: 10, distance: 5 },

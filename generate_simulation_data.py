@@ -121,7 +121,7 @@ class PopulationSimulator:
         return np.column_stack((self.lon, self.lat, self.states)).tolist()
 
 if __name__ == "__main__":
-    # 生成 5000 个智能体以兼顾性能和效果
+    # 生成智能体以兼顾性能和效果
     simulator = PopulationSimulator(num_agents=5000)
     frames = {}
     

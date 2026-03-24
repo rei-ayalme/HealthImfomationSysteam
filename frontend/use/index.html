@@ -538,6 +538,26 @@
             ]
         };
 
+        // 首页“智能分析摘要/最新健康资讯”静态兜底数据
+        // 说明：这些对象在当前文件内原本缺失，导致渲染阶段 ReferenceError，从而中断 apply()，
+        // 进而出现地图/卡片空白等连锁问题。
+        const reportPool = {
+            global: '全球健康概览：慢性病负担仍是主要增长驱动力，但多部门协同干预有助于延缓疾病进程。',
+            east_asia: '东亚健康概览：预期寿命总体提高，但人口老龄化带来 DALYs 结构性上升风险。',
+            southeast_asia: '东南亚健康概览：双重负担并存，传染病与慢性病叠加影响疾病负担演变。',
+            europe: '欧洲健康概览：公共卫生体系相对完善，干预效果显著，但不平等仍是关键挑战。',
+            north_america: '北美健康概览：医疗可及性较高，然而健康差距与行为风险对结果存在持续影响。'
+        };
+
+        const newsPool = [
+            { t: '慢性病防控策略更新', d: '多维度综合干预有助于降低心脑血管与代谢相关疾病的长期负担。' },
+            { t: '控烟政策带来健康收益', d: '提升烟草税与公共场所禁烟能够在较短周期内改善健康结局。' },
+            { t: '减盐行动的协同效应', d: '与健康教育结合时，减少高血压相关疾病负担的效果更稳定。' },
+            { t: '疫苗接种覆盖提升的意义', d: '提高关键人群的免疫水平，可显著降低可预防传染病的发生。' },
+            { t: '健康不平等监测与治理', d: '通过数据驱动的资源再分配，能够缓解不同群体间的健康差距。' },
+            { t: '健康行为改变的关键因素', d: '提高健康素养与可及性是促进行为长期转变的重要前提。' }
+        ];
+
         // 将从后端动态获取指标数据
         async function fetchKPIData(region, metric, year) {
             try {
@@ -743,7 +763,9 @@
         }
 
         function renderReport(region, year) {
-            reportText.textContent = `${year}年视角：${reportPool[region] || reportPool.global}`;
+            const pool = (typeof reportPool === 'object' && reportPool) ? reportPool : {};
+            const text = pool[region] || pool.global || '暂无分析摘要（静态兜底）';
+            reportText.textContent = `${year}年视角：${text}`;
         }
 
         async function renderNews(keyword = '') {
@@ -785,7 +807,8 @@
             
             // 降级静态数据
             newsList.innerHTML = '';
-            const filteredStatic = newsPool.filter(item => !key || item.t.includes(key) || item.d.includes(key));
+            const pool = (Array.isArray(newsPool) ? newsPool : []);
+            const filteredStatic = pool.filter(item => !key || (item?.t || '').includes(key) || (item?.d || '').includes(key));
             
             if (filteredStatic.length === 0) {
                 newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">未找到匹配的资讯</div>';
@@ -875,6 +898,32 @@
                     throw new Error(geoJson.msg);
                 }
 
+                if (!geoJson || !Array.isArray(geoJson.features) || geoJson.features.length === 0) {
+                    mapChart.hideLoading();
+                    mapChart.setOption({
+                        title: {
+                            text: '地图数据为空（已降级显示）',
+                            left: 'center',
+                            top: 'middle',
+                            textStyle: { color: '#ff4d4f', fontSize: 14 }
+                        },
+                        series: []
+                    });
+                    return;
+                }
+
+                // ECharts Map 匹配字段通常来自 feature.properties.name。
+                // 但本项目 GeoJSON 可能使用 NAME/ADMIN 等字段，因此在注册前做一次字段归一化。
+                if (geoJson && Array.isArray(geoJson.features)) {
+                    geoJson.features.forEach(f => {
+                        const props = f?.properties;
+                        if (!props) return;
+                        if (!props.name) {
+                            props.name = props.NAME || props.ADMIN || props.NAME_LONG || '';
+                        }
+                    });
+                }
+
                 echarts.registerMap('world', geoJson);
                 const { dataMap: worldMetricMap } = await fetchWorldMetricData(state);
 
@@ -887,7 +936,10 @@
                 const focusSet = new Set((regionCountries[state.region] || []).map(normalizeCountryKey));
 
                 const mapData = geoJson.features.map(f => {
-                    const countryName = f.properties.name;
+                    const props = f?.properties || {};
+                    // 世界地图 GeoJSON 字段名可能因数据源而不同（如 NAME/ADMIN）
+                    const countryName = props.name || props.NAME || props.ADMIN || props.NAME_LONG || '';
+                    if (!countryName) return null;
                     const countryKey = normalizeCountryKey(countryName);
                     const backendItem = worldMetricMap.get(countryKey);
                     const fallbackValue = getStableMapValue(countryName, state);
@@ -919,7 +971,7 @@
                             ? { areaColor: '#f5f5f5', opacity: 0.65 }
                             : undefined
                     };
-                });
+                }).filter(Boolean);
 
                 mapChart.hideLoading();
                 const hasInternational = mapData.some(i => i.sourceLabel === '国际数据');
