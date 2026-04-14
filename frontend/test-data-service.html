@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据服务测试 - Health Information System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+            background: #f5f7fa;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .test-card h3 {
+            font-size: 16px;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-btn {
+            padding: 10px 20px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .test-btn:hover {
+            background: #40a9ff;
+        }
+
+        .test-btn:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        .result-area {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 6px;
+            font-size: 13px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-area.error {
+            background: #fff1f0;
+            border-color: #ffa39e;
+        }
+
+        .result-area.loading {
+            background: #e6f7ff;
+            border-color: #91d5ff;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status-error {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+
+        .status-loading {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .summary {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .summary h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 16px;
+            background: #f5f7fa;
+            border-radius: 8px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1890ff;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数据服务测试面板</h1>
+
+        <div class="summary">
+            <h2>测试结果概览</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalTests">0</div>
+                    <div class="summary-label">总测试数</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="successTests" style="color: #52c41a;">0</div>
+                    <div class="summary-label">成功</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="failedTests" style="color: #f5222d;">0</div>
+                    <div class="summary-label">失败</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="apiStatus" style="color: #fa8c16;">--</div>
+                    <div class="summary-label">API状态</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <div class="test-card">
+                <h3>1. 数据集列表 API</h3>
+                <button class="test-btn" onclick="testDatasetList()">运行测试</button>
+                <div class="result-area" id="result-dataset">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>2. 分析指标 API</h3>
+                <button class="test-btn" onclick="testAnalysisMetrics()">运行测试</button>
+                <div class="result-area" id="result-metrics">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>3. 趋势数据 API</h3>
+                <button class="test-btn" onclick="testTrendData()">运行测试</button>
+                <div class="result-area" id="result-trend">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>4. 地理数据 API</h3>
+                <button class="test-btn" onclick="testGeoJSON()">运行测试</button>
+                <div class="result-area" id="result-geo">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>5. 疾病仿真 API</h3>
+                <button class="test-btn" onclick="testDiseaseSimulation()">运行测试</button>
+                <div class="result-area" id="result-simulation">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>6. 健康新闻 API</h3>
+                <button class="test-btn" onclick="testHealthNews()">运行测试</button>
+                <div class="result-area" id="result-news">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>7. 仿真数据获取</h3>
+                <button class="test-btn" onclick="testSimulationData()">运行测试</button>
+                <div class="result-area" id="result-simdata">点击按钮开始测试...</div>
+            </div>
+
+            <div class="test-card">
+                <h3>8. 缓存机制测试</h3>
+                <button class="test-btn" onclick="testCache()">运行测试</button>
+                <div class="result-area" id="result-cache">点击按钮开始测试...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/data-service.js"></script>
+    <script>
+        // 测试结果统计
+        let testStats = {
+            total: 0,
+            success: 0,
+            failed: 0
+        };
+
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('successTests').textContent = testStats.success;
+            document.getElementById('failedTests').textContent = testStats.failed;
+        }
+
+        function setResult(elementId, content, isError = false, isLoading = false) {
+            const element = document.getElementById(elementId);
+            element.className = 'result-area';
+            if (isError) element.classList.add('error');
+            if (isLoading) element.classList.add('loading');
+            element.innerHTML = content;
+        }
+
+        function formatJSON(data) {
+            return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // 测试1: 数据集列表
+        async function testDatasetList() {
+            testStats.total++;
+            setResult('result-dataset', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getDatasetList(5);
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                testStats.success++;
+                setResult('result-dataset', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(data)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-dataset', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试2: 分析指标
+        async function testAnalysisMetrics() {
+            testStats.total++;
+            setResult('result-metrics', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getAnalysisMetrics('China', 2024);
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                testStats.success++;
+                setResult('result-metrics', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(data)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-metrics', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试3: 趋势数据
+        async function testTrendData() {
+            testStats.total++;
+            setResult('result-trend', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getTrendData('China', 'prevalence', 2010, 2024);
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                testStats.success++;
+                setResult('result-trend', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(data)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-trend', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试4: 地理数据
+        async function testGeoJSON() {
+            testStats.total++;
+            setResult('result-geo', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getGeoJSON('china');
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                // 只显示部分数据避免过长
+                const summary = {
+                    type: data.type,
+                    featuresCount: data.features ? data.features.length : 0,
+                    sampleFeature: data.features ? data.features[0] : null
+                };
+
+                testStats.success++;
+                setResult('result-geo', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(summary)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-geo', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试5: 疾病仿真
+        async function testDiseaseSimulation() {
+            testStats.total++;
+            setResult('result-simulation', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getDiseaseSimulation(17, 'China');
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                testStats.success++;
+                setResult('result-simulation', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(data)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-simulation', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试6: 健康新闻
+        async function testHealthNews() {
+            testStats.total++;
+            setResult('result-news', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getHealthNews();
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                testStats.success++;
+                setResult('result-news', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(data)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-news', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试7: 仿真数据获取（含降级测试）
+        async function testSimulationData() {
+            testStats.total++;
+            setResult('result-simdata', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                const startTime = performance.now();
+                const data = await DataService.getSimulationData(2024);
+                const duration = (performance.now() - startTime).toFixed(2);
+
+                // 显示数据摘要
+                const summary = Array.isArray(data) ? {
+                    type: 'array',
+                    length: data.length,
+                    sample: data.slice(0, 3)
+                } : {
+                    type: 'object',
+                    keys: Object.keys(data),
+                    sample: data[2024] ? data[2024].slice(0, 3) : null
+                };
+
+                testStats.success++;
+                setResult('result-simdata', `
+                    <span class="status-badge status-success">成功 (${duration}ms)</span><br><br>
+                    ${formatJSON(summary)}
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-simdata', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 测试8: 缓存机制
+        async function testCache() {
+            testStats.total++;
+            setResult('result-cache', '<span class="status-badge status-loading">测试中...</span>', false, true);
+
+            try {
+                // 第一次请求
+                const start1 = performance.now();
+                await DataService.getDatasetList(1);
+                const duration1 = (performance.now() - start1).toFixed(2);
+
+                // 第二次请求（应该使用缓存）
+                const start2 = performance.now();
+                await DataService.getDatasetList(1);
+                const duration2 = (performance.now() - start2).toFixed(2);
+
+                testStats.success++;
+                setResult('result-cache', `
+                    <span class="status-badge status-success">成功</span><br><br>
+                    首次请求: ${duration1}ms<br>
+                    缓存请求: ${duration2}ms<br>
+                    缓存${duration2 < duration1 ? '生效' : '未生效'} (预期缓存请求更快)
+                `);
+            } catch (error) {
+                testStats.failed++;
+                setResult('result-cache', `
+                    <span class="status-badge status-error">失败</span><br><br>
+                    错误: ${error.message}
+                `, true);
+            }
+            updateStats();
+        }
+
+        // 检查API状态
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/api/dataset?limit=1', {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(3000)
+                });
+                if (response.ok) {
+                    document.getElementById('apiStatus').textContent = '在线';
+                    document.getElementById('apiStatus').style.color = '#52c41a';
+                } else {
+                    document.getElementById('apiStatus').textContent = '异常';
+                    document.getElementById('apiStatus').style.color = '#f5222d';
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = '离线';
+                document.getElementById('apiStatus').style.color = '#f5222d';
+            }
+        }
+
+        // 页面加载时检查API状态
+        window.addEventListener('DOMContentLoaded', checkAPIStatus);
+    </script>
+</body>
+</html>

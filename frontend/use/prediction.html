@@ -17,6 +17,10 @@
     <title>预测模拟 - 健康数据洞察平台</title>
     <script src="/assets/js/echarts.min.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/assets/js/data-service.js"></script>
+    <script src="/assets/js/api.js"></script>
     <style>
         
 
@@ -73,70 +77,66 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
-        /* 主布局 */
+        /* 主内容区 - 已移除侧边栏，全宽布局 */
         .main-container {
-            display: flex;
             margin-top: 64px;
             min-height: calc(100vh - 64px);
         }
 
-        /* 侧边栏 */
-        .sidebar {
-            width: 280px;
+        /* 内容区 - 全宽显示 */
+        .content {
+            width: 100%;
+            padding: 24px;
+        }
+
+        /* 可折叠筛选面板 */
+        .filter-panel {
             background: white;
-            border-right: 1px solid #e8e8e8;
+            border-radius: 12px;
             padding: 20px;
-            position: fixed;
-            height: calc(100vh - 64px);
-            overflow-y: auto;
-        }
-
-        .sidebar-section {
             margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
-        .sidebar-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #8c8c8c;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
-
-        .sidebar-item {
-            padding: 10px 12px;
-            border-radius: 6px;
+        .filter-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             cursor: pointer;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+
+        .filter-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-            font-size: 14px;
-            color: #595959;
-            text-decoration: none;
-            margin-bottom: 4px;
+            gap: 8px;
         }
 
-        .sidebar-item:hover {
-            background: #f5f5f5;
-            color: #1890ff;
+        .filter-panel-toggle {
+            font-size: 12px;
+            color: #722ed1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .sidebar-item.active {
-            background: #e6f7ff;
-            color: #1890ff;
-            font-weight: 500;
+        .filter-panel-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
         }
 
-        .sidebar-icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
+        .filter-panel-content.collapsed {
+            display: none;
         }
 
         .filter-group {
-            margin-bottom: 16px;
+            margin-bottom: 0;
         }
 
         .filter-label {
@@ -158,13 +158,13 @@
 
         .filter-select:focus {
             outline: none;
-            border-color: #1890ff;
+            border-color: #722ed1;
         }
 
         .scenario-group {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 0;
         }
 
         .scenario-btn {
@@ -179,20 +179,19 @@
         }
 
         .scenario-btn:hover {
-            border-color: #1890ff;
-            color: #1890ff;
+            border-color: #722ed1;
+            color: #722ed1;
         }
 
         .scenario-btn.active {
-            border-color: #1890ff;
-            background: #e6f7ff;
-            color: #1890ff;
+            border-color: #722ed1;
+            background: #f9f0ff;
+            color: #722ed1;
             font-weight: 500;
         }
 
         .run-btn {
-            width: 100%;
-            padding: 14px;
+            padding: 14px 24px;
             background: linear-gradient(135deg, #722ed1, #531dab);
             color: white;
             border: none;
@@ -212,11 +211,12 @@
             box-shadow: 0 4px 12px rgba(114, 46, 209, 0.4);
         }
 
-        /* 内容区 */
-        .content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 24px;
+        .filter-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
         }
 
         .page-header {
@@ -233,62 +233,6 @@
         .page-subtitle {
             font-size: 14px;
             color: #8c8c8c;
-        }
-
-        /* 分析步骤 */
-        .analysis-steps {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            padding: 16px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .step-card {
-            flex: 1;
-            padding: 16px;
-            background: #f5f5f5;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .step-card:hover {
-            background: #e6f7ff;
-            border-color: #1890ff;
-        }
-
-        .step-card.active {
-            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-            color: white;
-            border-color: #1890ff;
-        }
-
-        .step-number {
-            width: 32px;
-            height: 32px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin: 0 auto 8px;
-        }
-
-        .step-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .step-desc {
-            font-size: 12px;
-            opacity: 0.8;
         }
 
         /* 问题定义区域 */
@@ -887,14 +831,6 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-
-            .content {
-                margin-left: 0;
-            }
-
             .stats-grid {
                 grid-template-columns: 1fr;
             }
@@ -905,216 +841,84 @@
 </head>
 
 <body>
-    <nav class="top-nav">
-        <div class="logo">
-            <div class="logo-icon">🏥</div>
-            <span>健康数据洞察平台</span>
-        </div>
-        <div class="main-nav">
-            <a href="/use/index.html" class="nav-item" data-nav="index.html">
-                <span>🏠</span>
-                <span>首页</span>
-            </a>
-            <a href="/use/datasets.html" class="nav-item" data-nav="datasets.html">
-                <span>📁</span>
-                <span>数据集</span>
-            </a>
-            <div class="nav-item dropdown">
-                <span>📈</span>
-                <span>数据分析</span>
-                <span class="dropdown-icon">▼</span>
-                <div class="dropdown-menu">
-                    <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
-                        <span>🌍</span>
-                        <span>宏观分析</span>
-                    </a>
-                    <a href="/use/meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
-                        <span>🏛️</span>
-                        <span>中观分析</span>
-                    </a>
-                    <a href="/use/micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
-                        <span>👥</span>
-                        <span>微观分析</span>
-                    </a>
-                    <a href="/use/prediction.html" class="dropdown-item active" data-nav="prediction.html">
-                        <span>🔮</span>
-                        <span>预测模拟</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索模型、指标..." aria-label="搜索模型、指标...">
-            </div>
-            <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
-            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
-            <!-- 已登录时显示 -->
-            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
-            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
-        </div>
-    </nav>
+    <div id="site-header-container"></div>
 
     <div class="main-container">
-        <aside class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-title">预测配置</div>
-                <div class="filter-group">
-                    <label class="filter-label" for="targetSelect">预测目标</label>
-                    <select class="filter-select" id="targetSelect">
-                        <option value="disease_burden">疾病负担</option>
-                        <option value="life_expectancy">预期寿命</option>
-                        <option value="mortality">死亡率</option>
-                        <option value="prevalence">患病率</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="regionSelect">地区</label>
-                    <select class="filter-select" id="regionSelect">
-                        <option value="global">全球</option>
-                        <option value="china">中国</option>
-                        <option value="usa">美国</option>
-                        <option value="europe">欧洲</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="yearSelect">预测年限</label>
-                    <select class="filter-select" id="yearSelect">
-                        <option value="2030">2030</option>
-                        <option value="2035">2035</option>
-                        <option value="2040">2040</option>
-                        <option value="2050">2050</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="interventionLevel">政策干预强度</label>
-                    <select class="filter-select" id="interventionLevel">
-                        <option value="baseline" selected>基准干预</option>
-                        <option value="strong">强干预</option>
-                        <option value="weak">弱干预</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="resourceLevel">资源投入水平</label>
-                    <select class="filter-select" id="resourceLevel">
-                        <option value="medium" selected>中投入</option>
-                        <option value="high">高投入</option>
-                        <option value="low">低投入</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">📊 健康指标分析 (实时)</div>
-                
-                <div class="indicator-card skeleton" id="card-dalys">
-                    <div class="card-header">
-                        <span>核心疾病负担 (DALYs)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-dalys" class="metric-value">--</h2>
-                        <span class="metric-unit">总值</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="trend">
-                            <i></i> <span id="metric-dalys-trend">--%</span>
-                        </span>
-                    </div>
-                    <div id="sparkline-dalys" class="sparkline-container"></div>
-                </div>
-                
-                <div class="indicator-card skeleton" id="card-top-disease">
-                    <div class="card-header">
-                        <span>当期高发疾病 Top 1</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-disease-name" class="metric-value" style="font-size: 20px;">--</h2>
-                    </div>
-                    <div class="card-footer">
-                        <span class="metric-unit">占比: </span>
-                        <span id="metric-disease-ratio" style="font-weight: 600; color: var(--text-color);">--%</span>
-                    </div>
-                </div>
-
-                <div class="indicator-card skeleton" id="card-dea">
-                    <div class="card-header">
-                        <span>综合效率均值 (DEA)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-dea" class="metric-value">--</h2>
-                        <span class="metric-unit">指数</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="trend">
-                            <i></i> <span id="metric-dea-trend">--%</span>
-                        </span>
-                    </div>
-                    <div id="sparkline-dea" class="sparkline-container"></div>
-                </div>
-                
-                <div class="indicator-card skeleton" id="card-prediction">
-                    <div class="card-header">
-                        <span>风险预测研判 (SDE)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-pred-rate" class="metric-value" style="color: var(--warning-color);">--</h2>
-                        <span class="metric-unit">预计复合增长</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="metric-unit">高危靶点: </span>
-                        <span id="metric-pred-target" style="font-weight: 600; color: var(--text-color);">--</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">情景选择</div>
-                <div class="scenario-group">
-                    <button class="scenario-btn active" data-scenario="baseline">基准</button>
-                    <button class="scenario-btn" data-scenario="optimistic">乐观</button>
-                    <button class="scenario-btn" data-scenario="pessimistic">悲观</button>
-                </div>
-            </div>
-
-            <button class="run-btn" onclick="runPrediction()">
-                <span>🚀</span>
-                <span>运行预测</span>
-            </button>
-        </aside>
-
         <main class="content">
             <div class="page-header">
                 <h1 class="page-title">🔮 健康预测模拟</h1>
                 <p class="page-subtitle">基于时间序列模型，预测未来健康趋势，支持多情景分析与政策干预模拟
                 </p>
+            </div>
 
-                <div class="analysis-steps">
-                    <div class="step-card active" onclick="showStep(1)">
-                        <div class="step-number">1</div>
-                        <div class="step-title">模型配置</div>
-                        <div class="step-desc">选择预测目标与参数</div>
+            <div class="filter-panel" id="filterPanel">
+                <div class="filter-panel-header" onclick="toggleFilterPanel()">
+                    <div class="filter-panel-title">
+                        <span>⚙️</span>
+                        <span>预测配置与情景选择</span>
                     </div>
-                    <div class="step-card" onclick="showStep(2)">
-                        <div class="step-number">2</div>
-                        <div class="step-title">情景设定</div>
-                        <div class="step-desc">定义干预措施与假设</div>
+                    <div class="filter-panel-toggle" id="filterToggle">
+                        <span>收起</span>
+                        <span>▲</span>
                     </div>
-                    <div class="step-card" onclick="showStep(3)">
-                        <div class="step-number">3</div>
-                        <div class="step-title">模型训练</div>
-                        <div class="step-desc">算法自动优化</div>
+                </div>
+                <div class="filter-panel-content" id="filterContent">
+                    <div class="filter-group">
+                        <label class="filter-label" for="targetSelect">预测目标</label>
+                        <select class="filter-select" id="targetSelect">
+                            <option value="disease_burden">疾病负担</option>
+                            <option value="life_expectancy">预期寿命</option>
+                            <option value="mortality">死亡率</option>
+                            <option value="prevalence">患病率</option>
+                        </select>
                     </div>
-                    <div class="step-card" onclick="showStep(4)">
-                        <div class="step-number">4</div>
-                        <div class="step-title">结果分析</div>
-                        <div class="step-desc">解读预测与不确定性</div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="regionSelect">地区</label>
+                        <select class="filter-select" id="regionSelect">
+                            <option value="global">全球</option>
+                            <option value="china">中国</option>
+                            <option value="usa">美国</option>
+                            <option value="europe">欧洲</option>
+                        </select>
                     </div>
-                    <div class="step-card" onclick="showStep(5)">
-                        <div class="step-number">5</div>
-                        <div class="step-title">决策建议</div>
-                        <div class="step-desc">转化为政策方案</div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="yearSelect">预测年限</label>
+                        <select class="filter-select" id="yearSelect">
+                            <option value="2030">2030</option>
+                            <option value="2035">2035</option>
+                            <option value="2040">2040</option>
+                            <option value="2050">2050</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="interventionLevel">政策干预强度</label>
+                        <select class="filter-select" id="interventionLevel">
+                            <option value="baseline" selected>基准干预</option>
+                            <option value="strong">强干预</option>
+                            <option value="weak">弱干预</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="resourceLevel">资源投入水平</label>
+                        <select class="filter-select" id="resourceLevel">
+                            <option value="medium" selected>中投入</option>
+                            <option value="high">高投入</option>
+                            <option value="low">低投入</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">情景选择</label>
+                        <div class="scenario-group">
+                            <button class="scenario-btn active" data-scenario="baseline">基准</button>
+                            <button class="scenario-btn" data-scenario="optimistic">乐观</button>
+                            <button class="scenario-btn" data-scenario="pessimistic">悲观</button>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="run-btn" onclick="runPrediction()">
+                            <span>🚀</span>
+                            <span>运行预测</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1521,6 +1325,8 @@
     <script>
         /* global echarts */
 
+        loadNavigationHeader('frontend');
+
         const PREDICTION_API_BASE_URL = '/api';
         let latestPredictionReport = null;
 
@@ -1584,40 +1390,85 @@
             return mapping[target] || 'dalys';
         }
 
+        /**
+         * 获取预测基准数据（使用中台标准API）
+         * 利用api.js拦截器，无需手动处理响应格式和错误提示
+         */
         async function fetchPredictionSeed(target, region) {
-            const metric = mapPredictionMetric(target);
-            const endpoints = [
-                `/api/disease_simulation?years=17`, // 优先请求真实的后端模拟接口
-                `${PREDICTION_API_BASE_URL}/data/admin?region=${region}&metric=${metric}&start_year=2018&end_year=2024&limit=20`,
-                `${PREDICTION_API_BASE_URL}/chart/trend?region=${region}&metric=${metric}&start_year=2018&end_year=2024`
-            ];
-            for (const url of endpoints) {
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) continue;
-                    const payload = await res.json();
-                    
-                    // 适配真实后端接口的返回格式 (例如 /api/disease_simulation 返回 chart_data)
-                    if (payload && payload.status === "success" && payload.chart_data && payload.chart_data.datasets) {
+            try {
+                // 直接调用API，拦截器已处理code/message，返回的就是data对象
+                const chartData = await API.getDiseasePrediction(region, 17);
+                
+                // 验证数据完整性
+                if (chartData && chartData.datasets && chartData.datasets.length > 0) {
+                    const ds = chartData.datasets[0];
+                    if (ds && Array.isArray(ds.data) && ds.data.length > 0) {
                         // 返回第一个数据集的最后一个值作为基础值
-                        const ds = payload.chart_data.datasets[0];
-                        if (ds && Array.isArray(ds.data) && ds.data.length > 0) {
-                            return Number(ds.data[ds.data.length - 1]);
-                        }
+                        return Number(ds.data[ds.data.length - 1]);
                     }
-
-                    if (Array.isArray(payload.data) && payload.data.length) {
-                        const sorted = payload.data.slice().sort((a, b) => Number(a.year) - Number(b.year));
-                        return Number(sorted[sorted.length - 1].value);
-                    }
-                    if (Array.isArray(payload.series?.[0]?.data) && payload.series[0].data.length) {
-                        return Number(payload.series[0].data[payload.series[0].data.length - 1]);
-                    }
-                } catch (e) {
-                    console.warn(`请求 ${url} 失败，将尝试下一个接口或降级使用模拟数据`, e);
                 }
+            } catch (error) {
+                // 错误已被api.js中的SweetAlert处理，这里只需记录日志
+                console.warn("获取预测基准数据失败，将使用模拟数据", error);
             }
             return null;
+        }
+
+        /**
+         * 加载SDE预测数据并渲染图表（中台标准协议）
+         * 示例：展示如何使用api.js简化ECharts数据加载
+         */
+        async function loadSDEPrediction(region) {
+            const chartDom = document.getElementById('particleSimulationChart');
+            if (!chartDom || !particleChart) return;
+            
+            particleChart.showLoading({ 
+                text: '中台算力调用中...', 
+                textColor: '#1890ff', 
+                maskColor: 'rgba(0, 0, 0, 0.8)' 
+            });
+
+            try {
+                // 1. 直接拿数据！拦截器已经把外层的 code 和 message 剥离了，拿到的直接是 data 对象
+                const chartData = await API.getDiseasePrediction(region);
+
+                // 2. 组装 ECharts
+                const option = {
+                    title: {
+                        text: `${region} 疾病演化SDE预测`,
+                        left: 'center',
+                        textStyle: { color: '#fff' }
+                    },
+                    tooltip: { trigger: 'axis' },
+                    legend: {
+                        data: chartData.datasets.map(ds => ds.label),
+                        bottom: 10,
+                        textStyle: { color: '#fff' }
+                    },
+                    xAxis: { 
+                        type: 'category',
+                        data: chartData.labels,
+                        axisLabel: { color: '#fff' }
+                    },
+                    yAxis: { 
+                        type: 'value',
+                        axisLabel: { color: '#fff' }
+                    },
+                    series: chartData.datasets.map(ds => ({
+                        name: ds.label,
+                        type: 'line',
+                        smooth: true,
+                        data: ds.data,
+                        itemStyle: { color: ds.borderColor }
+                    }))
+                };
+                particleChart.setOption(option);
+            } catch (error) {
+                // 报错逻辑已经被 api.js 里的 SweetAlert 处理了，这里只需捕获即可，防止页面卡死
+                console.warn("中台请求中断");
+            } finally {
+                particleChart.hideLoading();
+            }
         }
 
         // AI助手功能
@@ -2222,27 +2073,6 @@
             return names[scenario] || scenario;
         }
 
-        // 显示分析步骤
-        function showStep(step) {
-            // 更新步骤卡片样式
-            document.querySelectorAll('.step-card').forEach((card, index) => {
-                if (index + 1 === step) {
-                    card.classList.add('active');
-                } else {
-                    card.classList.remove('active');
-                }
-            });
-
-            // 滚动到对应区域
-            const sections = ['problem', 'intervention', 'methods', 'results', 'recommendations'];
-            const targetSection = document.getElementById(sections[step - 1]);
-            if (targetSection) {
-                targetSection.scrollIntoView({ behavior: 'smooth' });
-            }
-
-            showNotification('已切换到分析步骤: ' + step, 'info');
-        }
-
         // 导出数据
         function exportData() {
             showNotification('正在导出预测数据...', 'info');
@@ -2473,6 +2303,17 @@
             }, 3000);
         }
 
+        function toggleFilterPanel() {
+            const content = document.getElementById('filterContent');
+            const toggle = document.getElementById('filterToggle');
+            if (content && toggle) {
+                const isCollapsed = content.classList.toggle('collapsed');
+                toggle.innerHTML = isCollapsed 
+                    ? '<span>展开</span><span>▼</span>' 
+                    : '<span>收起</span><span>▲</span>';
+            }
+        }
+
         // 粒子仿真系统逻辑 (ECharts GL)
         let particleChart;
         let simInterval;
@@ -2494,17 +2335,18 @@
             if (!chartDom) return;
             particleChart = getOrInitChart(chartDom);
             particleChart.showLoading({text: '正在加载微观人群仿真数据与模型...', textColor: '#1890ff', maskColor: 'rgba(0, 0, 0, 0.8)'});
-            
+
             try {
-                // 并发请求地图、医院 POI 和预计算的仿真数据
+                // 使用DataService获取数据，支持API优先、本地模拟数据兜底策略
                 const [geoRes, hospitalRes, simRes] = await Promise.all([
-                    fetch('/api/geojson/chengdu'),
-                    fetch('/api/geojson/hospitals').catch(e => null),
-                    fetch('/use/simulation_data.json').catch(e => fetch('/assets/data/simulation_data.json'))
+                    DataService.getGeoJSON('chengdu').catch(e => null),
+                    DataService.getGeoJSON('hospitals').catch(e => null),
+                    DataService.getSimulationData(simYear).catch(e => null)
                 ]);
-                
-                if (geoRes.ok) {
-                    geoJsonCache = await geoRes.json();
+
+                // 处理地理数据
+                if (geoRes) {
+                    geoJsonCache = geoRes;
                     if (geoJsonCache && Array.isArray(geoJsonCache.features)) {
                         geoJsonCache.features.forEach(f => {
                             const props = f?.properties;
@@ -2514,7 +2356,7 @@
                     }
                     echarts.registerMap('chengdu', geoJsonCache);
                 }
-                
+
                 // 1. 静态初始化（只执行一次，解决无法缩放的问题）
                 particleChart.setOption({
                     backgroundColor: '#000',
@@ -2550,7 +2392,7 @@
                 particleChart.on('georoam', function () {
                     const option = particleChart.getOption();
                     const newZoom = option.geo[0].zoom || 1;
-                    
+
                     // 只有当缩放级别发生明显变化时，才重新渲染（忽略纯平移操作，优化性能）
                     if (Math.abs(newZoom - currentZoom) > 0.05) {
                         currentZoom = newZoom;
@@ -2558,34 +2400,38 @@
                     }
                 });
 
-                if (hospitalRes && hospitalRes.ok) {
-                    const hJson = await hospitalRes.json();
-                    if (hJson && hJson.features) {
-                        hospitalsDataCache = hJson.features.map(f => {
-                            const coords = f.geometry.coordinates;
-                            return [coords[0], coords[1], f.properties.name || '医院'];
-                        });
-                    }
+                // 处理医院数据
+                if (hospitalRes && hospitalRes.features) {
+                    hospitalsDataCache = hospitalRes.features.map(f => {
+                        const coords = f.geometry.coordinates;
+                        return [coords[0], coords[1], f.properties.name || '医院'];
+                    });
                 }
-                
-                // 兜底医院坐标
+
+                // 兜底医院坐标（成都市主要三甲医院）
                 if (hospitalsDataCache.length === 0) {
                      hospitalsDataCache = [
                          [104.058564, 30.643904, '四川大学华西医院'],
-                         [104.037064, 30.668702, '四川省人民医院']
+                         [104.037064, 30.668702, '四川省人民医院'],
+                         [104.078523, 30.657234, '四川大学华西第二医院'],
+                         [104.045678, 30.689012, '成都中医药大学附属医院'],
+                         [104.112345, 30.623456, '成都市第一人民医院'],
+                         [104.023456, 30.645678, '成都市第二人民医院']
                      ];
                 }
-                
-                if (simRes && simRes.ok) {
-                    simData = await simRes.json();
-                } else {
-                    // Try an absolute fallback if relative paths fail
-                    const fallbackRes = await fetch('/assets/data/simulation_data.json');
-                    if (fallbackRes.ok) {
-                        simData = await fallbackRes.json();
-                    } else {
-                        throw new Error("Failed to load simulation data from all paths");
+
+                // 处理仿真数据
+                if (simRes) {
+                    // DataService返回的是特定年份的数据或完整数据对象
+                    if (Array.isArray(simRes)) {
+                        // 如果是数组，说明是特定年份的数据
+                        simData = { [simYear]: simRes };
+                    } else if (typeof simRes === 'object') {
+                        // 如果是对象，可能是完整的数据集
+                        simData = simRes;
                     }
+                } else {
+                    throw new Error("无法加载仿真数据，API和本地数据均不可用");
                 }
                 
                 particleChart.hideLoading();

@@ -194,54 +194,6 @@
             margin-top: 4px;
         }
 
-        /* 分析步骤 */
-        .analysis-steps {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .step-card {
-            background: #fafafa;
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
-            border: 2px solid transparent;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .step-card:hover, .step-card.active {
-            border-color: #1890ff;
-            background: #e6f7ff;
-        }
-
-        .step-number {
-            width: 32px;
-            height: 32px;
-            background: #1890ff;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin: 0 auto 8px;
-        }
-
-        .step-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 4px;
-        }
-
-        .step-desc {
-            font-size: 12px;
-            color: #666;
-        }
-
         /* 问题定义区 */
         .problem-section {
             background: #fff7e6;
@@ -583,9 +535,6 @@
         }
 
         @media (max-width: 1200px) {
-            .analysis-steps {
-                grid-template-columns: repeat(3, 1fr);
-            }
             .recommendation-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -598,9 +547,6 @@
             }
             .content {
                 margin-left: 0;
-            }
-            .analysis-steps {
-                grid-template-columns: repeat(2, 1fr);
             }
             .chart-grid {
                 grid-template-columns: 1fr;
@@ -617,30 +563,7 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <nav class="top-nav">
-        <div class="logo">
-            <div class="logo-icon">🏥</div>
-            <span>健康数据洞察平台</span>
-        </div>
-        <div class="main-nav">
-            <a href="index.html" class="nav-item" data-nav="index.html">首页</a>
-            <a href="datasets.html" class="nav-item" data-nav="datasets.html">数据集</a>
-            <div class="nav-item dropdown active">数据分析 <span class="dropdown-icon">▼</span>
-                <div class="dropdown-menu">
-                    <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">宏观分析</a>
-                    <a href="meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">中观分析</a>
-                    <a href="micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">微观分析</a>
-                    <a href="prediction.html" class="dropdown-item" data-nav="prediction.html">预测模拟</a>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions">
-            <a href="login.html" class="nav-item">登录</a>
-            <a href="register.html" class="nav-item">注册</a>
-            <a href="account-center.html" class="nav-item">个人中心</a>
-            <a href="/admin/dashboard.html" class="nav-item">管理端</a>
-        </div>
-    </nav>
+    <div id="site-header-container"></div>
 
     <div class="main-container">
         <aside class="sidebar">
@@ -769,34 +692,6 @@
                     <div>
                         <div class="framework-title">专业数据分析框架</div>
                         <div class="framework-subtitle">基于流行病学与生物统计学方法，提供科学、系统的健康数据分析</div>
-                    </div>
-                </div>
-
-                <div class="analysis-steps">
-                    <div class="step-card active" onclick="showStep(1)">
-                        <div class="step-number">1</div>
-                        <div class="step-title">问题定义</div>
-                        <div class="step-desc">明确研究目标与假设</div>
-                    </div>
-                    <div class="step-card" onclick="showStep(2)">
-                        <div class="step-number">2</div>
-                        <div class="step-title">数据收集</div>
-                        <div class="step-desc">多源数据整合验证</div>
-                    </div>
-                    <div class="step-card" onclick="showStep(3)">
-                        <div class="step-number">3</div>
-                        <div class="step-title">分析方法</div>
-                        <div class="step-desc">选择适当统计方法</div>
-                    </div>
-                    <div class="step-card" onclick="showStep(4)">
-                        <div class="step-number">4</div>
-                        <div class="step-title">结果解读</div>
-                        <div class="step-desc">深度挖掘数据价值</div>
-                    </div>
-                    <div class="step-card" onclick="showStep(5)">
-                        <div class="step-number">5</div>
-                        <div class="step-title">决策建议</div>
-                        <div class="step-desc">转化为行动方案</div>
                     </div>
                 </div>
 
@@ -1046,6 +941,8 @@
 
     <script>
         /* global echarts */
+
+        loadNavigationHeader('frontend');
 
         // 页面加载时初始化图表
         document.addEventListener('DOMContentLoaded', function() {
@@ -1429,17 +1326,6 @@
             setTimeout(() => box.remove(), 2600);
         }
 
-        // 显示分析步骤
-        function showStep(step) {
-            document.querySelectorAll('.step-card').forEach((card, index) => {
-                if (index + 1 === step) {
-                    card.classList.add('active');
-                } else {
-                    card.classList.remove('active');
-                }
-            });
-        }
-
         // 开始分析
         function startAnalysis() {
             const config = getAnalysisConfig();
@@ -1459,7 +1345,6 @@
                 applyAnalysisConfig(config);
                 refreshAnalysisCharts(config);
                 saveConfigToLocal(config);
-                showStep(5);
                 btn.textContent = '🔍 开始分析';
                 btn.disabled = false;
                 showNotification('分析完成', '已根据您的配置更新分析结果');

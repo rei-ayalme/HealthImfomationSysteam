@@ -20,14 +20,13 @@ from config.settings import SETTINGS
 from db.connection import SessionLocal
 from db.models import Base, HealthResource, AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
 from utils.logger import logger
-# 导入所有清洗器
-from modules.data.preprocessor import HealthDataPreprocessor
-from modules.data.gbd_preprocessor import AdvancedGlobalHealthCleaner
+# 导入双引擎架构
+from modules.data.loader import DataLoader
+from modules.data.processor import DataProcessor
 
 # 导入所有分析器与算法库
-from modules.analysis.health import UnifiedHealthAnalyzer
-from modules.analysis.disease import DiseaseRiskAnalyzer
-from modules.analysis.advanced_algorithms import HealthMathModels
+from modules.core.analyzer import ComprehensiveAnalyzer
+from modules.core.evaluator import HealthMathModels
 
 
 class HealthDataPipeline:
@@ -55,15 +54,25 @@ class HealthDataPipeline:
             return
 
         try:
-            # 1. 数据预处理
+            # 1. 数据预处理（新双引擎架构）
             logger.info(f"1. 扫描并提取目录 {input_file} 下的真实年鉴数据...")
-            preprocessor = HealthDataPreprocessor()
-            # 指定提取省级或市级的数据，这里默认提取"合计"层级
-            preprocessor.clean_health_data(input_file, output_file, hierarchy_level="合计")
+            
+            # 实例化双引擎架构（数据加载与数据处理分离）
+            loader = DataLoader()
+            processor = DataProcessor()  # 不需要地理注册表，使用默认配置
+            
+            # 分步执行数据处理流程
+            # 第一步：数据加载 - 扫描目录并加载原始数据
+            raw_df = loader.load_local_files(input_file)
+            
+            # 第二步：数据处理 - 清洗和标准化年鉴数据
+            clean_df = processor.process_yearbook_resource(raw_df)
+            
+            # 保存处理后的数据到文件
+            clean_df.to_excel(output_file, index=False)
 
             # 2. 核心分析
             logger.info("2. 执行核心指标分析...")
-            raw_df = pd.read_excel(output_file)
             
             # 由于真实的年鉴数据量极大且可能存在空缺，我们在进入分析器前进行最后一次清洗
             if 'region_name' not in raw_df.columns and 'region' in raw_df.columns:
@@ -74,12 +83,15 @@ class HealthDataPipeline:
                 logger.warning("提取出的数据为空，请检查年鉴格式或映射配置")
                 return
                 
-            analyzer = UnifiedHealthAnalyzer(raw_df)
+            # 创建数据处理器和加载器
+            processor = DataProcessor()
+            loader = DataLoader()
+            analyzer = ComprehensiveAnalyzer(processor, loader)
 
-            latest_year = analyzer.data['year'].max() if 'year' in analyzer.data.columns else 2020
+            latest_year = raw_df['year'].max() if 'year' in raw_df.columns else 2020
             logger.info(f"-> 分析基准年份: {latest_year}")
 
-            gap_data = analyzer.compute_resource_gap(latest_year)
+            gap_data = analyzer.compute_resource_gap(raw_df, latest_year)
             logger.info(f"-> 缺口计算完成，共覆盖 {len(gap_data)} 个地区")
 
             # 2.5 同步入库（分阶段：先落清洗基础数据，再落缺口分析结果）
@@ -352,9 +364,11 @@ class HealthDataPipeline:
         # ---------------------------------------------------------
         # 5. 疾病风险归因分析测试
         # ---------------------------------------------------------
-        analyzer = DiseaseRiskAnalyzer(spectrum_data=disease_df, risk_data=risk_df)
-        logger.info("\n-> 分析洞察结果节选：")
-        logger.info(analyzer.get_attribution(year=2019, region='China'))
+        processor = DataProcessor()
+        loader = DataLoader()
+        analyzer = ComprehensiveAnalyzer(processor, loader)
+        logger.info("\\n-> 分析洞察结果节选：")
+        logger.info(analyzer.get_risk_attribution(risk_df, year=2019, region='China'))
 
         # ---------------------------------------------------------
         # 6. 结果落库 (持久化存储)

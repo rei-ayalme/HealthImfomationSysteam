@@ -531,7 +531,9 @@
 </head>
 
 <body>
-    <div class="admin-container">
+    <div id="site-header-container"></div>
+
+    <div class="admin-container" style="margin-top: 64px;">
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -735,6 +737,8 @@
     </div>
 
     <script>
+        loadNavigationHeader('admin');
+
         // 模拟日志数据
         const logData = [
             { id: 1, level: 'info', time: '2024-01-15 14:32:18', module: 'api', message: '用户登录成功 - user_id: 12345, username: admin', user: 'admin', ip: '192.168.1.100', stack: '' },

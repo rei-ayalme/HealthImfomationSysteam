@@ -445,45 +445,7 @@
 </head>
 
 <body>
-  <nav class="top-nav">
-    <div class="logo">
-      <div class="logo-icon">🏥</div>
-      <span>健康数据洞察平台</span>
-    </div>
-    <div class="main-nav">
-      <a href="index.html" class="nav-item" data-nav="index.html">
-        <span>🏠</span>
-        <span>首页</span>
-      </a>
-      <a href="datasets.html" class="nav-item" data-nav="datasets.html">
-        <span>📁</span>
-        <span>数据集</span>
-      </a>
-      <div class="nav-item dropdown">
-        <span>📈</span>
-        <span>数据分析</span>
-        <span class="dropdown-icon">▼</span>
-        <div class="dropdown-menu">
-          <a href="macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">宏观分析</a>
-          <a href="meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">中观分析</a>
-          <a href="micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">微观分析</a>
-          <a href="prediction.html" class="dropdown-item" data-nav="prediction.html">预测模拟</a>
-        </div>
-      </div>
-    </div>
-    <div class="user-actions">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
-      </div>
-      <!-- 未登录时显示 -->
-      <a class="nav-item guest-only" href="login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
-      <a class="nav-item signup-btn guest-only" href="register.html" style="background: var(--primary-color); color: white; border: none;">注册</a>
-      <!-- 已登录时显示 -->
-      <a href="account-center.html" class="nav-item active" data-nav="account-center.html">个人中心</a>
-      <a href="/admin/dashboard.html" class="nav-item">管理端</a>
-    </div>
-  </nav>
+  <div id="site-header-container"></div>
 
   <div class="main-container">
     <aside class="sidebar">
@@ -870,6 +832,8 @@
 
   <script>
     /* global echarts */
+
+    loadNavigationHeader('frontend');
 
     // 切换内容区域
     // 修复：加入 event 传参，避免废弃方法引发报错

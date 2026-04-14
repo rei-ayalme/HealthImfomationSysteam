@@ -1,0 +1,123 @@
+<header class="global-top-bar">
+    <div class="brand">
+        <div class="brand-logo">🏥</div>
+        <span class="brand-name">健康信息洞察</span>
+    </div>
+
+    <nav class="nav-center">
+        <ul class="nav-menu">
+            <li class="nav-menu-item">
+                <a href="/admin/dashboard.html" class="nav-menu-link" data-nav="dashboard.html">
+                    <span>📊</span>
+                    <span>数据概览</span>
+                </a>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/admin/user-management.html" class="nav-menu-link" data-nav="user-management.html">
+                    <span>👥</span>
+                    <span>用户管理</span>
+                </a>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/admin/data-management.html" class="nav-menu-link" data-nav="data-management.html">
+                    <span>📁</span>
+                    <span>数据管理</span>
+                </a>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/admin/reports.html" class="nav-menu-link" data-nav="reports.html">
+                    <span>📈</span>
+                    <span>报表分析</span>
+                </a>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/admin/system-settings.html" class="nav-menu-link" data-nav="system-settings.html">
+                    <span>⚙️</span>
+                    <span>系统设置</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="nav-right">
+        <a href="/use/index.html" class="back-to-frontend">
+            <span>🏠</span>
+            <span>返回前台</span>
+        </a>
+
+        <button class="notification-btn" aria-label="通知">
+            <span>🔔</span>
+            <span class="notification-badge"></span>
+        </button>
+
+        <div class="user-menu">
+            <div class="user-avatar" title="管理员">管理</div>
+            <ul class="user-dropdown">
+                <li>
+                    <a href="/admin/dashboard.html" class="user-dropdown-item">
+                        <span>📊</span>
+                        <span>管理后台</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/use/account-center.html" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>个人中心</span>
+                    </a>
+                </li>
+                <li class="user-dropdown-divider"></li>
+                <li>
+                    <button class="user-dropdown-item" onclick="GlobalTopBar.logout()">
+                        <span>🚪</span>
+                        <span>退出登录</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <button class="mobile-menu-btn" aria-label="打开菜单" aria-expanded="false">
+            <span>☰</span>
+        </button>
+    </div>
+</header>
+
+<div class="mobile-nav-panel">
+    <ul class="mobile-nav-menu">
+        <li class="mobile-nav-item">
+            <a href="/admin/dashboard.html" class="mobile-nav-link" data-nav="dashboard.html">
+                <span>📊</span>
+                <span>数据概览</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/admin/user-management.html" class="mobile-nav-link" data-nav="user-management.html">
+                <span>👥</span>
+                <span>用户管理</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/admin/data-management.html" class="mobile-nav-link" data-nav="data-management.html">
+                <span>📁</span>
+                <span>数据管理</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/admin/reports.html" class="mobile-nav-link" data-nav="reports.html">
+                <span>📈</span>
+                <span>报表分析</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/admin/system-settings.html" class="mobile-nav-link" data-nav="system-settings.html">
+                <span>⚙️</span>
+                <span>系统设置</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/index.html" class="mobile-nav-link">
+                <span>🏠</span>
+                <span>返回前台</span>
+            </a>
+        </li>
+    </ul>
+</div>

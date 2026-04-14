@@ -510,7 +510,9 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <div class="admin-container">
+    <div id="site-header-container"></div>
+
+    <div class="admin-container" style="margin-top: 64px;">
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -782,6 +784,8 @@
 
     <script>
         /* global echarts */
+
+        loadNavigationHeader('admin');
 
         // 初始化用户活跃度图表
         const userActivityChart = echarts.init(document.getElementById('userActivityChart'));

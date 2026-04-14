@@ -1,0 +1,161 @@
+<header class="global-top-bar">
+    <div class="brand">
+        <div class="brand-logo">🏥</div>
+        <span class="brand-name">健康信息洞察</span>
+    </div>
+
+    <nav class="nav-center">
+        <ul class="nav-menu">
+            <li class="nav-menu-item">
+                <a href="/use/index.html" class="nav-menu-link" data-nav="index.html">
+                    <span>🏠</span>
+                    <span>首页</span>
+                </a>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/use/datasets.html" class="nav-menu-link" data-nav="datasets.html">
+                    <span>📁</span>
+                    <span>数据集</span>
+                </a>
+            </li>
+            <li class="nav-menu-item nav-dropdown">
+                <button class="nav-dropdown-toggle" aria-expanded="false">
+                    <span>📈</span>
+                    <span>数据分析</span>
+                    <span class="dropdown-arrow">▼</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
+                            <span>🌍</span>
+                            <span>宏观分析</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/use/meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
+                            <span>🏛️</span>
+                            <span>中观分析</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/use/micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
+                            <span>👥</span>
+                            <span>微观分析</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/use/prediction.html" class="dropdown-item" data-nav="prediction.html">
+                            <span>🔮</span>
+                            <span>预测模拟</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="nav-menu-item">
+                <a href="/use/account-center.html" class="nav-menu-link" data-nav="account-center.html">
+                    <span>👤</span>
+                    <span>个人中心</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="nav-right">
+        <div class="global-search">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="搜索国家、疾病、指标..." aria-label="全局搜索">
+        </div>
+
+        <button class="notification-btn" aria-label="通知">
+            <span>🔔</span>
+            <span class="notification-badge"></span>
+        </button>
+
+        <div class="auth-buttons guest-only">
+            <a href="/use/login.html" class="btn-login">登录</a>
+            <a href="/use/register.html" class="btn-register">免费注册</a>
+        </div>
+
+        <div class="user-menu user-only" style="display: none;">
+            <div class="user-avatar" title="个人中心">用户</div>
+            <ul class="user-dropdown">
+                <li>
+                    <a href="/use/account-center.html" class="user-dropdown-item">
+                        <span>👤</span>
+                        <span>个人中心</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/use/user-center.html" class="user-dropdown-item">
+                        <span>⚙️</span>
+                        <span>账号设置</span>
+                    </a>
+                </li>
+                <li class="admin-only" style="display: none;">
+                    <a href="/admin/dashboard.html" class="user-dropdown-item">
+                        <span>🔧</span>
+                        <span>管理后台</span>
+                    </a>
+                </li>
+                <li class="user-dropdown-divider"></li>
+                <li>
+                    <button class="user-dropdown-item" onclick="GlobalTopBar.logout()">
+                        <span>🚪</span>
+                        <span>退出登录</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <button class="mobile-menu-btn" aria-label="打开菜单" aria-expanded="false">
+            <span>☰</span>
+        </button>
+    </div>
+</header>
+
+<div class="mobile-nav-panel">
+    <ul class="mobile-nav-menu">
+        <li class="mobile-nav-item">
+            <a href="/use/index.html" class="mobile-nav-link" data-nav="index.html">
+                <span>🏠</span>
+                <span>首页</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/datasets.html" class="mobile-nav-link" data-nav="datasets.html">
+                <span>📁</span>
+                <span>数据集</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/macro-analysis.html" class="mobile-nav-link" data-nav="macro-analysis.html">
+                <span>🌍</span>
+                <span>宏观分析</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/meso-analysis.html" class="mobile-nav-link" data-nav="meso-analysis.html">
+                <span>🏛️</span>
+                <span>中观分析</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/micro-analysis.html" class="mobile-nav-link" data-nav="micro-analysis.html">
+                <span>👥</span>
+                <span>微观分析</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/prediction.html" class="mobile-nav-link" data-nav="prediction.html">
+                <span>🔮</span>
+                <span>预测模拟</span>
+            </a>
+        </li>
+        <li class="mobile-nav-item">
+            <a href="/use/account-center.html" class="mobile-nav-link" data-nav="account-center.html">
+                <span>👤</span>
+                <span>个人中心</span>
+            </a>
+        </li>
+    </ul>
+</div>

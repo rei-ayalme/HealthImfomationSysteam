@@ -19,16 +19,18 @@ class Settings:
     PROCESSED_DATA_PATH = os.path.join(DATA_DIR, "processed")
 
     # 数据库配置
-    DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'health_system.db')}")
+    DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'db', 'health_system.db')}")
 
     # 自动创建必要目录
     for path in [RAW_DATA_PATH, PROCESSED_DATA_PATH]:
         os.makedirs(path, exist_ok=True)
 
-     # Redis 配置
+    # Redis 配置
+    # 默认使用本地Redis服务 (127.0.0.1:6379)
+    # 如需修改，请设置环境变量 REDIS_HOST 和 REDIS_PORT
     REDIS_CONFIG = {
-        "host": os.getenv("REDIS_HOST", "localhost"),
-        "port": int(os.getenv("REDIS_PORT", 6379)),
+        "host": os.getenv("REDIS_HOST", "127.0.0.1"),  # 默认本地地址
+        "port": int(os.getenv("REDIS_PORT", 6379)),     # Redis默认端口
         "password": os.getenv("REDIS_PASSWORD", None),
         "db": int(os.getenv("REDIS_DB", 0))
     }

@@ -1,8 +1,417 @@
 {
-  "physicians": ["执业（助理）医师（人） - 执业（助理）医师（人）", "执业医师（人）", "执业（助理）医师（人）", "医生数", "医师总量", "医疗卫生机构人员数_执业(助理)医师(万人)"],
-  "nurses": ["注册护士（人）", "护士数", "护士总量", "医疗卫生机构人员数_注册护士(万人)"],
-  "hospital_beds": ["卫生设施 - 医疗卫生机构床位数（张）", "医疗卫生机构床位数（张）", "床位数", "病床数", "医疗卫生机构床位数_医院(万张)"],
-  "population": ["人口指标 - 总人口（万人）", "总人口（万人）", "人口（万人）", "人口数", "年末常住人口(万人)"],
-  "region_name": ["地区", "省份", "省市"],
-  "year": ["年份", "时间", "年度"]
+  "_meta": {
+    "version": "2.0.0",
+    "description": "异构数据源列名标准化映射表",
+    "last_updated": "2026-04-12",
+    "coverage": "中国卫生健康统计年鉴、GBD、WDI、NBS等数据源"
+  },
+  "region_code": {
+    "standard_name": "region_code",
+    "description": "地区编码",
+    "data_type": "string",
+    "aliases": [
+      "地区编码",
+      "行政区划代码",
+      "区划代码",
+      "code",
+      "region_id",
+      "adcode",
+      "area_code"
+    ]
+  },
+  "region_name": {
+    "standard_name": "region_name",
+    "description": "地区/省份名称",
+    "data_type": "string",
+    "aliases": [
+      "地区",
+      "省份",
+      "省市",
+      "省/市",
+      "省、市",
+      "region",
+      "province",
+      "city",
+      "area",
+      "location",
+      "地区名称",
+      "省",
+      "市",
+      "县",
+      "区县"
+    ]
+  },
+  "year": {
+    "standard_name": "year",
+    "description": "统计年份",
+    "data_type": "integer",
+    "aliases": [
+      "年份",
+      "时间",
+      "年度",
+      "year",
+      "统计年份",
+      "报告年份",
+      "data_year",
+      "period",
+      "时期"
+    ]
+  },
+  "physicians": {
+    "standard_name": "physicians",
+    "description": "执业(助理)医师数",
+    "data_type": "float",
+    "unit": "人",
+    "unit_conversion": 10000,
+    "aliases": [
+      "执业（助理）医师（人）",
+      "执业（助理）医师",
+      "执业医师（人）",
+      "执业医师",
+      "医生数",
+      "医师总量",
+      "医师数",
+      "执业医生",
+      "执业医生数",
+      "执业助理医师",
+      "执业助理医师数",
+      "医疗卫生机构人员数_执业(助理)医师(万人)",
+      "卫生人员_执业(助理)医师",
+      "卫生人员数_执业(助理)医师",
+      "卫生技术人员_执业(助理)医师",
+      "执业(助理)医师",
+      "physicians",
+      "doctors",
+      "medical_staff"
+    ]
+  },
+  "nurses": {
+    "standard_name": "nurses",
+    "description": "注册护士数",
+    "data_type": "float",
+    "unit": "人",
+    "unit_conversion": 10000,
+    "aliases": [
+      "注册护士（人）",
+      "注册护士",
+      "护士数",
+      "护士总量",
+      "护士",
+      "护理人员",
+      "护理人员数",
+      "医疗卫生机构人员数_注册护士(万人)",
+      "卫生人员_注册护士",
+      "卫生人员数_注册护士",
+      "卫生技术人员_注册护士",
+      "注册护士人员",
+      "nurses",
+      "registered_nurses",
+      "nursing_staff"
+    ]
+  },
+  "hospital_beds": {
+    "standard_name": "hospital_beds",
+    "description": "医疗卫生机构床位数",
+    "data_type": "float",
+    "unit": "张",
+    "unit_conversion": 10000,
+    "aliases": [
+      "卫生设施 - 医疗卫生机构床位数（张）",
+      "医疗卫生机构床位数（张）",
+      "医疗卫生机构床位数",
+      "床位数",
+      "病床数",
+      "床位",
+      "医院床位数",
+      "医院床位",
+      "医疗卫生机构床位数_医院(万张)",
+      "卫生设施_床位数",
+      "卫生设施_医疗卫生机构床位数",
+      "卫生统计_床位数",
+      "实际开放床位数",
+      "编制床位数",
+      "beds",
+      "hospital_beds",
+      "bed_count"
+    ]
+  },
+  "population": {
+    "standard_name": "population",
+    "description": "年末常住人口",
+    "data_type": "float",
+    "unit": "万人",
+    "unit_conversion": 1,
+    "aliases": [
+      "人口指标 - 总人口（万人）",
+      "总人口（万人）",
+      "人口（万人）",
+      "人口数",
+      "年末常住人口(万人)",
+      "年末常住人口",
+      "常住人口",
+      "总人口",
+      "人口",
+      "population",
+      "total_population",
+      "resident_population",
+      "年末人口",
+      "户籍人口",
+      "年末户籍人口"
+    ]
+  },
+  "hospitals": {
+    "standard_name": "hospitals",
+    "description": "医院数量",
+    "data_type": "float",
+    "unit": "个",
+    "aliases": [
+      "医院数",
+      "医院数量",
+      "医院个数",
+      "医疗卫生机构数_医院",
+      "卫生设施_医院数",
+      "hospitals",
+      "hospital_count",
+      "医院"
+    ]
+  },
+  "primary_institutions": {
+    "standard_name": "primary_institutions",
+    "description": "基层医疗卫生机构数",
+    "data_type": "float",
+    "unit": "个",
+    "aliases": [
+      "基层医疗卫生机构",
+      "社区卫生服务中心",
+      "乡镇卫生院",
+      "村卫生室",
+      "诊所",
+      "primary_institutions",
+      "primary_care",
+      "community_health_centers"
+    ]
+  },
+  "medical_expenditure": {
+    "standard_name": "medical_expenditure",
+    "description": "卫生总费用",
+    "data_type": "float",
+    "unit": "亿元",
+    "aliases": [
+      "卫生总费用",
+      "卫生费用",
+      "卫生支出",
+      "医疗卫生支出",
+      "health_expenditure",
+      "medical_cost",
+      "health_spending"
+    ]
+  },
+  "life_expectancy": {
+    "standard_name": "life_expectancy",
+    "description": "预期寿命",
+    "data_type": "float",
+    "unit": "岁",
+    "aliases": [
+      "预期寿命",
+      "平均预期寿命",
+      "人均预期寿命",
+      "life_expectancy",
+      "期望寿命",
+      "平均寿命"
+    ]
+  },
+  "mortality_rate": {
+    "standard_name": "mortality_rate",
+    "description": "死亡率",
+    "data_type": "float",
+    "unit": "‰",
+    "aliases": [
+      "死亡率",
+      "人口死亡率",
+      "mortality_rate",
+      "death_rate",
+      "粗死亡率"
+    ]
+  },
+  "birth_rate": {
+    "standard_name": "birth_rate",
+    "description": "出生率",
+    "data_type": "float",
+    "unit": "‰",
+    "aliases": [
+      "出生率",
+      "人口出生率",
+      "birth_rate",
+      "fertility_rate",
+      "粗出生率"
+    ]
+  },
+  "gdp": {
+    "standard_name": "gdp",
+    "description": "地区生产总值",
+    "data_type": "float",
+    "unit": "亿元",
+    "aliases": [
+      "地区生产总值",
+      "GDP",
+      "国内生产总值",
+      "gdp",
+      "gross_domestic_product",
+      "经济总量"
+    ]
+  },
+  "gdp_per_capita": {
+    "standard_name": "gdp_per_capita",
+    "description": "人均GDP",
+    "data_type": "float",
+    "unit": "元",
+    "aliases": [
+      "人均地区生产总值",
+      "人均GDP",
+      "人均国内生产总值",
+      "gdp_per_capita",
+      "per_capita_gdp",
+      "人均经济总量"
+    ]
+  },
+  "urbanization_rate": {
+    "standard_name": "urbanization_rate",
+    "description": "城镇化率",
+    "data_type": "float",
+    "unit": "%",
+    "aliases": [
+      "城镇化率",
+      "城镇化水平",
+      "城市化率",
+      "urbanization_rate",
+      "urban_rate",
+      "城镇人口比重"
+    ]
+  },
+  "elderly_ratio": {
+    "standard_name": "elderly_ratio",
+    "description": "老龄化比例",
+    "data_type": "float",
+    "unit": "%",
+    "aliases": [
+      "老龄化比例",
+      "老年人口比例",
+      "65岁及以上人口比例",
+      "老龄化率",
+      "elderly_ratio",
+      "aging_rate",
+      "老年人口比重",
+      "65岁及以上人口比重"
+    ]
+  },
+  "location_name": {
+    "standard_name": "location_name",
+    "description": "国家/地区名称",
+    "data_type": "string",
+    "aliases": [
+      "location",
+      "country",
+      "nation",
+      "地区",
+      "国家",
+      "国家/地区",
+      "location_name"
+    ]
+  },
+  "cause_name": {
+    "standard_name": "cause_name",
+    "description": "疾病名称",
+    "data_type": "string",
+    "aliases": [
+      "cause",
+      "disease",
+      "疾病",
+      "疾病名称",
+      "病种",
+      "疾病类型",
+      "cause_name",
+      "disease_name"
+    ]
+  },
+  "val": {
+    "standard_name": "val",
+    "description": "指标值/疾病负担",
+    "data_type": "float",
+    "aliases": [
+      "value",
+      "指标值",
+      "数值",
+      "val",
+      "measure",
+      "measure_value"
+    ]
+  },
+  "rei_name": {
+    "standard_name": "rei_name",
+    "description": "风险因素名称",
+    "data_type": "string",
+    "aliases": [
+      "rei",
+      "risk_factor",
+      "风险因素",
+      "危险因素",
+      "暴露因素",
+      "rei_name",
+      "risk_factor_name"
+    ]
+  },
+  "paf": {
+    "standard_name": "paf",
+    "description": "人群归因分数",
+    "data_type": "float",
+    "unit": "无量纲",
+    "aliases": [
+      "PAF",
+      "人群归因分数",
+      "population_attributable_fraction",
+      "attributable_fraction",
+      "paf"
+    ]
+  },
+  "indicator": {
+    "standard_name": "indicator",
+    "description": "指标名称",
+    "data_type": "string",
+    "aliases": [
+      "indicator_name",
+      "指标",
+      "指标名称",
+      "变量",
+      "变量名",
+      "indicator"
+    ]
+  },
+  "longitude": {
+    "standard_name": "longitude",
+    "description": "经度",
+    "data_type": "float",
+    "unit": "度",
+    "aliases": [
+      "经度",
+      "lon",
+      "lng",
+      "x",
+      "long",
+      "longitude",
+      "经度坐标"
+    ]
+  },
+  "latitude": {
+    "standard_name": "latitude",
+    "description": "纬度",
+    "data_type": "float",
+    "unit": "度",
+    "aliases": [
+      "纬度",
+      "lat",
+      "y",
+      "latitude",
+      "纬度坐标"
+    ]
+  }
 }

@@ -1,0 +1,40 @@
+文件路径,文件名,格式,大小(KB),创建/更新时间,数据层级,数据类别,记录量级,责任方,安全分级,备注
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\GBD.csv,GBD.csv,CSV,908,2025-03-11,RAW,全球疾病负担,~10000行,IHME/GBD,一般,Global Burden of Disease原始数据
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\DBD.csv,DBD.csv,CSV,910,2025-03-11,RAW,疾病负担(备份),~10000行,IHME/GBD,一般,与GBD.csv内容相似，疑似重复
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\NBS.csv,NBS.csv,CSV,4,2025-03-11,RAW,国家统计局宽表,~30行,NBS,内部,国家统计局省份指标宽表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\WDI.csv,WDI.csv,CSV,142,2025-03-11,RAW,世界发展指标,~2000行,World Bank,一般,WDI精选指标
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\WB_HNP.csv,WB_HNP.csv,CSV,2753909,2025-03-11,RAW,世界银行健康营养人口,>1000万行,World Bank,一般,超大文件2.6GB 需分批处理
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\中国卫生健康统计年鉴数据（2001-2020年）.xlsx,中国卫生健康统计年鉴数据（2001-2020年）.xlsx,XLSX,3886,2025-03-07,RAW,中国卫生年鉴面板,20年*31省,国家卫生健康委,机密,2001-2020年省级面板数据
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2005.xlsx,2005.xlsx,XLSX,18,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2005年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2006.xlsx,2006.xlsx,XLSX,16,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2006年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2007.xlsx,2007.xlsx,XLSX,551,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2007年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2008.xlsx,2008.xlsx,XLSX,22,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2008年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2010.xlsx,2010.xlsx,XLSX,19,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2010年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2011.xlsx,2011.xlsx,XLSX,55,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2011年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2012.xlsx,2012.xlsx,XLSX,24,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2012年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2013.xlsx,2013.xlsx,XLSX,534,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2013年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2014.xlsx,2014.xlsx,XLSX,556,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2014年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2015.xlsx,2015.xlsx,XLSX,523,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2015年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2016.xlsx,2016.xlsx,XLSX,549,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2016年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2017.xlsx,2017.xlsx,XLSX,520,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2017年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2018.xlsx,2018.xlsx,XLSX,515,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2018年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2019.xlsx,2019.xlsx,XLSX,528,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2019年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2020.xlsx,2020.xlsx,XLSX,452,2025-03-17,RAW,卫生年鉴分年,省级表,国家卫生健康委,机密,2020年卫生年鉴
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2006中国卫生统计年鉴\(多xls子表),多xls子表,XLS,混合,2007-01-23,RAW,历史年鉴分表,按主题分页,国家卫生健康委,机密,p3~p405共约130张分表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2007中国卫生统计年鉴\(多xls子表),多xls子表,XLS,混合,2008-01-08,RAW,历史年鉴分表,按主题分页,国家卫生健康委,机密,13大类含人员/设施/服务等
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2008\(14个VxxC.xls),VxxC系列,XLS,混合,2009-03,RAW,历史年鉴分表,省级,国家卫生健康委,机密,2008年VxxC格式14张表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2009\(18个VxxC.xls),VxxC系列,XLS,混合,2009-08,RAW,历史年鉴分表,省级,国家卫生健康委,机密,2009年VxxC格式18张表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\raw\卫生年鉴表\2012\(14个VxxC.xls),VxxC系列,XLS,混合,2012-03,RAW,历史年鉴分表,省级,国家卫生健康委,机密,2012年VxxC格式14张表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\processed\cleaned_health_data.xlsx,cleaned_health_data.xlsx,XLSX,39825,2025-03-24,PROCESSED,清洗后年鉴数据,~数万行,系统自动,内部,预处理器输出主表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\processed\cleaned_gbd_disease.csv,cleaned_gbd_disease.csv,CSV,1225,2025-03-21,PROCESSED,清洗后GBD疾病,~8000行,系统自动,一般,GBD疾病负担清洗结果
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\processed\cleaned_gbd_risk.csv,cleaned_gbd_risk.csv,CSV,0.4,2025-03-17,PROCESSED,清洗后GBD风险,极少,系统自动,一般,风险归因清洗结果(文件极小疑似空表)
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\processed\cleaned_wdi_resources.csv,cleaned_wdi_resources.csv,CSV,0.6,2025-03-17,PROCESSED,清洗后WDI资源,极少,系统自动,一般,WDI资源清洗结果(文件极小疑似空表)
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\processed\spatial_cache_*.json,空间缓存(多个),JSON,2-3,2025-03-20至25,PROCESSED,E2SFCA空间缓存,5区/次,系统自动,一般,成都市各区E2SFCA可及性结果缓存
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\frontend\assets\data\cleaned_health_data.json,cleaned_health_data.json,JSON,2308,2025-03-16,FRONTEND,前端展示健康数据,~数万行,系统自动,一般,供前端图表渲染的健康数据
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\frontend\assets\data\cn_health.json,cn_health.json,JSON,924,2025-03-16,FRONTEND,中国省级健康数据,31省多年,系统自动,一般,供宏观分析页渲染
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\frontend\assets\data\simulation_data.json,simulation_data.json,JSON,4762,2025-03-17,FRONTEND,微观仿真数据,~百万代理,系统自动,一般,IPF微观仿真人口结果
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\china\全国省份经纬度坐标.csv,全国省份经纬度坐标.csv,CSV,2,2025-03-11,REF,省份坐标参考,31行,系统自动,公开,各省地理中心坐标
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\missing_data\missing_report_2026-03.json,missing_report_2026-03.json,JSON,18,2026-03-23,REPORT,缺失数据报告,N/A,系统自动,内部,数据缺失检测报告
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\health_system.db,health_system.db,SQLite,3684,2025-03-24,DATABASE,生产数据库,见各表,系统自动,机密,包含7张核心业务表
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\deepanalyze\Simpson.csv,Simpson.csv,CSV,69,2025-03-23,SAMPLE,DeepAnalyze示例数据,~1000行,系统自动,公开,DeepAnalyze模块示例数据集
+d:\python_HIS\pythonProject\Health_Imformation_Systeam\data\osmnx_cache\*.json,OSMnx路网缓存(16个),JSON,185-19724,2025-03-23,CACHE,路网拓扑缓存,成都路网,OSM,公开,OpenStreetMap成都路网缓存文件

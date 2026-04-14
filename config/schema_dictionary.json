@@ -1,0 +1,216 @@
+{
+  "description": "数据模式字典 - 定义系统中各类数据的标准字段结构和类型",
+  "version": "1.0.0",
+  "last_updated": "2026-04-11",
+  
+  "schemas": {
+    "medical_resource": {
+      "description": "医疗资源数据模式",
+      "fields": {
+        "region_code": {"type": "string", "required": true, "description": "地区编码", "example": "510100"},
+        "region_name": {"type": "string", "required": true, "description": "地区名称", "example": "成都市"},
+        "year": {"type": "integer", "required": true, "description": "统计年份", "example": 2023},
+        "physicians": {"type": "number", "required": true, "description": "执业（助理）医师数（人）", "example": 85000},
+        "nurses": {"type": "number", "required": true, "description": "注册护士数（人）", "example": 92000},
+        "hospital_beds": {"type": "number", "required": true, "description": "医疗卫生机构床位数（张）", "example": 120000},
+        "hospitals": {"type": "number", "required": false, "description": "医院数量（个）", "example": 450},
+        "primary_institutions": {"type": "number", "required": false, "description": "基层医疗卫生机构数（个）", "example": 5200}
+      }
+    },
+    
+    "population": {
+      "description": "人口统计数据模式",
+      "fields": {
+        "region_code": {"type": "string", "required": true, "description": "地区编码", "example": "510100"},
+        "region_name": {"type": "string", "required": true, "description": "地区名称", "example": "成都市"},
+        "year": {"type": "integer", "required": true, "description": "统计年份", "example": 2023},
+        "total_population": {"type": "number", "required": true, "description": "年末常住人口（万人）", "example": 2140.3},
+        "urban_population": {"type": "number", "required": false, "description": "城镇人口（万人）", "example": 1684.0},
+        "rural_population": {"type": "number", "required": false, "description": "乡村人口（万人）", "example": 456.3},
+        "elderly_population": {"type": "number", "required": false, "description": "65岁及以上人口（万人）", "example": 285.6},
+        "elderly_ratio": {"type": "number", "required": false, "description": "老龄化率（%）", "example": 13.34},
+        "birth_rate": {"type": "number", "required": false, "description": "出生率（‰）", "example": 8.5},
+        "mortality_rate": {"type": "number", "required": false, "description": "死亡率（‰）", "example": 6.2}
+      }
+    },
+    
+    "facility_location": {
+      "description": "医疗设施位置数据模式",
+      "fields": {
+        "facility_id": {"type": "string", "required": true, "description": "设施唯一标识", "example": "HOSP_001"},
+        "facility_name": {"type": "string", "required": true, "description": "设施名称", "example": "华西医院"},
+        "facility_type": {"type": "string", "required": true, "description": "设施类型", "example": "三级甲等", "enum": ["三级甲等", "三级乙等", "二级甲等", "二级乙等", "社区卫生服务中心", "乡镇卫生院"]},
+        "address": {"type": "string", "required": false, "description": "详细地址", "example": "成都市武侯区国学巷37号"},
+        "longitude": {"type": "number", "required": true, "description": "经度（WGS-84）", "example": 104.0665},
+        "latitude": {"type": "number", "required": true, "description": "纬度（WGS-84）", "example": 30.6431},
+        "bed_capacity": {"type": "integer", "required": false, "description": "床位数", "example": 4300},
+        "department_count": {"type": "integer", "required": false, "description": "科室数量", "example": 45},
+        "is_emergency": {"type": "boolean", "required": false, "description": "是否有急诊科", "example": true},
+        "phone": {"type": "string", "required": false, "description": "联系电话", "example": "028-85422114"}
+      }
+    },
+    
+    "community_demand": {
+      "description": "社区需求点数据模式",
+      "fields": {
+        "community_id": {"type": "string", "required": true, "description": "社区唯一标识", "example": "COMM_001"},
+        "community_name": {"type": "string", "required": true, "description": "社区名称", "example": "玉林社区"},
+        "district": {"type": "string", "required": true, "description": "所属区县", "example": "武侯区"},
+        "longitude": {"type": "number", "required": true, "description": "经度（WGS-84）", "example": 104.0565},
+        "latitude": {"type": "number", "required": true, "description": "纬度（WGS-84）", "example": 30.6331},
+        "population": {"type": "number", "required": true, "description": "常住人口数", "example": 15000},
+        "elderly_ratio": {"type": "number", "required": false, "description": "老年人口比例", "example": 0.18},
+        "households": {"type": "integer", "required": false, "description": "户数", "example": 5200},
+        "avg_income": {"type": "number", "required": false, "description": "人均可支配收入（元）", "example": 48500}
+      }
+    },
+    
+    "accessibility_result": {
+      "description": "可达性分析结果数据模式",
+      "fields": {
+        "region_code": {"type": "string", "required": true, "description": "地区编码", "example": "510107"},
+        "region_name": {"type": "string", "required": true, "description": "地区名称", "example": "武侯区"},
+        "accessibility_index": {"type": "number", "required": true, "description": "可达性指数", "example": 2.35},
+        "method": {"type": "string", "required": true, "description": "计算方法", "example": "e2sfca", "enum": ["e2sfca", "gravity", "2sfca"]},
+        "threshold_km": {"type": "number", "required": true, "description": "搜寻半径（公里）", "example": 5.0},
+        "physician_ratio": {"type": "number", "required": false, "description": "每千人医师数", "example": 3.2},
+        "bed_ratio": {"type": "number", "required": false, "description": "每千人床位数", "example": 5.8},
+        "nearest_hospital_km": {"type": "number", "required": false, "description": "最近医院距离（公里）", "example": 1.5},
+        "avg_travel_time_min": {"type": "number", "required": false, "description": "平均通行时间（分钟）", "example": 12.5}
+      }
+    },
+    
+    "emergency_route": {
+      "description": "应急路线数据模式",
+      "fields": {
+        "route_id": {"type": "string", "required": true, "description": "路线唯一标识", "example": "ROUTE_001"},
+        "incident_lat": {"type": "number", "required": true, "description": "事件发生点纬度", "example": 30.6565},
+        "incident_lon": {"type": "number", "required": true, "description": "事件发生点经度", "example": 104.0665},
+        "hospital_id": {"type": "string", "required": true, "description": "目标医院ID", "example": "HOSP_001"},
+        "hospital_name": {"type": "string", "required": true, "description": "目标医院名称", "example": "华西医院"},
+        "distance_km": {"type": "number", "required": true, "description": "路线距离（公里）", "example": 3.5},
+        "estimated_time_min": {"type": "number", "required": true, "description": "预计通行时间（分钟）", "example": 8.5},
+        "priority_score": {"type": "number", "required": false, "description": "优先级评分", "example": 95.5},
+        "road_conditions": {"type": "string", "required": false, "description": "路况信息", "example": "畅通"}
+      }
+    },
+    
+    "api_response": {
+      "description": "API响应标准格式",
+      "fields": {
+        "code": {"type": "integer", "required": true, "description": "响应状态码", "example": 200},
+        "message": {"type": "string", "required": true, "description": "响应消息", "example": "success"},
+        "data": {"type": "object", "required": false, "description": "响应数据", "example": {}},
+        "timestamp": {"type": "string", "required": true, "description": "响应时间戳", "example": "2026-04-11T10:30:00Z"},
+        "request_id": {"type": "string", "required": false, "description": "请求追踪ID", "example": "req_abc123"}
+      }
+    }
+  },
+  
+  "data_types": {
+    "string": {"description": "字符串类型", "max_length": 255},
+    "integer": {"description": "整数类型", "min": -2147483648, "max": 2147483647},
+    "number": {"description": "浮点数类型", "precision": 6},
+    "boolean": {"description": "布尔类型", "values": [true, false]},
+    "object": {"description": "对象/字典类型"},
+    "array": {"description": "数组类型"},
+    "date": {"description": "日期类型", "format": "YYYY-MM-DD"},
+    "datetime": {"description": "日期时间类型", "format": "YYYY-MM-DDTHH:mm:ssZ"}
+  },
+  
+  "validation_rules": {
+    "longitude": {"min": -180, "max": 180, "description": "经度范围"},
+    "latitude": {"min": -90, "max": 90, "description": "纬度范围"},
+    "year": {"min": 2000, "max": 2100, "description": "有效年份范围"},
+    "population": {"min": 0, "description": "人口数必须为非负数"},
+    "ratio": {"min": 0, "max": 1, "description": "比例值范围（0-1）"},
+    "percentage": {"min": 0, "max": 100, "description": "百分比范围（0-100）"}
+  },
+
+  "data_sources": {
+    "yearbook_resource": {
+      "description": "卫生资源统计年鉴数据 (Track A)",
+      "track": "A",
+      "source_type": "yearbook",
+      "required_columns": ["region_name", "year", "population", "hospital_beds", "physicians", "nurses"],
+      "optional_columns": ["region_code", "urban_population", "rural_population", "hospitals", "primary_institutions"],
+      "data_types": {
+        "region_name": "string",
+        "year": "integer",
+        "population": "float",
+        "hospital_beds": "float",
+        "physicians": "float",
+        "nurses": "float"
+      },
+      "value_ranges": {
+        "year": {"min": 2000, "max": 2030, "description": "统计年份范围"},
+        "population": {"min": 1, "description": "人口数最小值（万人）"},
+        "hospital_beds": {"min": 0, "description": "床位数必须为非负数"},
+        "physicians": {"min": 0, "description": "医师数必须为非负数"},
+        "nurses": {"min": 0, "description": "护士数必须为非负数"}
+      },
+      "validation_rules": [
+        "year 必须在 2000-2030 范围内",
+        "population 必须大于 0",
+        "所有资源数量字段必须为非负数"
+      ]
+    },
+
+    "gbd_disease": {
+      "description": "全球疾病负担 GBD 数据 (Track B)",
+      "track": "B",
+      "source_type": "gbd",
+      "required_columns": ["location_name", "year", "cause_id", "val"],
+      "optional_columns": ["paf", "rei_name", "sdi", "hale", "cause_name", "metric_name"],
+      "data_types": {
+        "location_name": "string",
+        "year": "integer",
+        "cause_id": "integer",
+        "val": "float",
+        "paf": "float",
+        "sdi": "float",
+        "hale": "float"
+      },
+      "value_ranges": {
+        "year": {"min": 1990, "max": 2050, "description": "GBD数据年份范围"},
+        "val": {"min": 0, "description": "指标值必须为非负数"},
+        "paf": {"min": 0.0, "max": 1.0, "description": "人群归因分数（0-1）"},
+        "sdi": {"min": 0.0, "max": 1.0, "description": "社会人口学指数（0-1）"}
+      },
+      "validation_rules": [
+        "cause_id 必须是有效的GBD病因ID",
+        "paf 值必须在 0-1 范围内",
+        "sdi 值必须在 0-1 范围内"
+      ]
+    },
+
+    "spatial_od_matrix": {
+      "description": "空间可及性 OD 距离矩阵 (Track C)",
+      "track": "C",
+      "source_type": "spatial_matrix",
+      "required_columns": ["origin_id", "destination_id", "distance", "duration"],
+      "optional_columns": ["origin_lat", "origin_lon", "destination_lat", "destination_lon", "travel_mode"],
+      "data_types": {
+        "origin_id": "string",
+        "destination_id": "string",
+        "distance": "float",
+        "duration": "float",
+        "origin_lat": "float",
+        "origin_lon": "float",
+        "destination_lat": "float",
+        "destination_lon": "float"
+      },
+      "value_ranges": {
+        "distance": {"min": 0, "max": 10000, "description": "距离范围（公里）"},
+        "duration": {"min": 0, "max": 1440, "description": "通行时间范围（分钟）"},
+        "origin_lat": {"min": -90, "max": 90, "description": "起点纬度范围"},
+        "origin_lon": {"min": -180, "max": 180, "description": "起点经度范围"}
+      },
+      "validation_rules": [
+        "distance 必须大于等于 0",
+        "duration 必须大于等于 0",
+        "坐标值必须在有效范围内"
+      ]
+    }
+  }
+}

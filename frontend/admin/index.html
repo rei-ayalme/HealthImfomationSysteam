@@ -402,17 +402,7 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <nav class="top-nav">
-        <div class="logo">
-            <span>🏥</span>
-            <span>健康数据洞察平台 - 管理后台</span>
-        </div>
-        <div class="nav-right">
-            <div class="nav-item">🔔 通知</div>
-            <div class="nav-item">👤 管理员</div>
-            <div class="nav-item" onclick="window.location.href='/use/index.html'" style="cursor:pointer;">🚪 返回前台</div>
-        </div>
-    </nav>
+    <div id="site-header-container"></div>
 
     <div class="main-container">
         <aside class="sidebar">
@@ -638,6 +628,8 @@
 
     <script>
         /* global echarts */
+
+        loadNavigationHeader('admin');
 
         // 初始化图表
         document.addEventListener('DOMContentLoaded', function() {

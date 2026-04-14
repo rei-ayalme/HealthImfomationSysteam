@@ -16,6 +16,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中观分析 - 健康数据洞察平台</title>
     <script src="/assets/js/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/assets/js/api.js"></script>
     <style>
         
 
@@ -73,70 +76,66 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
-        /* 主布局 */
+        /* 主内容区 - 已移除侧边栏，全宽布局 */
         .main-container {
-            display: flex;
             margin-top: 64px;
             min-height: calc(100vh - 64px);
         }
 
-        /* 侧边栏 */
-        .sidebar {
-            width: 280px;
+        /* 内容区 - 全宽显示 */
+        .content {
+            width: 100%;
+            padding: 24px;
+        }
+
+        /* 可折叠筛选面板 */
+        .filter-panel {
             background: white;
-            border-right: 1px solid #e8e8e8;
+            border-radius: 12px;
             padding: 20px;
-            position: fixed;
-            height: calc(100vh - 64px);
-            overflow-y: auto;
-        }
-
-        .sidebar-section {
             margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
-        .sidebar-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #8c8c8c;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-        }
-
-        .sidebar-item {
-            padding: 10px 12px;
-            border-radius: 6px;
+        .filter-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             cursor: pointer;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+
+        .filter-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
             display: flex;
             align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-            font-size: 14px;
-            color: #595959;
-            text-decoration: none;
-            margin-bottom: 4px;
+            gap: 8px;
         }
 
-        .sidebar-item:hover {
-            background: #f5f5f5;
+        .filter-panel-toggle {
+            font-size: 12px;
             color: #1890ff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .sidebar-item.active {
-            background: #e6f7ff;
-            color: #1890ff;
-            font-weight: 500;
+        .filter-panel-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
         }
 
-        .sidebar-icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
+        .filter-panel-content.collapsed {
+            display: none;
         }
 
         .filter-group {
-            margin-bottom: 16px;
+            margin-bottom: 0;
         }
 
         .filter-label {
@@ -162,8 +161,7 @@
         }
 
         .apply-btn {
-            width: 100%;
-            padding: 12px;
+            padding: 12px 24px;
             background: linear-gradient(135deg, #1890ff, #096dd9);
             color: white;
             border: none;
@@ -172,7 +170,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 8px;
+            margin-top: 16px;
         }
 
         .apply-btn:hover {
@@ -180,11 +178,12 @@
             box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
         }
 
-        /* 内容区 */
-        .content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 24px;
+        .filter-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
         }
 
         .page-header {
@@ -206,63 +205,6 @@
             font-size: 14px;
             color: #8c8c8c;
             margin-bottom: 16px;
-        }
-
-        /* 分析框架步骤 */
-        .analysis-steps {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #f0f0f0;
-            flex-wrap: wrap;
-        }
-
-        .step-card {
-            flex: 1;
-            min-width: 150px;
-            padding: 16px;
-            background: #fafafa;
-            border-radius: 8px;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-        }
-
-        .step-card:hover {
-            background: #e6f7ff;
-            border-color: #1890ff;
-        }
-
-        .step-card.active {
-            background: #e6f7ff;
-            border-color: #1890ff;
-        }
-
-        .step-number {
-            width: 32px;
-            height: 32px;
-            background: #1890ff;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin: 0 auto 8px;
-        }
-
-        .step-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 4px;
-        }
-
-        .step-desc {
-            font-size: 12px;
-            color: #8c8c8c;
         }
 
         /* 问题定义区域 */
@@ -751,10 +693,6 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-
-            .analysis-steps {
-                flex-direction: column;
-            }
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
@@ -762,254 +700,99 @@
 </head>
 
 <body>
-    <nav class="top-nav">
-        <div class="logo">
-            <div class="logo-icon">🏥</div>
-            <span>健康数据洞察平台</span>
-        </div>
-        <div class="main-nav">
-            <a href="/use/index.html" class="nav-item" data-nav="index.html">
-                <span>🏠</span>
-                <span>首页</span>
-            </a>
-            <a href="/use/datasets.html" class="nav-item" data-nav="datasets.html">
-                <span>📁</span>
-                <span>数据集</span>
-            </a>
-            <div class="nav-item dropdown">
-                <span>📈</span>
-                <span>数据分析</span>
-                <span class="dropdown-icon">▼</span>
-                <div class="dropdown-menu">
-                    <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
-                        <span>🌍</span>
-                        <span>宏观分析</span>
-                    </a>
-                    <a href="/use/meso-analysis.html" class="dropdown-item active" data-nav="meso-analysis.html">
-                        <span>🏛️</span>
-                        <span>中观分析</span>
-                    </a>
-                    <a href="/use/micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
-                        <span>👥</span>
-                        <span>微观分析</span>
-                    </a>
-                    <a href="/use/prediction.html" class="dropdown-item" data-nav="prediction.html">
-                        <span>🔮</span>
-                        <span>预测模拟</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索省市、指标..." aria-label="搜索省市、指标...">
-            </div>
-            <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
-            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
-            <!-- 已登录时显示 -->
-            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
-            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
-        </div>
-    </nav>
+    <div id="site-header-container"></div>
 
     <div class="main-container">
-        <aside class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-title">分析维度</div>
-                <a href="#problem" class="sidebar-item active">
-                    <span class="sidebar-icon">🎯</span>
-                    <span>问题定义</span>
-                </a>
-                <a href="#disease-transition" class="sidebar-item">
-                    <span class="sidebar-icon">🔄</span>
-                    <span>疾病转型分析</span>
-                </a>
-                <a href="#burden-analysis" class="sidebar-item">
-                    <span class="sidebar-icon">⚖️</span>
-                    <span>疾病负担分解</span>
-                </a>
-                <a href="#resource-analysis" class="sidebar-item">
-                    <span class="sidebar-icon">🏥</span>
-                    <span>卫生资源配置</span>
-                </a>
-                <a href="#equity-analysis" class="sidebar-item">
-                    <span class="sidebar-icon">⚖️</span>
-                    <span>健康公平性分析</span>
-                </a>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">数据筛选</div>
-                <div class="filter-group">
-                    <label class="filter-label" for="countrySelect">选择国家/地区</label>
-                    <select class="filter-select" id="countrySelect">
-                        <option value="china" selected>🇨🇳 中国</option>
-                        <option value="usa">🇺🇸 美国</option>
-                        <option value="japan">🇯🇵 日本</option>
-                        <option value="germany">🇩🇪 德国</option>
-                        <option value="uk">🇬🇧 英国</option>
-                        <option value="france">🇫🇷 法国</option>
-                        <option value="india">🇮🇳 印度</option>
-                        <option value="brazil">🇧🇷 巴西</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="indicatorSelect">分析指标</label>
-                    <select class="filter-select" id="indicatorSelect">
-                        <option value="dalys">DALYs (伤残调整生命年)</option>
-                        <option value="mortality">死亡率</option>
-                        <option value="prevalence">患病率</option>
-                        <option value="incidence">发病率</option>
-                        <option value="yld">YLDs (伤残损失寿命年)</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="timeSelect">时间跨度</label>
-                    <select class="filter-select" id="timeSelect">
-                        <option value="1990-2024">1990-2024 (完整周期)</option>
-                        <option value="2000-2024">2000-2024 (近24年)</option>
-                        <option value="2010-2024">2010-2024 (近14年)</option>
-                        <option value="2019-2024">2019-2024 (疫情影响期)</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="diseaseSelect">疾病分类</label>
-                    <select class="filter-select" id="diseaseSelect">
-                        <option value="all">全部疾病</option>
-                        <option value="ncd">非传染性疾病</option>
-                        <option value="cd">传染性疾病</option>
-                        <option value="injury">伤害</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="systemCapacitySelect">卫生系统能力</label>
-                    <select class="filter-select" id="systemCapacitySelect">
-                        <option value="medium" selected>中等能力</option>
-                        <option value="low">较弱能力</option>
-                        <option value="high">较强能力</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label" for="policyIntensitySelect">政策执行强度</label>
-                    <select class="filter-select" id="policyIntensitySelect">
-                        <option value="baseline" selected>基准执行</option>
-                        <option value="weak">弱执行</option>
-                        <option value="strong">强执行</option>
-                    </select>
-                </div>
-                <button class="apply-btn" onclick="updateCharts()">✓ 应用筛选并分析</button>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">📊 健康指标分析 (实时)</div>
-                
-                <div class="indicator-card skeleton" id="card-dalys">
-                    <div class="card-header">
-                        <span>核心疾病负担 (DALYs)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-dalys" class="metric-value">--</h2>
-                        <span class="metric-unit">总值</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="trend">
-                            <i></i> <span id="metric-dalys-trend">--%</span>
-                        </span>
-                    </div>
-                    <div id="sparkline-dalys" class="sparkline-container"></div>
-                </div>
-                
-                <div class="indicator-card skeleton" id="card-top-disease">
-                    <div class="card-header">
-                        <span>当期高发疾病 Top 1</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-disease-name" class="metric-value" style="font-size: 20px;">--</h2>
-                    </div>
-                    <div class="card-footer">
-                        <span class="metric-unit">占比: </span>
-                        <span id="metric-disease-ratio" style="font-weight: 600; color: var(--text-color);">--%</span>
-                    </div>
-                </div>
-
-                <div class="indicator-card skeleton" id="card-dea">
-                    <div class="card-header">
-                        <span>综合效率均值 (DEA)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-dea" class="metric-value">--</h2>
-                        <span class="metric-unit">指数</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="trend">
-                            <i></i> <span id="metric-dea-trend">--%</span>
-                        </span>
-                    </div>
-                    <div id="sparkline-dea" class="sparkline-container"></div>
-                </div>
-                
-                <div class="indicator-card skeleton" id="card-prediction">
-                    <div class="card-header">
-                        <span>风险预测研判 (SDE)</span>
-                    </div>
-                    <div class="card-body">
-                        <h2 id="metric-pred-rate" class="metric-value" style="color: var(--warning-color);">--</h2>
-                        <span class="metric-unit">预计复合增长</span>
-                    </div>
-                    <div class="card-footer">
-                        <span class="metric-unit">高危靶点: </span>
-                        <span id="metric-pred-target" style="font-weight: 600; color: var(--text-color);">--</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">分析方法</div>
-                <div
-                    style="padding: 12px; background: #f6ffed; border-radius: 8px; font-size: 12px; color: #595959; line-height: 1.6;">
-                    <strong style="color: #389e0d;">当前使用：</strong><br>
-                    • 疾病转型理论框架<br>
-                    • DALYs分解分析<br>
-                    • 集中指数健康公平性<br>
-                    • 卫生资源弹性分析
-                </div>
-            </div>
-        </aside>
-
         <main class="content">
             <div class="page-header">
                 <h1 class="page-title">🏛️ 中观分析 - 国家与地区层面</h1>
                 <p class="page-subtitle">基于疾病转型理论，深入分析国家层面的疾病谱系演变、卫生资源配置效率与健康公平性 | 数据来源：IHME GBD 2024, WHO, World Bank
                     (2024)</p>
+            </div>
 
-                <div class="analysis-steps">
-                    <div class="step-card active" onclick="showStep(1)">
-                        <div class="step-number">1</div>
-                        <div class="step-title">问题定义</div>
-                        <div class="step-desc">明确研究目标与假设</div>
+            <div class="filter-panel" id="filterPanel">
+                <div class="filter-panel-header" onclick="toggleFilterPanel()">
+                    <div class="filter-panel-title">
+                        <span>⚙️</span>
+                        <span>数据筛选与分析维度</span>
                     </div>
-                    <div class="step-card" onclick="showStep(2)">
-                        <div class="step-number">2</div>
-                        <div class="step-title">数据收集</div>
-                        <div class="step-desc">多源数据整合验证</div>
+                    <div class="filter-panel-toggle" id="filterToggle">
+                        <span>收起</span>
+                        <span>▲</span>
                     </div>
-                    <div class="step-card" onclick="showStep(3)">
-                        <div class="step-number">3</div>
-                        <div class="step-title">分析方法</div>
-                        <div class="step-desc">选择适当统计方法</div>
+                </div>
+                <div class="filter-panel-content" id="filterContent">
+                    <div class="filter-group">
+                        <label class="filter-label" for="countrySelect">选择国家/地区</label>
+                        <select class="filter-select" id="countrySelect">
+                            <option value="china" selected>🇨🇳 中国</option>
+                            <option value="usa">🇺🇸 美国</option>
+                            <option value="japan">🇯🇵 日本</option>
+                            <option value="germany">🇩🇪 德国</option>
+                            <option value="uk">🇬🇧 英国</option>
+                            <option value="france">🇫🇷 法国</option>
+                            <option value="india">🇮🇳 印度</option>
+                            <option value="brazil">🇧🇷 巴西</option>
+                        </select>
                     </div>
-                    <div class="step-card" onclick="showStep(4)">
-                        <div class="step-number">4</div>
-                        <div class="step-title">结果解读</div>
-                        <div class="step-desc">深度挖掘数据价值</div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="indicatorSelect">分析指标</label>
+                        <select class="filter-select" id="indicatorSelect">
+                            <option value="dalys">DALYs (伤残调整生命年)</option>
+                            <option value="mortality">死亡率</option>
+                            <option value="prevalence">患病率</option>
+                            <option value="incidence">发病率</option>
+                            <option value="yld">YLDs (伤残损失寿命年)</option>
+                        </select>
                     </div>
-                    <div class="step-card" onclick="showStep(5)">
-                        <div class="step-number">5</div>
-                        <div class="step-title">决策建议</div>
-                        <div class="step-desc">转化为行动方案</div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="timeSelect">时间跨度</label>
+                        <select class="filter-select" id="timeSelect">
+                            <option value="1990-2024">1990-2024 (完整周期)</option>
+                            <option value="2000-2024">2000-2024 (近24年)</option>
+                            <option value="2010-2024">2010-2024 (近14年)</option>
+                            <option value="2019-2024">2019-2024 (疫情影响期)</option>
+                        </select>
                     </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="diseaseSelect">疾病分类</label>
+                        <select class="filter-select" id="diseaseSelect">
+                            <option value="all">全部疾病</option>
+                            <option value="ncd">非传染性疾病</option>
+                            <option value="cd">传染性疾病</option>
+                            <option value="injury">伤害</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="systemCapacitySelect">卫生系统能力</label>
+                        <select class="filter-select" id="systemCapacitySelect">
+                            <option value="medium" selected>中等能力</option>
+                            <option value="low">较弱能力</option>
+                            <option value="high">较强能力</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="policyIntensitySelect">政策执行强度</label>
+                        <select class="filter-select" id="policyIntensitySelect">
+                            <option value="baseline" selected>基准执行</option>
+                            <option value="weak">弱执行</option>
+                            <option value="strong">强执行</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="apply-btn" onclick="updateCharts()">✓ 应用筛选并分析</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="method-box">
+                <div class="method-title">📊 分析方法说明</div>
+                <div class="method-content">
+                    本分析采用<strong>疾病转型理论(Epidemiologic Transition
+                        Theory)</strong>框架，结合<strong>DALYs分解分析</strong>、<strong>集中指数(Concentration
+                        Index)</strong>健康公平性测量，
+                    以及<strong>卫生资源弹性分析</strong>方法。数据来源包括IHME全球疾病负担研究2024、WHO世界卫生统计、世界银行开放数据等权威数据库。
+                    时间跨度覆盖1990-2024年，重点关注2010年以来的转型加速期及COVID-19疫情影响。
                 </div>
             </div>
 
@@ -1409,6 +1192,8 @@
     <script>
         /* global echarts */
 
+        loadNavigationHeader('frontend');
+
         // 全局图表实例
         let transitionChart, decompositionChart, diseaseRankingChart, resourceChart, equityChart, urbanRuralChart, chinaMapChart;
         let currentResourceView = 'physician';
@@ -1498,9 +1283,8 @@
             chinaMapChart.showLoading({ text: '正在加载省级地理数据...' });
 
             try {
-                // 1. 请求中国地图 GeoJSON 数据
-                const geoJsonRes = await fetch('/api/geojson/china');
-                const geoJson = await geoJsonRes.json();
+                // 1. 请求中国地图 GeoJSON 数据（使用中台API）
+                const geoJson = await API.get('/geojson/china');
                 if (geoJson && Array.isArray(geoJson.features)) {
                     geoJson.features.forEach(f => {
                         const props = f?.properties;
@@ -2604,27 +2388,6 @@
             await refreshMesoInsight(country, indicator, timeRange);
         }
 
-        // 显示步骤
-        function showStep(step) {
-            document.querySelectorAll('.step-card').forEach((card, index) => {
-                if (index + 1 === step) {
-                    card.classList.add('active');
-                } else {
-                    card.classList.remove('active');
-                }
-            });
-
-            const messages = [
-                '明确研究目标：分析国家层面疾病谱系转型与卫生资源配置效率',
-                '数据来源：IHME GBD 2024, WHO, World Bank, 中国卫生统计年鉴',
-                '分析方法：疾病转型理论、DALYs分解、集中指数、弹性分析',
-                '核心发现：中国疾病转型进入加速期，NCDs占比达89.4%',
-                '政策建议：建立NCDs综合防控体系，优化卫生资源配置'
-            ];
-
-            showNotification('分析步骤 ' + step, messages[step - 1]);
-        }
-
         // 2. 丝滑生长动画 (ECharts 原生动画引擎优化)
         function playAnimation() {
             if (!transitionChart) {
@@ -2871,6 +2634,17 @@
             box.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${title}</div><div>${message}</div>`;
             document.body.appendChild(box);
             setTimeout(() => box.remove(), 2600);
+        }
+
+        function toggleFilterPanel() {
+            const content = document.getElementById('filterContent');
+            const toggle = document.getElementById('filterToggle');
+            if (content && toggle) {
+                const isCollapsed = content.classList.toggle('collapsed');
+                toggle.innerHTML = isCollapsed 
+                    ? '<span>展开</span><span>▼</span>' 
+                    : '<span>收起</span><span>▲</span>';
+            }
         }
 
         // 窗口大小改变时重新渲染图表

@@ -1,25 +1,45 @@
 # main.py
 import uvicorn
-from fastapi import FastAPI, Depends, BackgroundTasks
+from fastapi import FastAPI, Depends, BackgroundTasks, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, or_
-from modules.analysis.disease import DiseaseRiskAnalyzer
+import pandas as pd
+import os
+from pathlib import Path
+from contextlib import closing
 
 # 数据库模块导入
 from db.connection import SessionLocal, init_db, seed_db
-from db.models import GlobalHealthMetric, HealthResource, User
+from db.models import GlobalHealthMetric, HealthResource, User, AdvancedDiseaseTransition
 
-from fastapi.middleware.gzip import GZipMiddleware
+# ================= 1. 核心引擎全局实例化 (只执行一次！) =================
+from modules.data.loader import DataLoader
+from modules.data.processor import DataProcessor
+from modules.core.predictor import Predictor
+from modules.core.evaluator import HealthMathModels
+from modules.core.analyzer import ComprehensiveAnalyzer
+from utils.response import success_response, error_response
 
+# 基础组件
+data_loader = DataLoader()
+data_processor = DataProcessor()
+predictor = Predictor()
+
+# 业务大脑 (主厨)
+analyzer = ComprehensiveAnalyzer(
+    data_processor=data_processor,
+    data_loader=data_loader,
+    predictor=predictor
+)
+
+# ================= 2. FastAPI 初始化 =================
 app = FastAPI(title="健康数据分析平台 API")
 
-# 配置 GZip 压缩中间件
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-# 配置 CORS（允许跨域请求）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +54,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def _normalize_region_candidates(region: str):
     region_key = (region or "").strip().lower()
@@ -147,8 +166,7 @@ def _calc_reproducible_map_fallback(country_name: str, metric: str, year: int):
 @app.on_event("startup")
 def startup_event():
     init_db()
-    db = SessionLocal()
-    try:
+    with closing(SessionLocal()) as db:
         if db.query(User).count() == 0:
             db.add_all([
                 User(username="user_test", password="user123456", role="user"),
@@ -156,8 +174,6 @@ def startup_event():
             ])
             db.commit()
         seed_db(db)
-    finally:
-        db.close()
 
 # ==========================================
 # 1. 定义 API 接口 (必须放在静态目录挂载前)
@@ -384,28 +400,23 @@ async def get_analysis_metrics(region: str = "China", year: int = 2024, db: Sess
         top_disease_ratio = round((top_disease_val / dalys_current) * 100, 1) if dalys_current > 0 else 0
         sde_growth_rate = round(dalys_trend * 0.6, 2)
 
-        return {
-            "status": "success",
-            "data": {
-                "dalys": {"value": round(dalys_current, 0), "trend": dalys_trend, "sparkline": sparkline_dalys},
-                "top_disease": {"name": top_disease_name, "ratio": top_disease_ratio},
-                "dea": {"value": round(dea_current, 3), "trend": dea_trend, "sparkline": sparkline_dea},
-                "prediction": {"growth_rate": sde_growth_rate, "target": top_disease_name}
-            }
+        response_data = {
+            "dalys": {"value": round(dalys_current, 0), "trend": dalys_trend, "sparkline": sparkline_dalys},
+            "top_disease": {"name": top_disease_name, "ratio": top_disease_ratio},
+            "dea": {"value": round(dea_current, 3), "trend": dea_trend, "sparkline": sparkline_dea},
+            "prediction": {"growth_rate": sde_growth_rate, "target": top_disease_name}
         }
+        return success_response(data=response_data, message=f"{region} 健康指标数据获取成功")
     except Exception as e:
         from utils.logger import logger
         logger.exception("获取侧边栏指标失败")
-        return {
-            "status": "success",
-            "data": {
-                "dalys": {"value": 12450.0, "trend": 0, "sparkline": [11600, 11800, 12100, 12350, 12450]},
-                "top_disease": {"name": "心血管疾病", "ratio": 36.1},
-                "dea": {"value": 0.85, "trend": 0, "sparkline": [0.81, 0.82, 0.83, 0.84, 0.85]},
-                "prediction": {"growth_rate": 0, "target": "心血管疾病"}
-            },
-            "msg": str(e)
+        fallback_data = {
+            "dalys": {"value": 12450.0, "trend": 0, "sparkline": [11600, 11800, 12100, 12350, 12450]},
+            "top_disease": {"name": "心血管疾病", "ratio": 36.1},
+            "dea": {"value": 0.85, "trend": 0, "sparkline": [0.81, 0.82, 0.83, 0.84, 0.85]},
+            "prediction": {"growth_rate": 0, "target": "心血管疾病"}
         }
+        return success_response(data=fallback_data, message=f"{region} 健康指标数据获取成功(使用默认数据)")
 
 @app.get("/api/dataset")
 async def get_dataset(limit: int = 60, db: Session = Depends(get_db)):
@@ -579,199 +590,272 @@ async def get_dataset(limit: int = 60, db: Session = Depends(get_db)):
 
 @app.get("/api/dataset/{dataset_id}/detail")
 async def get_dataset_detail(dataset_id: str, limit: int = 50, db: Session = Depends(get_db)):
-    try:
-        from db.models import AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
-        
-        preview_data = []
-        d_meta = {
-            "title": f"数据集：{dataset_id}",
-            "category": "健康指标",
-            "record_count": 0,
-            "region_coverage": 0,
-            "year_min": 2000,
-            "year_max": 2024,
-            "latest_updated": "2024-03-21",
-            "fields": [
-                {"name": "region", "type": "string", "description": "国家/地区"},
-                {"name": "year", "type": "int", "description": "年份"},
-                {"name": "metric", "type": "string", "description": "指标名称"},
-                {"name": "value", "type": "float", "description": "数值"},
-                {"name": "source", "type": "string", "description": "数据来源"}
+    """
+    获取数据集详情 API
+    
+    接口路径: /api/dataset/{dataset_id}/detail
+    
+    返回结构:
+    {
+        "status": "success",
+        "dataset": {
+            "title": str,           # 数据集标题
+            "category": str,        # 数据分类
+            "record_count": int,    # 记录总数
+            "region_coverage": int, # 覆盖地区数
+            "year_min": int,        # 最小年份
+            "year_max": int,        # 最大年份
+            "latest_updated": str,  # 最后更新时间
+            "fields": [             # 字段结构列表
+                {"name": str, "type": str, "description": str}
             ]
-        }
-
+        },
+        "preview": [              # 前 N 条预览数据
+            {"region": str, "year": int, "metric": str, "value": float, "source": str, ...}
+        ]
+    }
+    """
+    try:
+        from db.crud import (
+            get_disease_dataset_detail,
+            get_risk_dataset_detail,
+            get_resource_dataset_detail,
+            get_global_overview_dataset_detail,
+            get_empty_dataset_detail
+        )
+        from sqlalchemy import inspect
+        
+        # 检查数据库表是否存在
+        inspector = inspect(db.bind)
+        
+        # 根据 dataset_id 前缀路由到不同的查询函数
         if dataset_id.startswith("disease_"):
-            records = db.query(AdvancedDiseaseTransition).limit(limit).all()
-            d_meta["category"] = "疾病负担数据"
-            d_meta["record_count"] = db.query(AdvancedDiseaseTransition).count()
-            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
-            for r in records:
-                preview_data.append({
-                    "region": r.location_name,
-                    "year": r.year,
-                    "metric": r.cause_name,
-                    "value": r.val,
-                    "source": "GBD 2019"
-                })
+            if inspector.has_table("adv_disease_transition"):
+                result = get_disease_dataset_detail(db, dataset_id, limit)
+            else:
+                result = get_empty_dataset_detail(dataset_id)
+                result.title = "疾病负担数据（表不存在）"
+                
         elif dataset_id.startswith("risk_"):
-            records = db.query(AdvancedRiskCloud).limit(limit).all()
-            d_meta["category"] = "风险因素数据"
-            d_meta["record_count"] = db.query(AdvancedRiskCloud).count()
-            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
-            for r in records:
-                preview_data.append({
-                    "region": r.location_name,
-                    "year": r.year,
-                    "metric": r.rei_name,
-                    "value": r.paf,
-                    "source": "GBD 2019"
-                })
+            if inspector.has_table("adv_risk_cloud"):
+                result = get_risk_dataset_detail(db, dataset_id, limit)
+            else:
+                result = get_empty_dataset_detail(dataset_id)
+                result.title = "风险因素数据（表不存在）"
+                
         elif dataset_id.startswith("resource_"):
-            records = db.query(AdvancedResourceEfficiency).limit(limit).all()
-            d_meta["category"] = "卫生资源效率数据"
-            d_meta["record_count"] = db.query(AdvancedResourceEfficiency).count()
-            d_meta["region_coverage"] = len(set([r.location_name for r in records]))
-            for r in records:
-                preview_data.append({
-                    "region": r.location_name,
-                    "year": r.year,
-                    "metric": "DEA 效率",
-                    "value": r.dea_efficiency if r.dea_efficiency else 0,
-                    "source": "WDI / Local"
-                })
+            # resource_ 可能对应多个表：AdvancedResourceEfficiency 或 HealthResource（fallback）
+            if "fallback" in dataset_id:
+                if inspector.has_table("health_resources"):
+                    result = get_resource_dataset_detail(db, dataset_id, limit)
+                else:
+                    result = get_empty_dataset_detail(dataset_id)
+                    result.title = "卫生资源数据（表不存在）"
+            else:
+                if inspector.has_table("adv_resource_efficiency"):
+                    result = get_resource_dataset_detail(db, dataset_id, limit)
+                else:
+                    result = get_empty_dataset_detail(dataset_id)
+                    result.title = "卫生资源效率数据（表不存在）"
+                    
+        elif dataset_id.startswith("global_overview"):
+            if inspector.has_table("global_health_metrics"):
+                result = get_global_overview_dataset_detail(db, dataset_id, limit)
+            else:
+                result = get_empty_dataset_detail(dataset_id)
+                result.title = "全球健康总览数据（表不存在）"
+                
+        elif dataset_id.startswith("intervention_"):
+            # 干预措施数据 - 目前使用疾病负担表作为替代
+            if inspector.has_table("adv_disease_transition"):
+                result = get_disease_dataset_detail(db, dataset_id, limit)
+                result.title = "干预措施评估数据"
+                result.category = "干预措施数据"
+            else:
+                result = get_empty_dataset_detail(dataset_id)
+                result.title = "干预措施数据（表不存在）"
+                
+        elif dataset_id.startswith("demographic_"):
+            # 人口统计数据 - 使用卫生资源表
+            if inspector.has_table("health_resources"):
+                result = get_resource_dataset_detail(db, "resource_fallback_0", limit)
+                result.title = "人口统计与健康指标数据"
+                result.category = "人口统计数据"
+            else:
+                result = get_empty_dataset_detail(dataset_id)
+                result.title = "人口统计数据（表不存在）"
         else:
-            return {"status": "error", "msg": "未知数据集 ID"}
-
-        if preview_data:
-            d_meta["year_min"] = min([r["year"] for r in preview_data])
-            d_meta["year_max"] = max([r["year"] for r in preview_data])
-
+            # 未知的数据集类型，返回空结构
+            result = get_empty_dataset_detail(dataset_id)
+            result.title = f"未知数据集：{dataset_id}"
+        
+        # 构造返回结果
+        # 如果数据库中没有数据，返回友好的空结构
+        if result.record_count == 0 and not result.preview:
+            return {
+                "status": "success",
+                "dataset": {
+                    "title": result.title,
+                    "category": result.category,
+                    "record_count": 0,
+                    "region_coverage": 0,
+                    "year_min": result.year_min or 2000,
+                    "year_max": result.year_max or 2024,
+                    "latest_updated": result.latest_updated,
+                    "fields": result.fields
+                },
+                "preview": [],
+                "msg": "该数据集暂无数据记录"
+            }
+        
         return {
             "status": "success",
-            "dataset": d_meta,
-            "preview": preview_data
+            "dataset": {
+                "title": result.title,
+                "category": result.category,
+                "record_count": result.record_count,
+                "region_coverage": result.region_coverage,
+                "year_min": result.year_min or 2000,
+                "year_max": result.year_max or 2024,
+                "latest_updated": result.latest_updated,
+                "fields": result.fields
+            },
+            "preview": result.preview
         }
+        
     except Exception as e:
         from utils.logger import logger
-        logger.exception("获取数据集详情失败")
-        return {"status": "error", "msg": str(e)}
+        logger.exception(f"获取数据集详情失败: dataset_id={dataset_id}, error={e}")
+        
+        # 返回友好的错误响应，而不是让前端脚本报错
+        return {
+            "status": "error",
+            "msg": f"获取数据集详情失败: {str(e)}",
+            "dataset": {
+                "title": f"数据集：{dataset_id}",
+                "category": "未知",
+                "record_count": 0,
+                "region_coverage": 0,
+                "year_min": 2000,
+                "year_max": 2024,
+                "latest_updated": "2024-01-01",
+                "fields": [
+                    {"name": "region", "type": "string", "description": "国家/地区"},
+                    {"name": "year", "type": "int", "description": "年份"},
+                    {"name": "metric", "type": "string", "description": "指标名称"},
+                    {"name": "value", "type": "float", "description": "数值"},
+                    {"name": "source", "type": "string", "description": "数据来源"}
+                ]
+            },
+            "preview": []
+        }
 
 @app.get("/api/disease_simulation")
-async def get_disease_simulation(years: int = 17, region: str = "China"):
+async def get_disease_simulation(years: int = 15, region: str = "China"):
+    """
+    疾病演化SDE预测接口（中台标准协议）
+    
+    Args:
+        years: 预测年数，默认15年
+        region: 预测区域，默认"China"
+    
+    Returns:
+        标准响应格式: {code, message, data, timestamp}
+    """
     try:
-        # 获取实际存在的清洗后数据
-        db = SessionLocal()
-        from db.models import AdvancedDiseaseTransition
-        # 查询最近几年的真实数据作为基线
-        real_data = db.query(AdvancedDiseaseTransition).filter(
-            AdvancedDiseaseTransition.location_name == region
-        ).order_by(AdvancedDiseaseTransition.year).all()
-        db.close()
+        # 1. 从数据库获取历史真实数据作为基线
+        with closing(SessionLocal()) as db:
+            real_data = db.query(AdvancedDiseaseTransition).filter(
+                AdvancedDiseaseTransition.location_name == region
+            ).order_by(AdvancedDiseaseTransition.year).all()
         
-        # 将真实数据转换为 dataframe 供模型使用
-        import pandas as pd
-        if real_data:
-            spectrum_df = pd.DataFrame([{
-                'year': item.year,
-                'cause_name': item.cause_name,
-                'val': item.val
-            } for item in real_data])
-        else:
-            spectrum_df = pd.DataFrame()
+        if not real_data:
+            from utils.logger import log_missing_data
+            log_missing_data("DiseaseSimulationAPI", "Disease Burden Baseline", 2023, region, "缺少该地区的疾病谱系数据")
+            return error_response(code=400, message=f"未能找到 {region} 的基线数据，无法进行 SDE 预测")
 
-        da = DiseaseRiskAnalyzer(spectrum_data=spectrum_df)
+        spectrum_df = pd.DataFrame([{
+            'year': item.year,
+            'cause_name': item.cause_name,
+            'val': item.val
+        } for item in real_data])
         
-        # 提取当前基线年份
-        start_year = 2023
-        if not spectrum_df.empty:
-            start_year = spectrum_df['year'].max()
-            
+        start_year = int(spectrum_df['year'].max())
         labels = [str(start_year + i) for i in range(0, years + 1, max(1, years//4))]
         
-        # 真实调用预测模型 (目前 DiseaseRiskAnalyzer 中的 run_sde_model_simple 已具备基本预测能力)
         datasets = []
         colors = ["#2b6cb0", "#c53030", "#d69e2e", "#319795", "#805ad5"]
-        
-        # 定义要预测的疾病类别
         target_causes = ["Cardiovascular diseases", "Neoplasms", "Diabetes", "Mental disorders"]
         display_names = ["心血管疾病", "肿瘤", "糖尿病", "精神疾病"]
         
-        # 为了防止数据为空时前端无数据渲染，如果 spectrum_df 是空的，抛出警告，不生成伪造的 baseline
-        if spectrum_df.empty:
-            from utils.logger import log_missing_data
-            log_missing_data("DiseaseSimulationAPI", "Disease Burden Baseline", 2023, region, "缺少该地区的疾病谱系数据作为预测基线")
-            return {"status": "error", "msg": f"未能找到 {region} 的疾病负担基线数据，无法进行 SDE 预测"}
-
         for idx, cause in enumerate(target_causes):
-            # 获取该疾病的当前负担基线
-            current_burden = 0.0
             cause_df = spectrum_df[spectrum_df['cause_name'].str.contains(cause.split()[0], na=False, case=False)]
-            if not cause_df.empty:
-                current_burden = float(cause_df.sort_values(by='year').iloc[-1]['val'])
-            else:
-                # 记录该特定疾病在当前地区的缺失情况，跳过该疾病的模拟
-                from utils.logger import log_missing_data
-                log_missing_data("DiseaseSimulationAPI", f"{cause} Baseline", start_year, region, f"缺少 {cause} 负担基线数据")
-                continue
+            if cause_df.empty or len(cause_df) < 2:
+                continue # 历史数据不足以校准 SDE 模型，跳过
+                
+            # 提取历史数值序列喂给预测引擎
+            historical_values = cause_df.sort_values(by='year')['val'].tolist()
             
-            # 调用 SDE 模型生成未来趋势，并对齐基准年份
-            pred_df = da.run_sde_model_simple(cause, current_burden, years_ahead=years, start_year=start_year)
+            # 呼叫真正的 SDE 数学引擎进行推演
+            # 假设该疾病的承载力上限为历史最大值的 2 倍
+            k_capacity = max(historical_values) * 2.0
             
-            # 提取与 labels 对应年份的数据点
-            data_points = []
-            for label_year in labels:
-                year_val = int(label_year)
-                # 寻找匹配年份的预测数据点
-                match_row = pred_df[pred_df['year'] == year_val]
-                if not match_row.empty:
-                    data_points.append(round(float(match_row['burden_index'].values[0]), 2))
-                else:
-                    # 如果年份未覆盖，通过插值或基线补全
-                    data_points.append(current_burden)
+            sde_result = predictor.run_data_driven_logistic_sde(
+                historical_data=historical_values,
+                years_ahead=years,
+                capacity_k=k_capacity
+            )
+            
+            # 提取预测曲线 (包含基线年份和未来预测点)
+            # 根据前端 labels 的间隔进行采样
+            full_predictions = [historical_values[-1]] + sde_result["future_predictions"]
+            sampled_points = [full_predictions[i] for i in range(0, years + 1, max(1, years//4))]
                     
             datasets.append({
-                "label": f"{display_names[idx]} (SDE预测)",
-                "data": data_points,
+                "label": f"{display_names[idx]} (SDE 动力学预测)",
+                "data": [round(val, 2) for val in sampled_points],
                 "borderColor": colors[idx % len(colors)],
                 "borderWidth": 3
             })
 
-        return {
-            "status": "success",
-            "chart_data": {
-                "labels": labels,
-                "datasets": datasets
-            }
+        # 按中台标准协议打包响应数据
+        response_data = {
+            "labels": labels,
+            "datasets": datasets
         }
+        
+        return success_response(data=response_data, message=f"{region} 疾病演化测算完成")
+        
+    except ValueError as ve:
+        # 参数校验异常
+        return error_response(code=400, message=str(ve))
     except Exception as e:
+        # 系统内部异常
         from utils.logger import logger
-        logger.exception("预测模拟失败")
-        return {"status": "error", "msg": str(e)}
+        logger.exception("SDE 预测模拟失败")
+        return error_response(code=500, message="中台算力引擎异常，请联系管理员")
 
 def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str, level: str = "community"):
     """后台运行实际的空间分析并写入缓存"""
     try:
-        from modules.spatial.poi_fetcher import fetch_hospital_pois, fetch_community_demand
-        from modules.analysis.advanced_algorithms import HealthMathModels
-        import pandas as pd
         import json
-        import os
         import math
-        
+
+        # 使用全局 data_loader 实例
         # 1. 获取供给端和需求端数据
         # 分别获取三甲医院和社区医院，体现不同层级医疗资源的搜寻半径差异
-        df_3a = fetch_hospital_pois(city=region, keyword="三甲医院")
+        df_3a = data_loader.fetch_poi_data(city=region, keyword="三甲医院")
         if not df_3a.empty:
             df_3a['type'] = '三甲医院'
             df_3a['search_radius'] = 30.0  # 约60分钟车程 (假设30km/h)
-            
-        df_comm = fetch_hospital_pois(city=region, keyword="社区卫生服务中心")
+
+        df_comm = loader.fetch_poi_data(city=region, keyword="社区卫生服务中心")
         if not df_comm.empty:
             df_comm['type'] = '社区医院'
             df_comm['search_radius'] = 7.5   # 约15分钟车程 (假设30km/h)
-            
+
         supply_df = pd.concat([df_3a, df_comm], ignore_index=True) if not df_3a.empty or not df_comm.empty else pd.DataFrame()
-        demand_df = fetch_community_demand(city=region)
+        demand_df = data_loader.fetch_community_demand(city=region)
         
         if supply_df.empty or demand_df.empty:
             # 数据获取失败时，生成随 threshold_km 联动的模拟数据以保证演示效果
@@ -920,7 +1004,7 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
                 if current_time - file_mtime < 30 * 86400:
                     with open(cache_file, "r", encoding="utf-8") as f:
                         cached_data = json.load(f)
-                        return cached_data
+                        return success_response(data=cached_data, message="空间分析数据获取成功(缓存)")
                 else:
                     # 缓存过期处理
                     os.remove(cache_file)
@@ -959,121 +1043,41 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
                         ]
                     }
                 }
-                return demo_data
+                return success_response(data=demo_data, message=f"{region} 空间分析演示数据生成完成")
 
         # 启动后台任务
         background_tasks.add_task(run_spatial_analysis_task, region, threshold_km, cache_file, level)
         
-        # 立即返回接收状态，前端可以展示“正在分析中，请稍后刷新...”
-        return {
+        # 立即返回接收状态，前端可以展示"正在分析中，请稍后刷新..."
+        processing_data = {
             "status": "processing",
             "msg": f"正在后台调度高德API及进行E2SFCA计算 ({level} 级聚合)，这可能需要几十秒时间，请稍后自动重试...",
             "region": region,
             "level": level
         }
-        
+        return success_response(data=processing_data, message="空间分析任务已提交，正在后台处理")
+
     except Exception as e:
         from utils.logger import logger
         logger.exception("触发微观空间分析任务失败")
-        return {"status": "error", "msg": str(e)}
+        return error_response(code=500, message=f"空间分析引擎异常: {str(e)}")
 
 @app.get("/api/news")
 async def get_health_news():
-    """获取最新健康资讯 (Mediastack API)"""
-    import os
-    import json
-    import time
-    from config.settings import SETTINGS
-    import requests
-    
-    cache_file = os.path.join(SETTINGS.DATA_DIR, "processed", "news_cache.json")
-    
-    # 缓存检索逻辑
-    try:
-        if os.path.exists(cache_file):
-            file_mtime = os.path.getmtime(cache_file)
-            current_time = time.time()
-            # 缓存有效期设为 3 天
-            if current_time - file_mtime < 259200:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    cached_data = json.load(f)
-                    return {"status": "success", "news": cached_data, "source": "cache"}
-            else:
-                # 缓存过期处理
-                os.remove(cache_file)
-    except Exception as e:
-        from utils.logger import logger
-        logger.warning(f"读取或清理新闻缓存失败: {e}")
+    """
+    获取最新健康资讯
 
+    通过DataLoader获取健康相关新闻，支持缓存机制和兜底数据。
+    实际数据获取逻辑已迁移至 modules/data/loader.py
+    """
     try:
-        news_config = SETTINGS.SEARCH_ENGINE_CONFIG.get("news_api", {})
-        api_key = news_config.get("api_key")
-        if not api_key:
-            return {"status": "error", "msg": "未配置 NewsAPI Key"}
-            
-        # Mediastack 参数
-        # keywords: health, disease, WHO
-        # categories: health
-        # languages: en, zh (可选)
-        url = f"{news_config['api_url']}?access_key={api_key}&categories=health&limit=10"
-        
-        response = requests.get(url, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            articles = data.get("data", [])
-            news_list = []
-            for article in articles:
-                if article.get("title"):
-                    news_list.append({
-                        "title": article.get("title"),
-                        "description": article.get("description") or "点击查看详情",
-                        "url": article.get("url"),
-                        "source": article.get("source", "Health News"),
-                        "publishedAt": article.get("published_at", "")
-                    })
-            
-            # 保存到缓存
-            try:
-                os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-                with open(cache_file, "w", encoding="utf-8") as f:
-                    json.dump(news_list, f, ensure_ascii=False)
-            except Exception as e:
-                from utils.logger import logger
-                logger.warning(f"保存新闻缓存失败: {e}")
-                
-            return {"status": "success", "news": news_list, "source": "api"}
-        else:
-            return {"status": "error", "msg": f"NewsAPI 返回状态码: {response.status_code}, {response.text}"}
+        # main.py仅作为请求处理的中间层
+        news_data = data_loader.fetch_health_news()
+        return {"status": "success", "news": news_data}
     except Exception as e:
         from utils.logger import logger
-        logger.warning(f"获取健康资讯 API 失败，使用本地兜底数据: {e}")
-        
-        # 静态兜底数据
-        fallback_news = [
-            {
-                "title": "全球预期寿命持续提升：公共卫生干预效果显著",
-                "description": "世界卫生组织最新报告显示，通过强化基层医疗与疫苗接种，全球平均预期寿命在过去十年稳步增长。",
-                "url": "#",
-                "source": "WHO News",
-                "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            },
-            {
-                "title": "数字化健康管理：大数据如何重塑慢性病预防",
-                "description": "随着智能穿戴设备的普及，基于大数据的疾病预测模型正成为慢性病管理的核心工具。",
-                "url": "#",
-                "source": "Digital Health",
-                "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            },
-            {
-                "title": "环境因素对群体健康的影响：最新研究进展",
-                "description": "研究表明，城市绿地覆盖率与居民心理健康水平及心血管健康具有显著正相关性。",
-                "url": "#",
-                "source": "Environmental Science",
-                "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            }
-        ]
-        return {"status": "success", "news": fallback_news, "source": "static_fallback"}
+        logger.exception("获取健康资讯失败")
+        return {"status": "error", "msg": str(e)}
 
 @app.get("/api/geojson/hospitals")
 async def get_hospitals_geojson():

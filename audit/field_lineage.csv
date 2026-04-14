@@ -1,0 +1,57 @@
+字段中文名,英文字段名,数据类型,长度/精度,取值范围,枚举值,单位,是否主键,是否外键,是否可为空,默认值,采样例值,关联接口URL,关联算法版本,来源文件/表,备注
+地区/省份,region_name,STRING,50,全国31省及直辖市,,无,否,否,否,,北京/四川/广东,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,年鉴表/health_resources,列名映射关键词：地区/省份/省市
+年份,year,INT,4,1990-2025,,年,否,否,否,,2019,/api/chart/trend,all,全部原始文件,ISO-8601整数格式
+执业(助理)医师数,physicians,FLOAT,12,≥0,,人,否,否,是,0.0,2341560.0,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,年鉴表,单位：人；年鉴以万人记需×10000
+注册护士数,nurses,FLOAT,12,≥0,,人,否,否,是,0.0,3000000.0,,UnifiedHealthAnalyzer v1,年鉴表,同上
+医疗机构床位数,hospital_beds,FLOAT,12,≥0,,张,否,否,是,0.0,6000000.0,,UnifiedHealthAnalyzer v1,年鉴表,同上
+总人口,population,FLOAT,12,≥0,,万人,否,否,是,0.0,14033.0,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,年鉴表/NBS.csv,年鉴单位万人
+每千人医师数,physicians_per_1000,FLOAT,10.4,0-50,,人/千人,否,否,是,0.0,2.8,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,PROCESSED(计算列),physicians/(population×10)
+每千人护士数,nurses_per_1000,FLOAT,10.4,0-50,,人/千人,否,否,是,0.0,3.2,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,PROCESSED(计算列),nurses/(population×10)
+每千人床位数,hospital_beds_per_1000,FLOAT,10.4,0-100,,张/千人,否,否,是,0.0,6.0,/api/map/china-provincial-health,UnifiedHealthAnalyzer v1,PROCESSED(计算列),hospital_beds/(population×10)
+综合供给指数,actual_supply_index,FLOAT,10.4,0-∞,,指数,否,否,是,0.0,3.15,,UnifiedHealthAnalyzer v1,PROCESSED(计算列),加权和：physician×0.4+nurse×0.35+beds×0.25
+理论需求指数,theoretical_demand_index,FLOAT,10.4,0-∞,,指数,否,否,是,0.0,3.50,,UnifiedHealthAnalyzer v1,PROCESSED(计算列),基准加权×人口调节系数
+相对缺口率,relative_gap_rate,FLOAT,10.4,-∞至1,,比率,否,否,是,0.0,0.1,/api/analysis/metrics,UnifiedHealthAnalyzer v1,PROCESSED(计算列),(需求-供给)/需求
+缺口严重程度,gap_severity,ENUM,20,配置充足/合理/轻度/严重,,无,否,否,是,,轻度短缺,/api/analysis/metrics,UnifiedHealthAnalyzer v1,PROCESSED(计算列),pd.cut四分类
+数据来源,source,ENUM,20,WHO/Local/OWID/GBD/SEARCH,,无,否,否,否,LOCAL,,/api/map/world-metrics,all,global_health_metrics,来源优先级：WHO>OWID>WB>Local>FALLBACK
+指标名称,indicator,STRING,200,自由文本,,无,否,否,否,,,/api/map/world-metrics,all,global_health_metrics,原始OWID/WHO指标名
+指标数值,value,FLOAT,15.4,依指标而定,,依指标,否,否,是,,62.5,/api/map/world-metrics,all,global_health_metrics/health_resources,
+单位,unit,STRING,50,自由文本,,无,否,否,是,,,,,global_health_metrics,
+国家/地区名称,location_name,STRING,100,ISO国家/省名,,无,否,否,否,,China,/api/map/global-risk,AdvancedDiseaseTransition,adv_disease_transition/adv_risk_cloud/adv_resource_efficiency,
+疾病名称,cause_name,STRING,200,GBD疾病分类,,无,否,否,否,,Cardiovascular diseases,,DiseaseRiskAnalyzer v1,adv_disease_transition/cleaned_gbd_disease.csv,
+疾病大类,disease_category,ENUM,50,传染/非传染/伤害,,无,否,否,是,,,/api/chart/trend,DiseaseRiskAnalyzer v1,adv_disease_transition,
+疾病负担绝对值,val,FLOAT,15.4,≥0,,DALYs,否,否,是,,,/api/chart/trend,DiseaseRiskAnalyzer v1,adv_disease_transition/cleaned_gbd_disease.csv,
+流行病学转型指数,eti,FLOAT,10.4,0-1,,指数,否,否,是,,,/api/chart/trend,DiseaseRiskAnalyzer v1,adv_disease_transition(计算列),
+转型阶段,transition_stage,STRING,50,,,无,否,否,是,,,,,adv_disease_transition,
+纬度,latitude,FLOAT,9.6,-90至90,,度,否,否,是,,,,,adv_disease_transition,
+经度,longitude,FLOAT,9.6,-180至180,,度,否,否,是,,,,,adv_disease_transition,
+城市区划类型,urban_zone_type,ENUM,50,老城区/新开发区/边缘区,,无,否,否,是,,,,,adv_disease_transition,
+老龄化比例,elderly_ratio,FLOAT,10.4,0-1,,比例,否,否,是,,,,,adv_disease_transition,
+风险因素名称,rei_name,STRING,200,GBD风险分类,,无,否,否,否,,PM2.5,,DiseaseRiskAnalyzer v1,adv_risk_cloud/cleaned_gbd_risk.csv,
+风险类别,risk_category,ENUM,50,behavioral/environmental/metabolic,,无,否,否,是,,,,,adv_risk_cloud,
+人群归因分数,paf,FLOAT,10.4,0-1,,无量纲,否,否,是,,,/api/chart/trend,DiseaseRiskAnalyzer v1,adv_risk_cloud,PAF
+暴露等级语言变量,exposure_category,ENUM,50,高/中/低,,无,否,否,是,,,,,adv_risk_cloud,
+云模型期望,cloud_ex,FLOAT,10.4,,,,否,否,是,,,,,adv_risk_cloud,云模型三参数之一
+云模型熵,cloud_en,FLOAT,10.4,,,,否,否,是,,,,,adv_risk_cloud,
+云模型超熵,cloud_he,FLOAT,10.4,,,,否,否,是,,,,,adv_risk_cloud,
+DEA综合技术效率,dea_efficiency,FLOAT,10.4,0-1,,无量纲,否,否,是,,,/api/analysis/metrics,HealthMathModels v1,adv_resource_efficiency,
+投入产出四象限,resource_quadrant,STRING,50,高投入_低产出等,,无,否,否,是,,,,,adv_resource_efficiency,
+2SFCA空间可及性指数,spatial_accessibility,FLOAT,10.4,0-1,,无量纲,否,否,是,,,/api/spatial_analysis,E2SFCA v1,adv_resource_efficiency,廖博玮2022
+鲁棒DEA弹性数据,robust_data,JSON,,,,,否,否,是,,,/api/spatial_analysis,E2SFCA v1,adv_resource_efficiency,鲁棒上下界JSON
+OWID指标ID,indicator_id,STRING,100,数字字符串,,无,是,否,否,,445883,,OWIDFetcher v1,owid_fetch_logs,
+爬取国家列表,target_countries,TEXT,,,,,否,否,是,,,,,owid_fetch_logs,JSON字符串存储
+爬取状态,status,BOOLEAN,1,True/False,,无,否,否,否,True,,,,owid_fetch_logs,True成功
+新增数据量,data_count,INT,11,≥0,,条,否,否,否,0,,,,owid_fetch_logs,
+分析任务类型,task_type,ENUM,50,disease_risk/resource_allocation,,无,否,否,否,,,,,deepseek_analysis_result,
+DALYs趋势值,burden_index,FLOAT,15.4,≥0,,DALYs,否,否,否,,,/api/disease_simulation,SDE Model v1,PROCESSED(SDE预测),run_sde_model_simple输出
+漂移系数,drift,FLOAT,10.4,-1至1,,无量纲,否,否,否,0.025,,,SDE Model v1,settings.py,代谢/慢病0.025；传染-0.015
+扩散系数,diffusion,FLOAT,10.4,≥0,,无量纲,否,否,否,0.03,,,SDE Model v1,settings.py,
+医院名称,name,STRING,200,,,无,否,否,否,,三甲医院,/api/geojson/hospitals,E2SFCA v1,chengdu_hospitals.geojson/POI,
+医院坐标_经度,lon,FLOAT,9.6,-180至180,,度,否,否,否,,,/api/geojson/hospitals,E2SFCA v1,chengdu_hospitals.geojson,
+医院坐标_纬度,lat,FLOAT,9.6,-90至90,,度,否,否,否,,,/api/geojson/hospitals,E2SFCA v1,chengdu_hospitals.geojson,
+搜索半径,search_radius,FLOAT,10.2,0-100,,km,否,否,是,10.0,7.5/30.0,/api/spatial_analysis,E2SFCA v1,空间分析模块,三甲30km；社区7.5km
+功能健康素养,functional,ARRAY,,,basic_literacy/reading_comprehension/health_info_access,,否,否,是,,,,,settings.py,公共卫生素养子维度
+交互健康素养,interactive,ARRAY,,,communication_skills/social_support_seeking/decision_making,,否,否,是,,,,,settings.py,
+批判健康素养,critical,ARRAY,,,information_appraisal/risk_perception/system_navigation,,否,否,是,,,,,settings.py,
+用户名,username,STRING,50,唯一,,无,是,否,否,,,/api/auth/login,,users,
+用户角色,role,ENUM,20,user/admin,,无,否,否,否,user,admin,/api/auth/login,,users,
+文件ID,id,STRING,50,file-前缀,,无,是,否,否,,,/v1/files,DeepAnalyze API 

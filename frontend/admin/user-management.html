@@ -572,7 +572,9 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <div class="admin-container">
+    <div id="site-header-container"></div>
+
+    <div class="admin-container" style="margin-top: 64px;">
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -837,6 +839,8 @@
     </div>
 
     <script>
+        loadNavigationHeader('admin');
+
         // 打开新增用户模态框
         function openAddModal() {
             document.getElementById('addModal').style.display = 'block';

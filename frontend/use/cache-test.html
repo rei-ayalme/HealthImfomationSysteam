@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>缓存测试页面</title>
+    <script src="/assets/js/geojson-cache.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+        .error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #cf1322;
+        }
+        .info {
+            background: #e6f7ff;
+            border: 1px solid #adc6ff;
+            color: #0958d9;
+        }
+        button {
+            padding: 10px 20px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #1677ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>缓存系统测试工具</h1>
+    
+    <div class="test-section">
+        <div class="test-title">1. IndexedDB 支持</div>
+        <div id="indexeddb-result" class="test-result info">检测中...</div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. localStorage 配额</div>
+        <div id="localStorage-result" class="test-result info">检测中...</div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. 缓存写入测试</div>
+        <button onclick="testCacheWrite()">写入测试数据</button>
+        <button onclick="testCacheRead()">读取测试数据</button>
+        <button onclick="testCacheDelete()">删除缓存</button>
+        <div id="cache-result" class="test-result info">等待操作...</div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">4. GeoJSON 文件大小</div>
+        <div id="geojson-size" class="test-result info">检测中...</div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">5. 当前缓存状态</div>
+        <button onclick="showCacheStatus()">刷新状态</button>
+        <div id="cache-status" class="test-result info">点击刷新...</div>
+    </div>
+
+    <script>
+        async function checkIndexedDB() {
+            const result = document.getElementById('indexeddb-result');
+            try {
+                const request = indexedDB.open('HealthGeoJSONCache', 1);
+                request.onsuccess = () => {
+                    result.className = 'test-result success';
+                    result.textContent = '✅ IndexedDB 支持正常';
+                };
+                request.onerror = () => {
+                    result.className = 'test-result error';
+                    result.textContent = '❌ IndexedDB 不支持或打开失败';
+                };
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ IndexedDB 异常: ${e.message}`;
+            }
+        }
+
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            try {
+                const testKey = 'test_' + Date.now();
+                const testData = 'x'.repeat(1024 * 1024 * 5); // 5MB
+                
+                try {
+                    localStorage.setItem(testKey, testData);
+                    localStorage.removeItem(testKey);
+                    
+                    const used = JSON.stringify(localStorage).length;
+                    const usedMB = (used / 1024 / 1024).toFixed(2);
+                    const totalMB = (5 * 1024 * 1024).toFixed(0);
+                    
+                    result.className = 'test-result success';
+                    result.textContent = `✅ localStorage 可用 | 已用: ${usedMB}MB / ${totalMB}MB`;
+                } catch (e) {
+                    result.className = 'test-result error';
+                    result.textContent = `❌ localStorage 配额不足: ${e.message}`;
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ localStorage 异常: ${e.message}`;
+            }
+        }
+
+        async function testCacheWrite() {
+            const result = document.getElementById('cache-result');
+            result.className = 'test-result info';
+            result.textContent = '写入中...';
+            
+            try {
+                const testData = {
+                    type: 'test',
+                    timestamp: Date.now(),
+                    data: 'x'.repeat(1024 * 1024 * 20) // 20MB 测试数据
+                };
+                
+                const success = await geojsonCache.set('test_key', testData, 86400000);
+                
+                if (success) {
+                    result.className = 'test-result success';
+                    result.textContent = `✅ 写入成功 | 大小: ${(JSON.stringify(testData).length / 1024 / 1024).toFixed(2)}MB`;
+                } else {
+                    result.className = 'test-result error';
+                    result.textContent = '❌ 写入失败';
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ 写入异常: ${e.message}`;
+            }
+        }
+
+        async function testCacheRead() {
+            const result = document.getElementById('cache-result');
+            result.className = 'test-result info';
+            result.textContent = '读取中...';
+            
+            try {
+                const data = await geojsonCache.get('test_key');
+                
+                if (data) {
+                    result.className = 'test-result success';
+                    result.textContent = `✅ 读取成功 | 大小: ${(JSON.stringify(data).length / 1024 / 1024).toFixed(2)}MB`;
+                } else {
+                    result.className = 'test-result error';
+                    result.textContent = '❌ 读取失败：缓存不存在或已过期';
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ 读取异常: ${e.message}`;
+            }
+        }
+
+        async function testCacheDelete() {
+            const result = document.getElementById('cache-result');
+            result.className = 'test-result info';
+            result.textContent = '删除中...';
+            
+            try {
+                const success = await geojsonCache.delete('test_key');
+                
+                if (success) {
+                    result.className = 'test-result success';
+                    result.textContent = '✅ 删除成功';
+                } else {
+                    result.className = 'test-result error';
+                    result.textContent = '❌ 删除失败';
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ 删除异常: ${e.message}`;
+            }
+        }
+
+        async function checkGeoJSONSize() {
+            const result = document.getElementById('geojson-size');
+            result.className = 'test-result info';
+            result.textContent = '检测中...';
+            
+            try {
+                const response = await fetch('/api/geojson/world', { method: 'HEAD' });
+                const size = response.headers.get('Content-Length');
+                
+                if (size) {
+                    const sizeMB = (parseInt(size) / 1024 / 1024).toFixed(2);
+                    result.className = 'test-result success';
+                    result.textContent = `✅ GeoJSON 文件大小: ${sizeMB}MB (${parseInt(size).toLocaleString()} 字符)`;
+                } else {
+                    result.className = 'test-result info';
+                    result.textContent = '⚠️ 无法获取文件大小（可能需要完整请求）';
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ 检测失败: ${e.message}`;
+            }
+        }
+
+        async function showCacheStatus() {
+            const result = document.getElementById('cache-status');
+            result.className = 'test-result info';
+            result.textContent = '检测中...';
+            
+            try {
+                const data = await geojsonCache.get('world_geojson_cache_v1');
+                
+                if (data) {
+                    const size = JSON.stringify(data).length;
+                    const sizeMB = (size / 1024 / 1024).toFixed(2);
+                    result.className = 'test-result success';
+                    result.textContent = `✅ 缓存存在 | 大小: ${sizeMB}MB`;
+                } else {
+                    result.className = 'test-result info';
+                    result.textContent = '⚠️ 缓存不存在或已过期';
+                }
+            } catch (e) {
+                result.className = 'test-result error';
+                result.textContent = `❌ 检测失败: ${e.message}`;
+            }
+        }
+
+        window.onload = () => {
+            checkIndexedDB();
+            checkLocalStorage();
+            checkGeoJSONSize();
+        };
+    </script>
+</body>
+</html>

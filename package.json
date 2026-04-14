@@ -1,0 +1,33 @@
+{
+  "name": "health-imformation-systeam",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "start": "node deepanalyze/index.js",
+    "dev": "nodemon deepanalyze/index.js",
+    "build": "node -e \"console.log('No frontend build for deepanalyze migration')\"",
+    "test:deepanalyze": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js __tests__/integration/deepanalyze --runInBand --detectOpenHandles --coverage",
+    "test:ui-dropdown": "node tests/ui/dropdown_compat_check.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "openai": "~4.68.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
+    "playwright": "^1.58.2",
+    "supertest": "^7.1.1"
+  },
+  "overrides": {
+    "openai": "~4.68.0"
+  },
+  "resolutions": {
+    "openai": "~4.68.0"
+  }
+}

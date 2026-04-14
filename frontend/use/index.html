@@ -15,30 +15,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台</title>
     <script src="/assets/js/echarts.min.js"></script>
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <script src="/assets/js/common.js"></script>
+    <script src="/assets/js/data-service.js"></script>
     <style>
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-        
-
-                        .user-actions {
+        .user-actions {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -101,19 +82,53 @@
         }
 
         .main-container {
-            display: flex;
             margin-top: 64px;
             min-height: calc(100vh - 64px);
         }
 
-        .sidebar {
-            width: 280px;
+        .filter-panel {
             background: #fff;
-            border-right: 1px solid #e8e8e8;
+            border-radius: 12px;
             padding: 20px;
-            position: fixed;
-            height: calc(100vh - 64px);
-            overflow-y: auto;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .filter-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+
+        .filter-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-panel-toggle {
+            font-size: 12px;
+            color: #1890ff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-panel-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .filter-panel-content.collapsed {
+            display: none;
         }
 
         .filter-title {
@@ -126,7 +141,7 @@
         }
 
         .filter-group {
-            margin-bottom: 18px;
+            margin-bottom: 0;
         }
 
         .filter-label {
@@ -151,17 +166,23 @@
             box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.12);
         }
 
+        .filter-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
         .apply-btn {
-            width: 100%;
+            padding: 11px 24px;
             border: none;
             background: #1890ff;
             color: #fff;
             border-radius: 8px;
-            padding: 11px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            margin-bottom: 8px;
         }
 
         .apply-btn:hover {
@@ -169,12 +190,11 @@
         }
 
         .reset-btn {
-            width: 100%;
+            padding: 10px 24px;
             border: 1px solid #d9d9d9;
             background: #fff;
             color: #333;
             border-radius: 8px;
-            padding: 10px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -186,8 +206,7 @@
         }
 
         .content {
-            flex: 1;
-            margin-left: 280px;
+            width: 100%;
             padding: 24px;
         }
 
@@ -217,12 +236,12 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .kpi-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
         }
-        
+
         .kpi-card::before {
             content: '';
             position: absolute;
@@ -232,7 +251,7 @@
             height: 100%;
             background: var(--primary-color);
         }
-        
+
         .kpi-source-tag {
             position: absolute;
             top: 12px;
@@ -270,7 +289,7 @@
 
         /* noinspection CssUnusedSymbol */
         .kpi-up {
-            color: var(--error-color); /* 疾病指标通常上升是坏事 */
+            color: var(--error-color);
         }
 
         /* noinspection CssUnusedSymbol */
@@ -292,7 +311,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             transition: all 0.3s ease;
         }
-        
+
         .card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
@@ -348,7 +367,7 @@
         }
 
         @media (max-width: 1400px) {
-            
+
         }
 
         @media (max-width: 1280px) {
@@ -358,115 +377,75 @@
         }
 
         @media (max-width: 992px) {
-            .sidebar { display: none; }
-            .content { margin-left: 0; }
             .chart-grid { grid-template-columns: 1fr; }
-            
-            
             .status-chip { display: none; }
         }
     </style>
-    <link rel="stylesheet" href="/assets/css/common.css">
-    <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <header class="top-nav">
-        <div class="logo">
-            <div class="logo-icon">🌍</div>
-            <span>健康数据洞察平台</span>
-        </div>
-        <nav class="main-nav">
-            <a class="nav-item active" href="/use/index.html" data-nav="index.html">
-                <span>🏠</span>
-                <span>首页</span>
-            </a>
-            <a class="nav-item" href="/use/datasets.html" data-nav="datasets.html">
-                <span>📁</span>
-                <span>数据集</span>
-            </a>
-            <div class="nav-item dropdown">
-                <span>📈</span>
-                <span>数据分析</span>
-                <span class="dropdown-icon">▼</span>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" href="/use/macro-analysis.html" data-nav="macro-analysis.html">
-                        <span>🌍</span>
-                        <span>宏观分析</span>
-                    </a>
-                    <a class="dropdown-item" href="/use/meso-analysis.html" data-nav="meso-analysis.html">
-                        <span>🏛️</span>
-                        <span>中观分析</span>
-                    </a>
-                    <a class="dropdown-item" href="/use/micro-analysis.html" data-nav="micro-analysis.html">
-                        <span>👥</span>
-                        <span>微观分析</span>
-                    </a>
-                    <a class="dropdown-item" href="/use/prediction.html" data-nav="prediction.html">
-                        <span>🔮</span>
-                        <span>预测模拟</span>
-                    </a>
-                </div>
-            </div>
-        </nav>
-        <div class="user-actions" id="userActions">
-            <div class="status-chip">数据源在线</div>
-            <div class="search-box"><input placeholder="搜索国家、疾病、指标" aria-label="搜索国家、疾病、指标"></div>
-            <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
-            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
-            <!-- 已登录时显示 -->
-            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
-            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
-            <div class="avatar user-only" style="display: none;" onclick="window.location.href='/use/account-center.html'" style="cursor:pointer">GH</div>
-        </div>
-    </header>
-    <!-- 在原有的 main-container 内容前加入高德地图脚本，用于全球/中国地图展示 -->
+    <div id="site-header-container"></div>
+
     <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=893aa291ba8fd5ceea01973a6162f182"></script>
     <div class="main-container">
-        <aside class="sidebar">
-            <div class="filter-group">
-                <div class="filter-title">筛选条件</div>
-                <label class="filter-label" for="region">地区</label>
-                <select id="region" class="filter-select">
-                    <option value="global">全球</option>
-                    <option value="east_asia">东亚</option>
-                    <option value="southeast_asia">东南亚</option>
-                    <option value="europe">欧洲</option>
-                    <option value="north_america">北美</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" for="year">时间范围</label>
-                <select id="year" class="filter-select">
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                    <option value="2020">2020</option>
-                    <option value="2015">2015</option>
-                    <option value="2010">2010</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" for="granularity">时间粒度</label>
-                <select id="granularity" class="filter-select">
-                    <option value="year">年度</option>
-                    <option value="five">五年</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" for="metric">核心指标</label>
-                <select id="metric" class="filter-select">
-                    <option value="dalys">DALYs</option>
-                    <option value="deaths">死亡人数</option>
-                    <option value="prevalence">患病率</option>
-                    <option value="ylls">YLLs</option>
-                    <option value="ylds">YLDs</option>
-                </select>
-            </div>
-            <button id="applyBtn" class="apply-btn">应用筛选</button>
-            <button id="resetBtn" class="reset-btn">重置筛选</button>
-        </aside>
         <main class="content">
             <h1 class="page-title">全球健康概览</h1>
+
+            <div class="filter-panel" id="filterPanel">
+                <div class="filter-panel-header" onclick="toggleFilterPanel()">
+                    <div class="filter-panel-title">
+                        <span>⚙️</span>
+                        <span>数据筛选条件</span>
+                    </div>
+                    <div class="filter-panel-toggle" id="filterToggle">
+                        <span>收起</span>
+                        <span>▲</span>
+                    </div>
+                </div>
+                <div class="filter-panel-content" id="filterContent">
+                    <div class="filter-group">
+                        <label class="filter-label" for="region">地区</label>
+                        <select id="region" class="filter-select">
+                            <option value="global">全球</option>
+                            <option value="east_asia">东亚</option>
+                            <option value="southeast_asia">东南亚</option>
+                            <option value="europe">欧洲</option>
+                            <option value="north_america">北美</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="year">时间范围</label>
+                        <select id="year" class="filter-select">
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2020">2020</option>
+                            <option value="2015">2015</option>
+                            <option value="2010">2010</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="granularity">时间粒度</label>
+                        <select id="granularity" class="filter-select">
+                            <option value="year">年度</option>
+                            <option value="five">五年</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="metric">核心指标</label>
+                        <select id="metric" class="filter-select">
+                            <option value="dalys">DALYs</option>
+                            <option value="deaths">死亡人数</option>
+                            <option value="prevalence">患病率</option>
+                            <option value="ylls">YLLs</option>
+                            <option value="ylds">YLDs</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="applyBtn" class="apply-btn">应用筛选</button>
+                        <button id="resetBtn" class="reset-btn">重置筛选</button>
+                    </div>
+                </div>
+            </div>
+
             <section class="kpi-grid" id="kpiGrid"></section>
             <section class="chart-grid">
                 <!-- 新增：全球地图分布图表模块 -->
@@ -496,6 +475,8 @@
     <script>
         /* global echarts */
 
+        loadNavigationHeader('frontend');
+
         const kpiGrid = document.getElementById('kpiGrid');
         const reportText = document.getElementById('reportText');
         const newsList = document.getElementById('newsList');
@@ -504,6 +485,17 @@
         const pieChart = echarts.init(document.getElementById('pieChart'));
         const mapChart = echarts.init(document.getElementById('mapChart'));
         let activeMapCountry = null;
+
+        function toggleFilterPanel() {
+            const content = document.getElementById('filterContent');
+            const toggle = document.getElementById('filterToggle');
+            if (content && toggle) {
+                const isCollapsed = content.classList.toggle('collapsed');
+                toggle.innerHTML = isCollapsed 
+                    ? '<span>展开</span><span>▼</span>' 
+                    : '<span>收起</span><span>▲</span>';
+            }
+        }
 
         const kpiMap = {
             dalys: [
@@ -538,7 +530,7 @@
             ]
         };
 
-        // 首页“智能分析摘要/最新健康资讯”静态兜底数据
+        // 首页"智能分析摘要/最新健康资讯"静态兜底数据
         // 说明：这些对象在当前文件内原本缺失，导致渲染阶段 ReferenceError，从而中断 apply()，
         // 进而出现地图/卡片空白等连锁问题。
         const reportPool = {
@@ -605,7 +597,7 @@
         async function renderKPI(region, metric, year) {
             kpiGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px;">数据加载中...</div>';
             const kpiData = await fetchKPIData(region, metric, year);
-            
+
             kpiGrid.innerHTML = '';
             if (!Array.isArray(kpiData) || kpiData.length === 0) {
                 kpiGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #8c8c8c;">暂无可展示指标</div>';
@@ -680,7 +672,7 @@
                 ylds: [0.59, 0.61, 0.64, 0.68, 0.72, 0.76, 0.80, 0.83]
             };
             const factor = region === 'global' ? 1 : region === 'east_asia' ? 0.86 : region === 'southeast_asia' ? 0.74 : region === 'europe' ? 0.53 : 0.61;
-            
+
             // 首先尝试从真实后端接口获取
             trendChart.showLoading({ text: '加载真实数据...', color: '#1890ff' });
             const realData = await fetchTrendData(region, metric, year);
@@ -751,13 +743,182 @@
                 europe: [{ n: '非传染性疾病', v: 86.1 }, { n: '传染性疾病', v: 7.3 }, { n: '伤害', v: 6.6 }],
                 north_america: [{ n: '非传染性疾病', v: 84.7 }, { n: '传染性疾病', v: 6.5 }, { n: '伤害', v: 8.8 }]
             };
+
+            const data = map[region];
+            const total = data.reduce((sum, item) => sum + item.v, 0);
+            const dataWithPercent = data.map(item => ({
+                name: item.n,
+                value: item.v,
+                percent: ((item.v / total) * 100).toFixed(1)
+            }));
+
+            // 配色方案 - 区分度高的专业色彩
+            const colorPalette = [
+                { 
+                    start: '#3b82f6', 
+                    end: '#1d4ed8',
+                    name: '非传染性疾病'
+                },
+                { 
+                    start: '#10b981', 
+                    end: '#059669',
+                    name: '传染性疾病'
+                },
+                { 
+                    start: '#f59e0b', 
+                    end: '#d97706',
+                    name: '伤害'
+                }
+            ];
+
             pieChart.setOption({
-                tooltip: { trigger: 'item' },
-                legend: { bottom: 0 },
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    textStyle: {
+                        color: '#1f2937',
+                        fontSize: 13
+                    },
+                    padding: [12, 16],
+                    formatter: function(params) {
+                        const item = dataWithPercent.find(d => d.name === params.name);
+                        return `
+                            <div style="font-weight:600;margin-bottom:6px;">${params.name}</div>
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${params.color};"></span>
+                                <span>数值: <strong>${params.value}</strong></span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:transparent;"></span>
+                                <span>占比: <strong>${item.percent}%</strong></span>
+                            </div>
+                        `;
+                    }
+                },
+                legend: {
+                    show: false
+                },
+                graphic: [
+                    {
+                        type: 'text',
+                        left: 'center',
+                        top: '42%',
+                        style: {
+                            text: '总 DALYs',
+                            textAlign: 'center',
+                            fill: '#6b7280',
+                            fontSize: 14,
+                            fontWeight: 500
+                        }
+                    },
+                    {
+                        type: 'text',
+                        left: 'center',
+                        top: '50%',
+                        style: {
+                            text: total.toFixed(1),
+                            textAlign: 'center',
+                            fill: '#111827',
+                            fontSize: 28,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    {
+                        type: 'text',
+                        left: 'center',
+                        top: '62%',
+                        style: {
+                            text: '单位: 百万',
+                            textAlign: 'center',
+                            fill: '#9ca3af',
+                            fontSize: 11
+                        }
+                    }
+                ],
                 series: [{
+                    name: '疾病负担分布',
                     type: 'pie',
-                    radius: ['42%', '72%'],
-                    data: map[region].map(i => ({ name: i.n, value: i.v }))
+                    radius: ['45%', '80%'],
+                    center: ['50%', '50%'],
+                    roseType: 'area',
+                    startAngle: 90,
+                    minAngle: 5,
+                    itemStyle: {
+                        borderRadius: 6,
+                        borderColor: '#fff',
+                        borderWidth: 3
+                    },
+                    label: {
+                        show: true,
+                        position: 'outside',
+                        formatter: function(params) {
+                            const item = dataWithPercent.find(d => d.name === params.name);
+                            return `{name|${params.name}}\n{value|${params.value}} {percent|${item.percent}%}`;
+                        },
+                        rich: {
+                            name: {
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: '#374151',
+                                padding: [0, 0, 4, 0]
+                            },
+                            value: {
+                                fontSize: 15,
+                                fontWeight: 'bold',
+                                color: '#111827'
+                            },
+                            percent: {
+                                fontSize: 13,
+                                color: '#6b7280',
+                                padding: [0, 0, 0, 4]
+                            }
+                        }
+                    },
+                    labelLine: {
+                        show: true,
+                        length: 20,
+                        length2: 30,
+                        smooth: true,
+                        lineStyle: {
+                            width: 1.5,
+                            color: '#d1d5db'
+                        }
+                    },
+                    data: dataWithPercent.map((item, index) => ({
+                        name: item.name,
+                        value: item.value,
+                        itemStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [
+                                    { offset: 0, color: colorPalette[index].start },
+                                    { offset: 1, color: colorPalette[index].end }
+                                ]
+                            },
+                            shadowBlur: 8,
+                            shadowColor: 'rgba(0, 0, 0, 0.1)',
+                            shadowOffsetY: 4
+                        }
+                    })),
+                    emphasis: {
+                        scale: true,
+                        scaleSize: 8,
+                        itemStyle: {
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(0, 0, 0, 0.2)',
+                            shadowOffsetY: 8
+                        },
+                        label: {
+                            fontSize: 14,
+                            fontWeight: 'bold'
+                        }
+                    }
                 }]
             });
         }
@@ -771,7 +932,7 @@
         async function renderNews(keyword = '') {
             const key = keyword.trim();
             newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">正在加载最新健康资讯...</div>';
-            
+
             try {
                 // 尝试通过后端获取真实资讯
                 const response = await fetch('/api/news');
@@ -780,12 +941,12 @@
                     if (data.status === 'success' && data.news && data.news.length > 0) {
                         newsList.innerHTML = '';
                         const filteredNews = data.news.filter(item => !key || item.title.includes(key) || item.description.includes(key));
-                        
+
                         if (filteredNews.length === 0) {
                             newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">未找到匹配的资讯</div>';
                             return;
                         }
-                        
+
                         filteredNews.forEach(item => {
                             const box = document.createElement('div');
                             box.className = 'news-item';
@@ -804,17 +965,17 @@
             } catch (e) {
                 console.warn('获取真实资讯失败，降级使用静态数据', e);
             }
-            
+
             // 降级静态数据
             newsList.innerHTML = '';
             const pool = (Array.isArray(newsPool) ? newsPool : []);
             const filteredStatic = pool.filter(item => !key || (item?.t || '').includes(key) || (item?.d || '').includes(key));
-            
+
             if (filteredStatic.length === 0) {
                 newsList.innerHTML = '<div style="padding: 20px; color: #8c8c8c;">未找到匹配的资讯</div>';
                 return;
             }
-            
+
             filteredStatic.forEach(item => {
                 const box = document.createElement('div');
                 box.className = 'news-item';
@@ -822,14 +983,6 @@
                 box.onclick = () => alert('当前为模拟静态数据，无真实链接。');
                 box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p><span style="font-size: 11px; color: #bfbfbf;">来源: 平台资讯库</span>`;
                 newsList.appendChild(box);
-            });
-        }
-
-        function syncNavState() {
-            const current = location.pathname.split('/').pop() || 'index.html';
-            document.querySelectorAll('.nav-item[data-nav], .dropdown-item[data-nav]').forEach(el => {
-                el.classList.remove('active');
-                if (el.getAttribute('data-nav') === current) el.classList.add('active');
             });
         }
 
@@ -893,7 +1046,7 @@
                     throw new Error('网络响应不正常');
                 }
                 const geoJson = await geoJsonRes.json();
-                
+
                 if (geoJson.status === "error") {
                     throw new Error(geoJson.msg);
                 }
@@ -1092,33 +1245,15 @@
             await apply();
         });
 
-        searchInput.addEventListener('input', e => renderNews(e.target.value));
-
-        syncNavState();
-        renderNews();
-        apply();
-
         window.addEventListener('resize', () => {
             trendChart.resize();
             pieChart.resize();
             mapChart.resize();
         });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Update auth state in nav
-            const userStr = localStorage.getItem('user') || localStorage.getItem('currentUser');
-            if (userStr) {
-                try {
-                    const user = JSON.parse(userStr);
-                    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
-                    document.querySelectorAll('.user-only').forEach(el => el.style.display = 'inline-flex');
-                    if (user.role === 'admin') {
-                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-flex');
-                    }
-                } catch (e) {}
-            }
-        });
+
+        // 初始化加载
+        renderNews();
+        apply();
     </script>
 </body>
 </html>

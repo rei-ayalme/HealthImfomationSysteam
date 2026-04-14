@@ -1,7 +1,9 @@
 # pages/api_checker_page.py
 import streamlit as st
-from modules.search_api_checker import check_search_engine
-from modules.dpio_checker import check_dpio_interface
+from modules.core.guard import SystemGuard
+
+# 初始化系统守卫
+guard = SystemGuard()
 
 def show():
     st.title("🔌 接口接入检查中心")
@@ -13,25 +15,22 @@ def show():
     test_query = st.text_input("输入测试搜索关键词", "2025全球卫生资源配置报告")
     if st.button("🚀 开始检查搜索引擎API", type="primary"):
         with st.spinner("正在检查搜索引擎API接入/访问/数据获取..."):
-            search_result = check_search_engine(test_query)
+            # 使用 guard.py 中的 ExternalAPIGuard
+            api_result = guard.check_external_apis()
+            # 查找搜索引擎相关检查项
+            search_items = [item for item in api_result.items if "serpapi" in item.name.lower() or "bing" in item.name.lower()]
             # 展示检查项
             st.write("#### 检查项详情")
-            for item in search_result.check_items:
-                if item["status"]:
-                    st.success(f"✅ {item['item']}：{item['msg']}")
+            for item in search_items:
+                if item.status.value == "ok":
+                    st.success(f"✅ {item.name}：{item.message}")
                 else:
-                    st.error(f"❌ {item['item']}：{item['msg']}")
-            # 展示结果
-            if search_result.status:
-                st.markdown("#### 📊 测试获取数据（前3条）")
-                for i, res in enumerate(search_result.data["results"], 1):
-                    st.write(f"**结果{i}**")
-                    st.write(f"标题：{res['title']}")
-                    st.write(f"摘要：{res['snippet'][:100]}...")
-                    st.write(f"链接：{res['link']}")
-                    st.markdown("---")
+                    st.error(f"❌ {item.name}：{item.message}")
+            # 整体结果
+            if api_result.overall_status.value == "ok":
+                st.success("✅ 搜索引擎API检查通过")
             else:
-                st.error(f"❌ 搜索引擎API检查失败：{search_result.error_msg}")
+                st.error(f"❌ 搜索引擎API检查失败")
 
     st.markdown("---")
 
@@ -40,23 +39,24 @@ def show():
     st.caption("提示：需Linux系统+DPIO硬件/驱动+管理员权限")
     if st.button("🚀 开始检查DPIO接口", type="secondary"):
         with st.spinner("正在检查DPIO驱动/硬件/帧收发/数据完整性..."):
-            dpio_result = check_dpio_interface()
+            # 使用 guard.py 中的 HardwareGuard
+            hw_result = guard.check_hardware()
             # 展示检查项
             st.write("#### 检查项详情")
-            for item in dpio_result.check_items:
-                if item["status"]:
-                    st.success(f"✅ {item['item']}：{item['msg']}")
+            for item in hw_result.items:
+                if item.status.value == "ok":
+                    st.success(f"✅ {item.name}：{item.message}")
                 else:
-                    st.error(f"❌ {item['item']}：{item['msg']}")
+                    st.error(f"❌ {item.name}：{item.message}")
             # 展示硬件信息
-            if dpio_result.hardware_info:
+            if hw_result.metadata:
                 st.write("#### 📋 硬件/驱动信息")
-                st.json(dpio_result.hardware_info)
+                st.json(hw_result.metadata)
             # 整体结果
-            if dpio_result.status:
+            if hw_result.overall_status.value == "ok":
                 st.success("✅ DPIO接口检查通过：驱动加载正常、硬件绑定成功、可正常收发数据且数据完整！")
             else:
-                st.error(f"❌ DPIO接口检查失败：{dpio_result.error_msg}")
+                st.error(f"❌ DPIO接口检查失败")
 
 if __name__ == "__main__":
     show()

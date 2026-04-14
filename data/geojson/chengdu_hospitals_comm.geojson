@@ -1,0 +1,1505 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.48488315307614,
+          31.25021487426758
+        ]
+      },
+      "properties": {
+        "name": "社区卫生服务中心",
+        "address": "塘沽路300号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.03030896459961,
+          39.068506944580065
+        ]
+      },
+      "properties": {
+        "name": "社区卫生服务中心",
+        "address": "知景道与华旭路交叉口",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          104.0566444359131,
+          30.64028192395019
+        ]
+      },
+      "properties": {
+        "name": "玉林社区卫生服务中心",
+        "address": "电信南街1号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.71240132434083,
+          26.594631619506842
+        ]
+      },
+      "properties": {
+        "name": "普陀社区卫生服务中心",
+        "address": "友谊路230号6号楼103",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.52914382543946,
+          31.298697822021484
+        ]
+      },
+      "properties": {
+        "name": "长海社区卫生服务中心",
+        "address": "营口路760-762号(黄兴公园地铁站1号口步行180米)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.41988738647461,
+          41.80969496704101
+        ]
+      },
+      "properties": {
+        "name": "社区卫生服务中心",
+        "address": "民富小区南门西北70米",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.05807391369628,
+          28.202249912475587
+        ]
+      },
+      "properties": {
+        "name": "东岸街道社区卫生服务中心",
+        "address": "张公岭远大二路(近长沙市旅游职业中专)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.10877044018554,
+          29.29825297827149
+        ]
+      },
+      "properties": {
+        "name": "江东街道社区卫生服务中心",
+        "address": "江东街道和欣路369号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.41843048889162,
+          31.175464599487306
+        ]
+      },
+      "properties": {
+        "name": "田林街道社区卫生服务中心",
+        "address": "柳州路545号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.63902426623535,
+          34.80639074450684
+        ]
+      },
+      "properties": {
+        "name": "郑州市社区卫生服务中心",
+        "address": "宋寨南街",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.02469602416991,
+          25.794811488525394
+        ]
+      },
+      "properties": {
+        "name": "人民路街道社区卫生服务中心",
+        "address": "东风路6号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.75849893981935,
+          30.7770234696045
+        ]
+      },
+      "properties": {
+        "name": "解放街道社区卫生服务中心",
+        "address": "东升东路530号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.36974246154786,
+          31.130001272338873
+        ]
+      },
+      "properties": {
+        "name": "莘庄社区卫生服务中心",
+        "address": "水清路1099号(近秀文路)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          129.61690447216796,
+          44.5792321147461
+        ]
+      },
+      "properties": {
+        "name": "牡丹街道社区卫生服务中心",
+        "address": "市政路7号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.14700890063477,
+          30.16638162475586
+        ]
+      },
+      "properties": {
+        "name": "滨江区浦沿街道社区卫生服务中心",
+        "address": "浦沿路320号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.04747427160645,
+          30.383034325073247
+        ]
+      },
+      "properties": {
+        "name": "良渚街道社区卫生服务中心",
+        "address": "良渚街道玉琮路151号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.31313325268553,
+          30.63578238745117
+        ]
+      },
+      "properties": {
+        "name": "江岸区二七街社区卫生服务中心",
+        "address": "发展大道882号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.30968385180662,
+          22.98520312182617
+        ]
+      },
+      "properties": {
+        "name": "卫生社区服务中心",
+        "address": "钟村街商贸城1号铺",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.62071357373046,
+          29.872217765136725
+        ]
+      },
+      "properties": {
+        "name": "福明街道社区卫生服务中心",
+        "address": "河清北路828号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.97698557055665,
+          30.226753533935547
+        ]
+      },
+      "properties": {
+        "name": "闲林街道社区卫生服务中心",
+        "address": "闲兴路3号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.40131818017579,
+          34.67798283251954
+        ]
+      },
+      "properties": {
+        "name": "涧西区天津路社区卫生服务中心",
+        "address": "超丽家园1号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.27911414892577,
+          39.848423057128905
+        ]
+      },
+      "properties": {
+        "name": "丰台社区卫生服务中心",
+        "address": "永善里1号楼",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          108.93841352978515,
+          34.24893420556641
+        ]
+      },
+      "properties": {
+        "name": "碑林区长安路社区卫生服务中心",
+        "address": "振兴路36号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.17538572180175,
+          30.513997945922846
+        ]
+      },
+      "properties": {
+        "name": "新民社区卫生服务中心",
+        "address": "经济技术开发区新民南路59号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.32544851293946,
+          30.325756719970702
+        ]
+      },
+      "properties": {
+        "name": "下沙街道社区卫生服务中心",
+        "address": "松乔街768号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.41687777770996,
+          31.134122198852538
+        ]
+      },
+      "properties": {
+        "name": "凌云社区卫生服务中心",
+        "address": "凌云路99号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.85480305236815,
+          38.29261361267089
+        ]
+      },
+      "properties": {
+        "name": "南湖社区卫生服务中心",
+        "address": "黄河路7号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          129.60101940124514,
+          44.5626836842041
+        ]
+      },
+      "properties": {
+        "name": "立新社区卫生服务中心",
+        "address": "海浪路167号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.97479204809571,
+          41.09462826147461
+        ]
+      },
+      "properties": {
+        "name": "山南街道社区卫生服务中心",
+        "address": "工人街6号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          111.55817835205076,
+          24.41852142822266
+        ]
+      },
+      "properties": {
+        "name": "建中社区卫生服务中心",
+        "address": "东园巷58号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.65244463647463,
+          45.734108970458976
+        ]
+      },
+      "properties": {
+        "name": "民生社区卫生服务中心",
+        "address": "和平路50号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.63985036975096,
+          34.737234714233395
+        ]
+      },
+      "properties": {
+        "name": "郑州市建中街社区卫生服务中心",
+        "address": "交通路与陇海路交叉口向西100米路南",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.0929674385986,
+          24.50748576501465
+        ]
+      },
+      "properties": {
+        "name": "湖里区湖里街道社区卫生服务中心",
+        "address": "海天路53号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.27727645544435,
+          30.220277008422848
+        ]
+      },
+      "properties": {
+        "name": "杭州市萧山区宁围街道社区卫生服务中心",
+        "address": "宁围街道利华路571号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.44325263598634,
+          31.4842099621582
+        ]
+      },
+      "properties": {
+        "name": "硕放街道社区卫生服务中心",
+        "address": "墙宅路359号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.60263860961913,
+          31.297352309326175
+        ]
+      },
+      "properties": {
+        "name": "高行社区卫生服务中心",
+        "address": "金高路180号(近万安街)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.27346202905272,
+          30.5788317331543
+        ]
+      },
+      "properties": {
+        "name": "江汉区民意街社区卫生服务中心",
+        "address": "民主一街9号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.96027368090819,
+          31.96398274291992
+        ]
+      },
+      "properties": {
+        "name": "南通市小海街道社区卫生服务中心",
+        "address": "海星路6号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99396700817873,
+          31.40669729382325
+        ]
+      },
+      "properties": {
+        "name": "昆山市周市镇新镇社区卫生服务中心",
+        "address": "萧林东路3120号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.21713509875488,
+          30.31837766516113
+        ]
+      },
+      "properties": {
+        "name": "笕桥街道社区卫生服务中心",
+        "address": "机场路238-6号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.97966370642091,
+          31.858070179077146
+        ]
+      },
+      "properties": {
+        "name": "湖熟街道社区卫生服务中心",
+        "address": "灵顺南路120号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.34710862377929,
+          40.3244024724121
+        ]
+      },
+      "properties": {
+        "name": "绥中社区卫生服务中心",
+        "address": "商业路与金丝路交叉口东40米",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.27590895288085,
+          40.13287200268556
+        ]
+      },
+      "properties": {
+        "name": "沙河社区卫生服务中心",
+        "address": "沙河镇展思门路5号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.06045846801757,
+          41.117139957275384
+        ]
+      },
+      "properties": {
+        "name": "创新街道社区卫生服务中心",
+        "address": "松林路6号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.1831690551758,
+          29.293054130371097
+        ]
+      },
+      "properties": {
+        "name": "白云街道社区卫生服务中心",
+        "address": "东义路550号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.90601058325197,
+          28.465706985107428
+        ]
+      },
+      "properties": {
+        "name": "莲都区白云街道社区卫生服务中心",
+        "address": "金桥东街66号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.78007800634765,
+          32.03693264501954
+        ]
+      },
+      "properties": {
+        "name": "秦淮区淮海路社区卫生服务中心",
+        "address": "程阁老巷20号(张府园地铁站1号口步行470米)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.03859498156739,
+          28.139459754272465
+        ]
+      },
+      "properties": {
+        "name": "圭塘街道社区卫生服务中心",
+        "address": "体院路7号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.1352538079834,
+          29.354958926147468
+        ]
+      },
+      "properties": {
+        "name": "三眼桥街道社区卫生服务中心",
+        "address": "学院路249号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.44998624694824,
+          32.207012326782234
+        ]
+      },
+      "properties": {
+        "name": "京口区健康路社区卫生服务中心",
+        "address": "中山东路239号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.67818978967283,
+          34.79977926794433
+        ]
+      },
+      "properties": {
+        "name": "郑州市北林路社区卫生服务中心",
+        "address": "鑫苑路3号原侨光医院",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.26359293603514,
+          23.11342241064453
+        ]
+      },
+      "properties": {
+        "name": "滨江街社区卫生服务中心",
+        "address": "南华东路636号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.16818140222166,
+          36.180702128784176
+        ]
+      },
+      "properties": {
+        "name": "上高社区卫生服务中心",
+        "address": "天烛峰路509号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.5492009559326,
+          31.187452554565432
+        ]
+      },
+      "properties": {
+        "name": "北蔡社区卫生服务中心",
+        "address": "莲园路271号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          103.83464619848633,
+          36.07023908032227
+        ]
+      },
+      "properties": {
+        "name": "盐场路街道社区卫生服务中心",
+        "address": "盐场路367号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.20893213696289,
+          30.265372163818366
+        ]
+      },
+      "properties": {
+        "name": "四季青街道社区卫生服务中心",
+        "address": "江中路1号五楼预防接种登记对面",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          108.31835198193357,
+          22.74052171533203
+        ]
+      },
+      "properties": {
+        "name": "玉龙社区卫生服务中心",
+        "address": "秀和路25-1号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.12517763696289,
+          32.22203602172851
+        ]
+      },
+      "properties": {
+        "name": "靖安社区卫生服务中心",
+        "address": "龙潭街道营防街17号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.0971105632324,
+          30.328191641357424
+        ]
+      },
+      "properties": {
+        "name": "祥符街道社区卫生服务中心",
+        "address": "三墩路57号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.42457928198243,
+          31.603968120361326
+        ]
+      },
+      "properties": {
+        "name": "安镇街道社区卫生服务中心",
+        "address": "人民中路85号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.12760583898924,
+          24.501417939331056
+        ]
+      },
+      "properties": {
+        "name": "湖里区江头街道社区卫生服务中心",
+        "address": "台湾街331号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.5753352159424,
+          39.80259952770996
+        ]
+      },
+      "properties": {
+        "name": "北京市通州区次渠社区卫生服务中心",
+        "address": "次渠大街",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.35259510375977,
+          34.6816725876465
+        ]
+      },
+      "properties": {
+        "name": "中云社区卫生服务中心",
+        "address": "开发区松花江路20号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.68551584692383,
+          34.74678847485352
+        ]
+      },
+      "properties": {
+        "name": "郑州市东大街社区卫生服务中心",
+        "address": "东大街社区卫生服务中心城东路49号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.84274068518066,
+          37.356501100708
+        ]
+      },
+      "properties": {
+        "name": "里则街道社区卫生服务中心",
+        "address": "中心路",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.7244810541992,
+          30.74185914794922
+        ]
+      },
+      "properties": {
+        "name": "城南街道社区卫生服务中心",
+        "address": "万历路138号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.41001220825197,
+          31.149869373291015
+        ]
+      },
+      "properties": {
+        "name": "康健街道社区卫生服务中心",
+        "address": "江安路88号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.44450508544924,
+          31.181987888183592
+        ]
+      },
+      "properties": {
+        "name": "枫林街道社区卫生服务中心",
+        "address": "双峰路450号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.78506833752441,
+          30.753625581176756
+        ]
+      },
+      "properties": {
+        "name": "东栅街道社区卫生服务中心",
+        "address": "双溪路118号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.71608338208009,
+          39.10577285473633
+        ]
+      },
+      "properties": {
+        "name": "大连金州中长街道社区卫生服务中心",
+        "address": "中长街道胜利路690号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.74511728442383,
+          32.21834180297853
+        ]
+      },
+      "properties": {
+        "name": "大厂街道社区卫生服务中心",
+        "address": "太子山路68号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.42994640551757,
+          41.825740732666006
+        ]
+      },
+      "properties": {
+        "name": "沈阳市皇姑区龙江社区卫生服务中心",
+        "address": "宁山东路33号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.25465546533204,
+          31.845525634277344
+        ]
+      },
+      "properties": {
+        "name": "三里庵街道社区卫生服务中心",
+        "address": "肥西路",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.15380543041991,
+          33.40102622827149
+        ]
+      },
+      "properties": {
+        "name": "大洋街道社区卫生服务中心",
+        "address": "榆河路136号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.09471185559083,
+          33.55707740588379
+        ]
+      },
+      "properties": {
+        "name": "福地路社区卫生服务中心",
+        "address": "云林路1号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          105.44208170776366,
+          28.902763763427732
+        ]
+      },
+      "properties": {
+        "name": "小市街道社区卫生服务中心",
+        "address": "上大街146号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.25023732629394,
+          28.668475940063473
+        ]
+      },
+      "properties": {
+        "name": "北城街道社区卫生服务中心",
+        "address": "大桥路534号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.64680579174802,
+          45.76711658618163
+        ]
+      },
+      "properties": {
+        "name": "荣市社区卫生服务中心",
+        "address": "邮政街28号(烟厂地铁站1号口步行320米)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05084100622561,
+          31.252625348754883
+        ]
+      },
+      "properties": {
+        "name": "石浦社区卫生服务中心",
+        "address": "宏川路",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.53295236218261,
+          31.330061914672847
+        ]
+      },
+      "properties": {
+        "name": "上海市杨浦区殷行社区卫生服务中心",
+        "address": "包头路959号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.64298090112302,
+          34.77780516674805
+        ]
+      },
+      "properties": {
+        "name": "郑州市金水区南阳路社区卫生服务中心",
+        "address": "南阳路31号(南阳路红专路交叉口东南角)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.44529894274903,
+          38.08867702526855
+        ]
+      },
+      "properties": {
+        "name": "天苑社区卫生服务中心",
+        "address": "友谊北大街426号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.11736076440431,
+          36.71441567797852
+        ]
+      },
+      "properties": {
+        "name": "潍坊市奎文区东关街道社区卫生服务中心",
+        "address": "中学街7号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.13269875341797,
+          36.70791897216797
+        ]
+      },
+      "properties": {
+        "name": "奎文区广文街道社区卫生服务中心",
+        "address": "院校街7号潍坊市第二人民医院",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.65288260217285,
+          38.92208640417479
+        ]
+      },
+      "properties": {
+        "name": "大连中山人民路社区卫生服务中心",
+        "address": "五五路35号(港湾广场地铁站D口步行470米)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.98707592822265,
+          38.51707678466797
+        ]
+      },
+      "properties": {
+        "name": "定州市宝塔社区卫生服务中心",
+        "address": "东大街",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.46245507360841,
+          36.12495673937988
+        ]
+      },
+      "properties": {
+        "name": "崂山区社区卫生服务中心",
+        "address": "辽阳东路35号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.24705914331054,
+          33.364528017822266
+        ]
+      },
+      "properties": {
+        "name": "惠民社区卫生服务中心",
+        "address": "经济技术开发区赣江路与嵩山路交汇处",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.42521784252926,
+          36.31788140747069
+        ]
+      },
+      "properties": {
+        "name": "城阳区城阳街道社区卫生服务中心",
+        "address": "萃城路103号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.3828801804199,
+          36.07299013745117
+        ]
+      },
+      "properties": {
+        "name": "南京路社区卫生服务中心",
+        "address": "南京路88号(江西路地铁站A口步行70米)",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.62075080834961,
+          34.716987278076175
+        ]
+      },
+      "properties": {
+        "name": "二七区嵩山路社区卫生服务中心",
+        "address": "郑密路与汉江路交叉口东北角郑密路25-2号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          119.52832837243652,
+          35.46270235583495
+        ]
+      },
+      "properties": {
+        "name": "秦楼街道社区卫生服务中心",
+        "address": "德州路119号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.16560366064454,
+          30.23448937939453
+        ]
+      },
+      "properties": {
+        "name": "上城区紫阳街道社区卫生服务中心",
+        "address": "中山南路303号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.25169867077636,
+          30.393571684204097
+        ]
+      },
+      "properties": {
+        "name": "星桥街道社区卫生服务中心",
+        "address": "学成街16号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.32421779748533,
+          23.143789356567382
+        ]
+      },
+      "properties": {
+        "name": "天河区林和街道社区卫生服务中心",
+        "address": "天河北路382号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.09384626086424,
+          22.612358892944336
+        ]
+      },
+      "properties": {
+        "name": "北街社区卫生服务中心",
+        "address": "港口二路39号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          114.52552423022462,
+          38.05006668920899
+        ]
+      },
+      "properties": {
+        "name": "育才街社区卫生服务中心",
+        "address": "谈北路38号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.02852665026855,
+          41.19634242590331
+        ]
+      },
+      "properties": {
+        "name": "辽河社区卫生服务中心",
+        "address": "长征街125号",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          118.91270129394532,
+          42.26946701660157
+        ]
+      },
+      "properties": {
+        "name": "铁东街道社区卫生服务中心",
+        "address": "桥西大街中段",
+        "capacity": 1000
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          113.09419393933105,
+          22.5853827076416
+        ]
+      },
+      "properties": {
+        "name": "堤东社区卫生服务中心",
+        "address": "吉利街39号",
+        "capacity": 1000
+      }
+    }
+  ]
+}

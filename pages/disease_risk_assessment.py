@@ -4,7 +4,9 @@ import pandas as pd
 import plotly.express as px
 from scipy import stats  # 移到顶部导入
 
-from modules.analysis.disease import DiseaseRiskAnalyzer
+from modules.core.analyzer import ComprehensiveAnalyzer
+from modules.data.loader import DataLoader
+from modules.data.processor import DataProcessor
 from modules.agent.agent import HealthResourceAgent
 from pages.health_analysis import get_owid_db_data, OWID_COLORS
 from db.connection import SessionLocal
@@ -14,7 +16,9 @@ from db.models import DeepSeekAnalysisResult
 def show():
     st.title("🔬 疾病风险归因与 SDE 模拟")
 
-    da = st.session_state.get('disease_analyzer', DiseaseRiskAnalyzer())
+    processor = DataProcessor()
+    loader = DataLoader()
+    da = st.session_state.get('disease_analyzer', ComprehensiveAnalyzer(processor, loader))
     prov = st.text_input("输入分析省份", "北京市")
 
     # ==========================================

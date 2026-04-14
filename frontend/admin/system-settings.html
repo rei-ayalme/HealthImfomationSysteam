@@ -445,7 +445,9 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <div class="admin-container">
+    <div id="site-header-container"></div>
+
+    <div class="admin-container" style="margin-top: 64px;">
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -657,6 +659,8 @@
     </div>
 
     <script>
+        loadNavigationHeader('admin');
+
         // 切换标签
         // 修复：移除了未使用到的参数 index，消除编辑器警告
         document.querySelectorAll('.tab-item').forEach(item => {

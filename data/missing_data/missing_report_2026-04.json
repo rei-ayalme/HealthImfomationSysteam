@@ -1,0 +1,58 @@
+[
+    {
+        "timestamp": "2026-04-14T18:02:38.150864",
+        "module": "DiseaseSimulationAPI",
+        "region": "China",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T18:05:46.601440",
+        "module": "DiseaseSimulationAPI",
+        "region": "China",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T18:07:42.912268",
+        "module": "DiseaseSimulationAPI",
+        "region": "China",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T18:10:43.568043",
+        "module": "DiseaseSimulationAPI",
+        "region": "China",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T18:17:26.492366",
+        "module": "DiseaseSimulationAPI",
+        "region": "China",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T20:38:30.224919",
+        "module": "DiseaseSimulationAPI",
+        "region": "global",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    },
+    {
+        "timestamp": "2026-04-14T20:38:40.408951",
+        "module": "DiseaseSimulationAPI",
+        "region": "global",
+        "year": 2023,
+        "metric": "Disease Burden Baseline",
+        "details": "缺少该地区的疾病谱系数据"
+    }
+]

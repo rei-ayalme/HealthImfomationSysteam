@@ -418,57 +418,7 @@
     <script src="/assets/js/common.js"></script>
 </head>
 <body>
-    <nav class="top-nav">
-        <div class="logo">
-            <div class="logo-icon">🏥</div>
-            <span>健康数据洞察平台</span>
-        </div>
-        <div class="main-nav">
-            <a href="/use/index.html" class="nav-item" data-nav="index.html">
-                <span>🏠</span>
-                <span>首页</span>
-            </a>
-            <a href="/use/datasets.html" class="nav-item active" data-nav="datasets.html">
-                <span>📁</span>
-                <span>数据集</span>
-            </a>
-            <div class="nav-item dropdown">
-                <span>📈</span>
-                <span>数据分析</span>
-                <span class="dropdown-icon">▼</span>
-                <div class="dropdown-menu">
-                    <a href="/use/macro-analysis.html" class="dropdown-item" data-nav="macro-analysis.html">
-                        <span>🌍</span>
-                        <span>宏观分析</span>
-                    </a>
-                    <a href="/use/meso-analysis.html" class="dropdown-item" data-nav="meso-analysis.html">
-                        <span>🏛️</span>
-                        <span>中观分析</span>
-                    </a>
-                    <a href="/use/micro-analysis.html" class="dropdown-item" data-nav="micro-analysis.html">
-                        <span>👥</span>
-                        <span>微观分析</span>
-                    </a>
-                    <a href="/use/prediction.html" class="dropdown-item" data-nav="prediction.html">
-                        <span>🔮</span>
-                        <span>预测模拟</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions">
-            <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" placeholder="搜索数据集..." aria-label="搜索数据集">
-            </div>
-            <!-- 未登录时显示 -->
-            <a class="nav-item guest-only" href="/use/login.html" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">登录</a>
-            <a class="nav-item signup-btn guest-only" href="/use/register.html" style="background: var(--primary-color); color: white; border: none;">免费注册</a>
-            <!-- 已登录时显示 -->
-            <a class="nav-item user-only" href="/use/account-center.html" style="display: none;">个人中心</a>
-            <a class="nav-item admin-only" href="/admin/dashboard.html" style="display: none;">管理端</a>
-        </div>
-    </nav>
+    <div id="site-header-container"></div>
 
     <div class="main-content">
         <div class="page-header">
@@ -772,6 +722,8 @@
     </div>
 
     <script>
+
+        loadNavigationHeader('frontend');
 
         const DATASET_API_BASE = '/api';
         const datasetPageState = {

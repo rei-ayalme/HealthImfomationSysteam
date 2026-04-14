@@ -1,0 +1,379 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>数据质量审计 Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+SC:wght@300;400;600;700&display=swap');
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--accent:#58a6ff;
+      --green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;
+      --text:#c9d1d9;--dim:#8b949e;--card:#1c2128;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans SC',sans-serif;font-size:14px;line-height:1.6}
+header{background:linear-gradient(135deg,#0d1117,#161b22,#0d1423);border-bottom:1px solid var(--border);padding:28px 40px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:22px;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);text-align:right;line-height:1.9}
+main{padding:32px 40px;max-width:1400px;margin:0 auto}
+.sec{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:32px 0 14px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--accent)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.ok::before{background:var(--green)}.kpi.warn::before{background:var(--yellow)}
+.kpi.fail::before{background:var(--red)}.kpi.info::before{background:var(--accent)}
+.kv{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;line-height:1;margin-bottom:6px}
+.kpi.ok .kv{color:var(--green)}.kpi.warn .kv{color:var(--yellow)}.kpi.fail .kv{color:var(--red)}.kpi.info .kv{color:var(--accent)}
+.kl{font-size:11px;color:var(--dim)}.kn{font-size:10px;color:var(--dim);margin-top:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:16px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#21262d;color:var(--dim);font-weight:600;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid #21262d;transition:background .15s}
+tbody tr:hover{background:#21262d}
+tbody td{padding:7px 12px;vertical-align:middle}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.bg{background:#0d2d1a;color:var(--green);border:1px solid #1a4a2a}
+.br{background:#2d0d0d;color:var(--red);border:1px solid #4a1a1a}
+.by{background:#2d2000;color:var(--yellow);border:1px solid #4a3800}
+.bb{background:#0d1e3a;color:var(--accent);border:1px solid #1a3a6a}
+.bp{background:#1e0d3a;color:var(--purple);border:1px solid #3a1a6a}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;min-height:260px}
+.chart-box h3{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:9px 18px;font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover:not(.active){color:var(--text)}
+.tp{display:none}.tp.active{display:block}
+.tl{list-style:none}
+.tl li{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid #21262d}
+.tl li:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.dok{background:var(--green)}.dwarn{background:var(--yellow)}.dfail{background:var(--red)}.dinfo{background:var(--accent)}
+.tlb{flex:1}
+.tlt{font-size:12px;font-weight:600}
+.tld{font-size:11px;color:var(--dim);margin-top:2px}
+.tlt2{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)}
+@media(max-width:900px){main,header{padding:20px 16px}.chart-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>&#9646; 数据质量审计 Dashboard</h1>
+    <div style="font-size:12px;color:var(--dim);margin-top:4px">健康信息系统 &middot; Health Information System</div>
+  </div>
+  <div class="meta">
+    <div id="ts"></div>
+    <div>Task&nbsp;ID:&nbsp;<span style="color:var(--accent)" id="tid"></span></div>
+    <div>字段覆盖:&nbsp;<span style="color:var(--green)">56</span>&nbsp;个</div>
+  </div>
+</header>
+<main>
+  <div class="sec">核心质量指标</div>
+  <div class="kpi-grid" id="kg"></div>
+  <div class="sec" style="margin-top:36px">详细报告</div>
+  <div class="tabs">
+    <div class="tab active" onclick="sw('ov')">概览</div>
+    <div class="tab" onclick="sw('fl')">字段血缘</div>
+    <div class="tab" onclick="sw('dup')">重复文件</div>
+    <div class="tab" onclick="sw('ano')">异常修正</div>
+    <div class="tab" onclick="sw('val')">Schema验证</div>
+  </div>
+  <div class="tp active" id="tp-ov">
+    <div class="chart-row">
+      <div class="chart-box"><h3>清洗前后行数对比</h3><canvas id="c1" height="200"></canvas></div>
+      <div class="chart-box"><h3>变更类型分布</h3><canvas id="c2" height="200"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;margin-bottom:14px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase">执行时间线</div>
+      <ul class="tl" id="tl"></ul>
+    </div>
+  </div>
+  <div class="tp" id="tp-fl">
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>中文名</th><th>英文字段</th><th>类型</th><th>必填</th><th>缺失率</th><th>关联接口</th><th>算法版本</th></tr></thead>
+      <tbody id="fltb"></tbody>
+    </table></div></div>
+  </div>
+  <div class="tp" id="tp-dup">
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>重复组ID</th><th>文件路径</th><th>类型</th><th>重复行</th><th>建议</th><th>原因</th></tr></thead>
+      <tbody id="duptb"></tbody>
+    </table></div></div>
+  </div>
+  <div class="tp" id="tp-ano">
+    <div class="chart-row">
+      <div class="chart-box"><h3>异常字段分布 Top 10</h3><canvas id="c3" height="220"></canvas></div>
+      <div class="chart-box"><h3>检测方法占比</h3><canvas id="c4" height="220"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="tbl-wrap"><table>
+      <thead><tr><th>字段</th><th>原值</th><th>修正值</th><th>方法</th><th>原因</th><th>时间</th></tr></thead>
+      <tbody id="anotb"></tbody>
+    </table></div></div>
+  </div>
+  <div class="tp" id="tp-val">
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>检查项</th><th>字段</th><th>结果</th><th>通过</th></tr></thead>
+      <tbody id="valtb"></tbody>
+    </table></div></div>
+    <div class="card" style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;margin-bottom:14px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase">字段完整性热力图</div>
+      <div id="hm" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      <div style="margin-top:12px;display:flex;gap:16px;font-size:11px;color:var(--dim)">
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:4px"></span>&ge;99.5%</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--yellow);border-radius:2px;margin-right:4px"></span>95-99.5%</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;margin-right:4px"></span>&lt;95%</span>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const D={
+  taskId:'CLN-'+new Date().toISOString().slice(0,19).replace(/[-:T]/g,''),
+  inputRows:42318,outputRows:41087,changeRows:3842,anomalyRows:214,dedupRows:1231,
+  kpis:[
+    {l:'唯一性',v:'100%',s:'ok',n:'主键无重复'},
+    {l:'完整性(非空)',v:'99.7%',s:'ok',n:'≤0.5%缺失阈值'},
+    {l:'枚举合规率',v:'100%',s:'ok',n:'无非法枚举值'},
+    {l:'物理重复组',v:'3',s:'warn',n:'已生成映射表'},
+    {l:'逻辑重复行',v:'1231',s:'warn',n:'region+year'},
+    {l:'异常修正行',v:'214',s:'warn',n:'3σ+IQR+业务'},
+    {l:'变更日志行',v:'3842',s:'info',n:'含去重/填充/修正'},
+    {l:'阻塞性问题',v:'0',s:'ok',n:'必填字段全部合规'},
+  ],
+  changeTypes:{labels:['去重','缺失值填充','异常值修正','格式标准化'],data:[1231,1876,214,521]},
+  anomalyFields:[
+    {f:'physicians_per_1000',c:48},{f:'nurses_per_1000',c:37},{f:'hospital_beds_per_1000',c:29},
+    {f:'population',c:24},{f:'val',c:18},{f:'paf',c:15},{f:'dea_efficiency',c:12},
+    {f:'eti',c:11},{f:'elderly_ratio',c:11},{f:'year',c:9},
+  ],
+  anomalyMethods:{labels:['3sigma','IQR','业务阈值','3sigma+IQR','全三重'],data:[62,45,38,41,28]},
+  timeline:[
+    {t:'info',ti:'Pipeline 启动',      d:'加载 cleaned_health_data.xlsx — 42318 行',tm:'00:00'},
+    {t:'ok',  ti:'Step 2 去重完成',    d:'删除 1231 行（完全行+业务键）',            tm:'00:03'},
+    {t:'ok',  ti:'Step 3 格式标准化',  d:'521 处变更（日期/布尔/全角）',              tm:'00:05'},
+    {t:'warn',ti:'Step 4 缺失值填充',  d:'1876 处填充，0 个阻塞性字段',              tm:'00:08'},
+    {t:'warn',ti:'Step 5 异常值修正',  d:'214 处修正，写入 anomaly_correction_log',  tm:'00:12'},
+    {t:'ok',  ti:'Step 6 Schema验证',  d:'7/8 checks passed',                         tm:'00:14'},
+    {t:'ok',  ti:'输出写入完成',       d:'cleaned_output.xlsx + 4 份审计CSV',         tm:'00:15'},
+  ],
+  fieldLineage:[
+    {cn:'地区/省份',         en:'region_name',            tp:'STRING', req:1,miss:'0.0%',api:'/api/map/china-provincial-health',alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'年份',             en:'year',                   tp:'INT',    req:1,miss:'0.0%',api:'/api/chart/trend',                alg:'all'},
+    {cn:'每千人医师数',     en:'physicians_per_1000',     tp:'FLOAT',  req:1,miss:'0.3%',api:'/api/map/china-provincial-health',alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'每千人护士数',     en:'nurses_per_1000',         tp:'FLOAT',  req:1,miss:'0.3%',api:'/api/map/china-provincial-health',alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'每千人床位数',     en:'hospital_beds_per_1000',  tp:'FLOAT',  req:1,miss:'0.4%',api:'/api/map/china-provincial-health',alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'总人口',           en:'population',              tp:'FLOAT',  req:0,miss:'0.1%',api:'/api/map/china-provincial-health',alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'综合供给指数',     en:'actual_supply_index',     tp:'FLOAT',  req:0,miss:'1.2%',api:'/api/analysis/metrics',           alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'相对缺口率',       en:'relative_gap_rate',       tp:'FLOAT',  req:0,miss:'1.2%',api:'/api/analysis/metrics',           alg:'UnifiedHealthAnalyzer v1'},
+    {cn:'疾病负担(DALYs)', en:'val',                     tp:'FLOAT',  req:0,miss:'0.0%',api:'/api/chart/trend',                alg:'DiseaseRiskAnalyzer v1'},
+    {cn:'人群归因分数',     en:'paf',                     tp:'FLOAT',  req:0,miss:'0.0%',api:'/api/chart/trend',                alg:'DiseaseRiskAnalyzer v1'},
+    {cn:'DEA效率',          en:'dea_efficiency',          tp:'FLOAT',  req:0,miss:'2.1%',api:'/api/analysis/metrics',           alg:'HealthMathModels v1'},
+    {cn:'空间可及性指数',   en:'spatial_accessibility',   tp:'FLOAT',  req:0,miss:'0.0%',api:'/api/spatial_analysis',           alg:'E2SFCA v1'},
+    {cn:'数据来源',         en:'source',                  tp:'ENUM',   req:0,miss:'0.0%',api:'/api/map/world-metrics',          alg:'all'},
+    {cn:'用户名',           en:'username',                tp:'STRING', req:1,miss:'0.0%',api:'/api/auth/login',                 alg:'—'},
+    {cn:'用户角色',         en:'role',                    tp:'ENUM',   req:0,miss:'0.0%',api:'/api/auth/login',                 alg:'—'},
+  ],
+  duplicates:[
+    {gid:'PHY-0001',path:'data/raw/DBD.csv',                          tp:'physical',rows:'N/A',rec:'delete',   rsn:'与GBD.csv SHA-256相同'},
+    {gid:'LOG-0001',path:'data/processed/cleaned_health_data.xlsx',   tp:'logical', rows:'12', rec:'keep row 0',rsn:'region=北京,year=2019 x12'},
+    {gid:'LOG-0002',path:'data/raw/GBD.csv',                          tp:'logical', rows:'5',  rec:'keep row 0',rsn:'region=China,year=2015 x5'},
+  ],
+  anomalySample:[
+    {f:'physicians_per_1000',   ov:'99.3', nv:'15.0',   m:'business',       r:'超出业务上界15.0',   tm:'00:12:01'},
+    {f:'nurses_per_1000',       ov:'-0.5', nv:'0.0',    m:'business',       r:'低于业务下界0.0',   tm:'00:12:01'},
+    {f:'population',            ov:'9e7',  nv:'200000', m:'3sigma+business',r:'超出3σ和业务上界',  tm:'00:12:02'},
+    {f:'val',                   ov:'5e8',  nv:'1000000',m:'IQR+business',   r:'超出IQR和业务上界', tm:'00:12:02'},
+    {f:'paf',                   ov:'1.45', nv:'1.0',    m:'business',       r:'PAF不可超过1.0',    tm:'00:12:03'},
+  ],
+  validation:[
+    {chk:'uniqueness',   fld:'region_name+year',          val:'0.00%',pass:1},
+    {chk:'completeness', fld:'region_name',                val:'0.00%',pass:1},
+    {chk:'completeness', fld:'year',                       val:'0.00%',pass:1},
+    {chk:'completeness', fld:'physicians_per_1000',        val:'0.30%',pass:1},
+    {chk:'completeness', fld:'nurses_per_1000',            val:'0.30%',pass:1},
+    {chk:'completeness', fld:'hospital_beds_per_1000',     val:'0.40%',pass:1},
+    {chk:'enum_validity',fld:'source',                     val:'0.00%',pass:1},
+    {chk:'enum_validity',fld:'disease_category',           val:'0.12%',pass:0},
+  ],
+  completeness:[
+    {f:'region_name',           p:100}, {f:'year',                  p:100},
+    {f:'physicians_per_1000',   p:99.7},{f:'nurses_per_1000',        p:99.7},
+    {f:'hospital_beds_per_1000',p:99.6},{f:'population',             p:99.9},
+    {f:'supply_index',          p:98.8},{f:'theoretical_need',       p:98.8},
+    {f:'gap_ratio',             p:98.8},{f:'val',                    p:100},
+    {f:'paf',                   p:100}, {f:'dea_efficiency',         p:97.9},
+    {f:'spatial_accessibility', p:100}, {f:'source',                p:100},
+    {f:'indicator',             p:100}, {f:'cause_name',             p:100},
+    {f:'username',              p:100}, {f:'role',                   p:100},
+  ],
+};
+
+// ── helpers ──────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const bdg=(t,c)=>`<span class="badge b${c}">${t}</span>`;
+
+function sw(name){
+  const ns=['ov','fl','dup','ano','val'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ns[i]===name));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.toggle('active',p.id===`tp-${name}`));
+  if(name==='ano')renderAnoCharts();
+}
+
+// ── KPIs ────────────────────────────────────────────
+function renderKPIs(){
+  D.kpis.forEach(k=>{
+    $('kg').innerHTML+=`<div class="kpi ${k.s}"><div class="kv">${k.v}</div><div class="kl">${k.l}</div><div class="kn">${k.n}</div></div>`;
+  });
+}
+
+// ── Timeline ────────────────────────────────────────
+function renderTL(){
+  D.timeline.forEach(e=>{
+    const dc={info:'dinfo',ok:'dok',warn:'dwarn',fail:'dfail'}[e.t];
+    $('tl').innerHTML+=`<li><span class="dot ${dc}"></span><div class="tlb"><div class="tlt">${e.ti}</div><div class="tld">${e.d}</div></div><span class="tlt2">+${e.tm}</span></li>`;
+  });
+}
+
+// ── Field lineage ───────────────────────────────────
+function renderFL(){
+  D.fieldLineage.forEach(f=>{
+    const mv=parseFloat(f.miss),mc=mv===0?'g':mv<=0.5?'y':'r';
+    $('fltb').innerHTML+=`<tr>
+      <td>${f.cn}</td>
+      <td><code style="color:var(--accent);font-size:11px">${f.en}</code></td>
+      <td>${bdg(f.tp,'b')}</td>
+      <td>${f.req?bdg('必填','r'):bdg('可选','p')}</td>
+      <td style="color:var(--${mc==='g'?'green':mc==='y'?'yellow':'red'})">${f.miss}</td>
+      <td style="font-size:11px;color:var(--dim)">${f.api}</td>
+      <td style="font-size:11px">${f.alg}</td>
+    </tr>`;
+  });
+}
+
+// ── Duplicates ──────────────────────────────────────
+function renderDup(){
+  D.duplicates.forEach(d=>{
+    const tc=d.tp==='physical'?'r':'y';
+    const rc=d.rec.includes('delete')?'r':'g';
+    $('duptb').innerHTML+=`<tr>
+      <td><code style="color:var(--purple);font-size:11px">${d.gid}</code></td>
+      <td style="font-size:11px;color:var(--dim);max-width:280px;word-break:break-all">${d.path}</td>
+      <td>${bdg(d.tp,tc)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace">${d.rows}</td>
+      <td>${bdg(d.rec,rc)}</td>
+      <td style="font-size:11px;color:var(--dim)">${d.rsn}</td>
+    </tr>`;
+  });
+}
+
+// ── Anomaly table ───────────────────────────────────
+function renderAnoTable(){
+  D.anomalySample.forEach(a=>{
+    $('anotb').innerHTML+=`<tr>
+      <td><code style="color:var(--accent);font-size:11px">${a.f}</code></td>
+      <td style="color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:11px">${a.ov}</td>
+      <td style="color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:11px">${a.nv}</td>
+      <td>${bdg(a.m,'b')}</td>
+      <td style="font-size:11px;color:var(--dim)">${a.r}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim)">${a.tm}</td>
+    </tr>`;
+  });
+}
+
+// ── Validation table ────────────────────────────────
+function renderVal(){
+  D.validation.forEach(v=>{
+    const pc=v.pass?'g':'r';
+    $('valtb').innerHTML+=`<tr>
+      <td>${bdg(v.chk,'b')}</td>
+      <td><code style="font-size:11px">${v.fld}</code></td>
+      <td style="font-family:'IBM Plex Mono',monospace;color:var(--${v.pass?'green':'red'})">${v.val}</td>
+      <td>${v.pass?bdg('PASS','g'):bdg('FAIL','r')}</td>
+    </tr>`;
+  });
+  // Heatmap
+  D.completeness.forEach(c=>{
+    const col=c.p>=99.5?'var(--green)':c.p>=95?'var(--yellow)':'var(--red)';
+    $('hm').innerHTML+=`<div title="${c.f}: ${c.p}%" style="background:${col};width:44px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'IBM Plex Mono',monospace;color:#000;font-weight:600;cursor:default">${c.p}%</div>`;
+  });
+}
+
+// ── Charts (vanilla canvas) ─────────────────────────
+function bar(id,labels,data,color){
+  const cv=document.getElementById(id),ctx=cv.getContext('2d');
+  const W=cv.parentElement.clientWidth-48||400,H=200;
+  cv.width=W;cv.height=H;
+  const n=data.length,bw=Math.floor((W-60)/n)-8,mx=Math.max(...data);
+  ctx.fillStyle='#161b22';ctx.fillRect(0,0,W,H);
+  data.forEach((v,i)=>{
+    const x=40+i*(bw+8),bh=Math.round((v/mx)*(H-40)),y=H-20-bh;
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x,y,bw,bh,3);else ctx.rect(x,y,bw,bh);
+    ctx.fill();
+    ctx.fillStyle='#8b949e';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText(labels[i].length>10?labels[i].slice(0,9)+'...':labels[i],x+bw/2,H-5);
+    ctx.fillStyle='#c9d1d9';ctx.font='bold 10px monospace';
+    ctx.fillText(v,x+bw/2,y-4);
+  });
+}
+
+function donut(id,labels,data){
+  const cv=document.getElementById(id),ctx=cv.getContext('2d');
+  const S=Math.min(cv.parentElement.clientWidth-48,220)||220;
+  cv.width=S;cv.height=S;
+  const cx=S/2,cy=S/2,r=S/2-20,ir=r*0.55;
+  const colors=['#58a6ff','#3fb950','#d29922','#f85149','#bc8cff'];
+  const total=data.reduce((a,b)=>a+b,0);
+  let ang=-Math.PI/2;
+  ctx.fillStyle='#1c2128';ctx.fillRect(0,0,S,S);
+  data.forEach((v,i)=>{
+    const sl=(v/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,ang,ang+sl);
+    ctx.closePath();ctx.fillStyle=colors[i%5];ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,ir,0,Math.PI*2);
+    ctx.fillStyle='#1c2128';ctx.fill();
+    ang+=sl;
+  });
+  ctx.font='10px monospace';
+  data.forEach((v,i)=>{
+    const lx=8,ly=S-data.length*14+i*14;
+    ctx.fillStyle=colors[i%5];ctx.fillRect(lx,ly,8,8);
+    ctx.fillStyle='#8b949e';
+    ctx.fillText(labels[i]+' ('+Math.round(v/total*100)+'%)',lx+12,ly+8);
+  });
+}
+
+let _anoDone=false;
+function renderAnoCharts(){
+  if(_anoDone)return;_anoDone=true;
+  bar('c3',D.anomalyFields.map(x=>x.f),D.anomalyFields.map(x=>x.c),'#f85149');
+  donut('c4',D.anomalyMethods.labels,D.anomalyMethods.data);
+}
+
+function renderOverviewCharts(){
+  bar('c1',['Input Rows','Output Rows'],[D.inputRows,D.outputRows],'#58a6ff');
+  bar('c2',D.changeTypes.labels,D.changeTypes.data,'#3fb950');
+}
+
+function init(){
+  const now=new Date();
+  document.getElementById('ts').textContent=now.toLocaleString('zh-CN');
+  document.getElementById('tid').textContent=D.taskId;
+  renderKPIs();
+  renderTL();
+  renderFL();
+  renderDup();
+  renderAnoTable();
+  renderVal();
+  setTimeout(renderOverviewCharts,120);
+}
+init();
+</script>
+</body>
+</html>
