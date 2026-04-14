@@ -19,6 +19,7 @@
     <script src="/assets/js/common.js"></script>
     <script src="/assets/js/data-service.js"></script>
     <style>
+<<<<<<< HEAD
         /* 主布局 - 移除侧边栏 */
         .admin-container {
             margin-top: 64px;
@@ -65,6 +66,63 @@
             background: #1890ff;
             color: white;
         }
+=======
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
 
         .btn-primary:hover {
             background: #40a9ff;
@@ -239,6 +297,7 @@
 
         /* 响应式设计 */
         @media (max-width: 768px) {
+<<<<<<< HEAD
             .main-content {
                 padding: 16px;
             }
@@ -250,6 +309,13 @@
             }
 
             .charts-section {
+=======
+            
+            
+            
+            
+            .stats-grid {
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
                 grid-template-columns: 1fr;
             }
 
@@ -263,12 +329,19 @@
             }
         }
     </style>
+<<<<<<< HEAD
+=======
+    <link rel="stylesheet" href="/assets/css/common.css">
+    <link rel="stylesheet" href="/assets/css/admin-layout.css">
+    <script src="/assets/js/common.js"></script>
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
 </head>
 <body>
     <div id="site-header-container"></div>
 
     <!-- 主内容区 -->
     <div class="admin-container">
+<<<<<<< HEAD
         <main class="main-content">
             <!-- 页面标题 -->
             <div class="page-header">
@@ -343,6 +416,117 @@
                             <option>最近30天</option>
                             <option>最近90天</option>
                         </select>
+=======
+                <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🏥</div>
+                    <div class="logo-text">健康数据平台</div>
+                </div>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-group-title">核心监控</div>
+                <a href="/admin/dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">仪表盘</span>
+                </a>
+                
+                <div class="nav-group-title">数据与分析</div>
+                <a href="/admin/data-management.html" class="nav-item">
+                    <span class="nav-icon">💾</span>
+                    <span class="nav-text">数据管理</span>
+                    <span class="nav-badge">待处理</span>
+                </a>
+                <a href="/admin/reports.html" class="nav-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">模型管理</span>
+                </a>
+                
+                <div class="nav-group-title">系统运维</div>
+                <a href="/admin/user-management.html" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">用户审计</span>
+                </a>
+                <a href="/admin/logs.html" class="nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">系统日志</span>
+                </a>
+                <a href="/admin/system-settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">系统配置</span>
+                </a>
+                <a href="/admin/help.html" class="nav-item">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-text">帮助中心</span>
+                </a>
+            </div>
+        </div>
+        <div class="main-content">
+                        <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="toggle-btn">☰</button>
+                    <h1 class="page-title" id="dynamicPageTitle">管理后台</h1>
+                </div>
+                <div class="top-bar-right">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="搜索..." aria-label="全局搜索">
+                    </div>
+                    <div class="user-menu" onclick="window.location.href='/use/index.html'" style="cursor:pointer;">
+                        <div class="user-info">
+                            <div class="user-name">返回前台</div>
+                            <div class="user-role">系统管理员</div>
+                        </div>
+                        <div class="user-avatar">A</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-info">
+                                <div class="stat-title">总用户数</div>
+                                <div class="stat-value">1,248</div>
+                                <div class="stat-change positive">↗ +12.5% 本月</div>
+                            </div>
+                            <div class="stat-icon user">👥</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-info">
+                                <div class="stat-title">数据总量</div>
+                                <div class="stat-value">2.4M</div>
+                                <div class="stat-change positive">↗ +8.3% 本月</div>
+                            </div>
+                            <div class="stat-icon data">💾</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-info">
+                                <div class="stat-title">日访问量</div>
+                                <div class="stat-value">8,762</div>
+                                <div class="stat-change negative">↘ -2.1% 昨日</div>
+                            </div>
+                            <div class="stat-icon visit">📈</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-info">
+                                <div class="stat-title">系统告警</div>
+                                <div class="stat-value">5</div>
+                                <div class="stat-change positive">↗ +2 今日</div>
+                            </div>
+                            <div class="stat-icon alert">⚠️</div>
+                        </div>
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
                     </div>
                     <div id="trendChart" class="chart-container"></div>
                 </div>
@@ -438,8 +622,12 @@
                 }
             },
             legend: {
+<<<<<<< HEAD
                 data: ['健康指标', '疾病数据', '人口统计'],
                 bottom: 0
+=======
+                data: ['配置用户', '活跃用户']
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
             },
             grid: {
                 left: '3%',
@@ -464,7 +652,11 @@
                     itemStyle: { color: '#1890ff' }
                 },
                 {
+<<<<<<< HEAD
                     name: '疾病数据',
+=======
+                    name: '配置用户',
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
                     type: 'line',
                     smooth: true,
                     data: [220, 182, 191, 234, 290, 330, 310],
@@ -614,6 +806,43 @@
             trendChart.resize();
             dataDistributionChart.resize();
         });
+<<<<<<< HEAD
+=======
+
+        // 绑定全局搜索栏事件
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const keyword = this.value.trim();
+                    if (keyword) {
+                        showToast(`正在全站检索: ${keyword}`, 'info');
+                        // 模拟检索延迟
+                        setTimeout(() => {
+                            showToast(`未找到关于 "${keyword}" 的相关模块或数据记录`, 'warning');
+                        }, 800);
+                    }
+                }
+            });
+        }
+    </script>
+    
+    <script>
+        (function syncAdminNavState() {
+            const current = location.pathname.split('/').pop() || 'index.html';
+            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                if (href && href.endsWith(current)) {
+                    link.classList.add('active');
+                    const pageTitle = document.getElementById('dynamicPageTitle');
+                    if (pageTitle) {
+                        pageTitle.textContent = link.querySelector('.nav-text').textContent;
+                    }
+                }
+            });
+        })();
+>>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
     </script>
 </body>
 </html>

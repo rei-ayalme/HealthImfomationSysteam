@@ -106,7 +106,7 @@ class Settings:
     ]
     OWID_INDICATORS = OWID_HEALTH_INDICATORS
 
-    # 新增：GeoJSON 地图文件路径配置
+    # 配置：GeoJSON 地图文件路径配置
     GEOJSON_PATH_WORLD = os.getenv("GEOJSON_PATH_WORLD", "data/geojson/ne_10m_admin_0_countries.geojson")
     GEOJSON_PATH_CONTINENTS = os.getenv("GEOJSON_PATH_CONTINENTS", "data/geojson/continents.geojson")
     GEOJSON_PATH_CHINA = os.getenv("GEOJSON_PATH_CHINA", "data/geojson/china.geojson")
@@ -114,12 +114,12 @@ class Settings:
     GEOJSON_PATH_CHENGDU_HOSPITALS = os.getenv("GEOJSON_PATH_CHENGDU_HOSPITALS", "data/geojson/chengdu_hospitals.geojson")
     GEOJSON_PATH_CHENGDU_STREET = os.getenv("GEOJSON_PATH_CHENGDU_STREET", "data/geojson/chengdu_street.geojson")
 
-    # 新增：资源缺口等级阈值
+    # 配置：资源缺口等级阈值
     GAP_THRESHOLD_ADEQUATE = float(os.getenv("GAP_THRESHOLD_ADEQUATE", 0.0))
     GAP_THRESHOLD_REASONABLE = float(os.getenv("GAP_THRESHOLD_REASONABLE", 0.1))
     GAP_THRESHOLD_MILD = float(os.getenv("GAP_THRESHOLD_MILD", 0.3))
 
-    # 新增：预测增长率情景配置
+    # 配置：预测增长率情景配置
     SCENARIO_MULTIPLIERS = {
         "基准": float(os.getenv("SCENARIO_BASELINE", 1.02)),
         "高增长": float(os.getenv("SCENARIO_HIGH", 1.05)),

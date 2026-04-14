@@ -1961,7 +1961,7 @@
         function updateSidebarMetrics() {
             const cardIds = ['card-dalys', 'card-top-disease', 'card-dea', 'card-prediction'];
             // 前端兜底逻辑，当数据库为空或API失败时展示模拟数据
-            const mockData = {
+            const fallbackData = {
                 dalys: { value: 31542, trend: -1.2, sparkline: [32000, 31800, 31542, 31200, 31000] },
                 top_disease: { name: "心血管疾病", ratio: 35.2 },
                 dea: { value: 0.82, trend: 2.1, sparkline: [0.75, 0.78, 0.82, 0.84, 0.85] },
@@ -1977,44 +1977,44 @@
 
             const dalysCard = document.getElementById('card-dalys');
             if (dalysCard) {
-                document.getElementById('metric-dalys').innerText = mockData.dalys.value.toLocaleString();
+                document.getElementById('metric-dalys').innerText = fallbackData.dalys.value.toLocaleString();
                 const trendEl = document.getElementById('metric-dalys-trend');
                 if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dalys.trend)}%`;
-                    trendEl.parentElement.className = mockData.dalys.trend > 0 ? 'trend up' : 'trend down';
-                    trendEl.previousElementSibling.innerHTML = mockData.dalys.trend > 0 ? '↑' : '↓';
+                    trendEl.innerText = `${Math.abs(fallbackData.dalys.trend)}%`;
+                    trendEl.parentElement.className = fallbackData.dalys.trend > 0 ? 'trend up' : 'trend down';
+                    trendEl.previousElementSibling.innerHTML = fallbackData.dalys.trend > 0 ? '↑' : '↓';
                 }
                 if (window.echarts) {
-                    renderSparkline('sparkline-dalys', mockData.dalys.sparkline, mockData.dalys.trend > 0 ? '#f5222d' : '#52c41a');
+                    renderSparkline('sparkline-dalys', fallbackData.dalys.sparkline, fallbackData.dalys.trend > 0 ? '#f5222d' : '#52c41a');
                 }
             }
 
             const diseaseCard = document.getElementById('card-top-disease');
             if (diseaseCard) {
-                document.getElementById('metric-disease-name').innerText = mockData.top_disease.name;
+                document.getElementById('metric-disease-name').innerText = fallbackData.top_disease.name;
                 const ratioEl = document.getElementById('metric-disease-ratio');
-                if (ratioEl) ratioEl.innerText = `${mockData.top_disease.ratio}%`;
+                if (ratioEl) ratioEl.innerText = `${fallbackData.top_disease.ratio}%`;
             }
 
             const deaCard = document.getElementById('card-dea');
             if (deaCard) {
-                document.getElementById('metric-dea').innerText = mockData.dea.value.toFixed(3);
+                document.getElementById('metric-dea').innerText = fallbackData.dea.value.toFixed(3);
                 const trendEl = document.getElementById('metric-dea-trend');
                 if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dea.trend)}%`;
-                    trendEl.parentElement.className = mockData.dea.trend > 0 ? 'trend down' : 'trend up';
-                    trendEl.previousElementSibling.innerHTML = mockData.dea.trend > 0 ? '↑' : '↓';
+                    trendEl.innerText = `${Math.abs(fallbackData.dea.trend)}%`;
+                    trendEl.parentElement.className = fallbackData.dea.trend > 0 ? 'trend down' : 'trend up';
+                    trendEl.previousElementSibling.innerHTML = fallbackData.dea.trend > 0 ? '↑' : '↓';
                 }
                 if (window.echarts) {
-                    renderSparkline('sparkline-dea', mockData.dea.sparkline, mockData.dea.trend > 0 ? '#52c41a' : '#f5222d');
+                    renderSparkline('sparkline-dea', fallbackData.dea.sparkline, fallbackData.dea.trend > 0 ? '#52c41a' : '#f5222d');
                 }
             }
 
             const predCard = document.getElementById('card-prediction');
             if (predCard) {
-                document.getElementById('metric-pred-rate').innerText = `${mockData.prediction.growth_rate}%`;
+                document.getElementById('metric-pred-rate').innerText = `${fallbackData.prediction.growth_rate}%`;
                 const targetEl = document.getElementById('metric-pred-target');
-                if (targetEl) targetEl.innerText = mockData.prediction.target;
+                if (targetEl) targetEl.innerText = fallbackData.prediction.target;
             }
         }
 

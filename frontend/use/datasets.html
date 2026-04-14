@@ -857,6 +857,15 @@
             });
             return q.toString();
         }
+        function hydrateSearchFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const keyword = (params.get('q') || '').trim();
+            if (!keyword) return;
+            const advancedInput = document.getElementById('searchKeyword');
+            const topSearchInput = document.querySelector('.search-box input');
+            if (advancedInput) advancedInput.value = keyword;
+            if (topSearchInput) topSearchInput.value = keyword;
+        }
         function renderInsightBar(datasets) {
             const bar = document.getElementById('datasetInsightBar');
             const total = datasets.length;
@@ -1023,6 +1032,7 @@
             attachCategoryEvents();
             document.getElementById('searchBtn')?.addEventListener('click', searchDatasets);
             document.getElementById('resetBtn')?.addEventListener('click', resetAdvancedSearch);
+            hydrateSearchFromQuery();
             searchDatasets();
         });
     </script>

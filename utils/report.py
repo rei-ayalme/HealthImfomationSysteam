@@ -52,7 +52,7 @@ def generate_pdf_report(year: int, province: str = None):
     plt.close(fig)  # 释放内存
 
     story.append(Image(chart_path, width=450, height=220))
-    os.remove(chart_path)  # 删除临时文件
+    os.remove(chart_path)  # 删除保障文件
 
     doc.build(story)
     buffer.seek(0)
