@@ -3,13 +3,13 @@ import random
 from modules.core.orchestrator import orchestrate_data
 
 def fetch_real_life_expectancy():
-    # Simulate fetching from WHO GHO & World Bank
-    # Here we directly use fallback data generation for simulation
+    # 模拟从 WHO GHO (全球卫生观察站) 与 World Bank (世界银行) 获取数据
+    # 此处直接使用回退数据生成进行模拟
     return generate_fallback_life_expectancy()
 
 def generate_fallback_life_expectancy():
-    # UN 2019 historical trend extrapolation
-    # Range [49.2, 85.4]
+    # 基于 UN 2019 历史趋势外推法
+    # 数值范围 [49.2, 85.4]
     features = []
     
     countries = [
@@ -35,9 +35,9 @@ def generate_fallback_life_expectancy():
         "Lesotho", "Burundi", "Central African Republic", "Liberia", "Somalia", "Eritrea", "Gambia"
     ]
     
-    # Generate raster/polygon fallback data
+    # 生成栅格/多边形回退数据
     for c in countries:
-        # generate random life expectancy within range
+        # 在指定范围内生成随机预期寿命
         score = random.uniform(49.2, 85.4)
         features.append({
             "type": "Feature",
@@ -51,7 +51,7 @@ def generate_fallback_life_expectancy():
     return {
         "type": "FeatureCollection",
         "features": features,
-        "meta": {"freshness_hour": 17520} # 2 years old
+        "meta": {"freshness_hour": 17520} # 数据时效：2年
     }
 
 @orchestrate_data("GlobalLifeExpectancy", generate_fallback_life_expectancy, timeout=5.0, max_retries=3)

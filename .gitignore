@@ -48,9 +48,16 @@ data/processed/*
 data/temp/
 data/cache/
 
+# 大型数据文件（超过500MB）
+data/**/WB_HNP.csv
+
+# GitHub 限制文件（超过100MB）
+data/osmnx_cache/*.graphml
+data/geojson/成都路网genjson/*.geojson
+
 # 保留地理数据（通常较小且必要）
 !data/geojson/         # 保留地理数据目录
-!data/geojson/**/*     # 保留所有geojson文件
+!data/geojson/**/*.geojson     # 保留所有geojson文件（但排除超大文件）
 
 # ==================== 数据库文件 ====================
 # SQLite 数据库文件

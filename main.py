@@ -184,11 +184,11 @@ async def quality_report():
     """
     return get_quality_report()
 
-from modules.analysis.global_risk import get_global_risk_map
-from modules.analysis.global_life_expectancy import get_global_life_expectancy
-from modules.analysis.china_provincial_health import get_china_provincial_health
-from modules.analysis.chengdu_e2sfca import get_chengdu_e2sfca
-from modules.analysis.microsimulation import get_microsimulation_data
+from utils.global_risk import get_global_risk_map
+from utils.global_life_expectancy import get_global_life_expectancy
+from utils.china_provincial_health import get_china_provincial_health
+from utils.chengdu_e2sfca import get_chengdu_e2sfca
+from utils.microsimulation import get_microsimulation_data
 
 @app.get("/api/map/global-risk")
 async def api_global_risk():

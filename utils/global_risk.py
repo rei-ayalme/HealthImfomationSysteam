@@ -2,19 +2,19 @@ import math
 import random
 from modules.core.orchestrator import orchestrate_data
 
-# GEM (Global Earthquake Model) & AIR Worldwide Risk API (Fallback representation)
+# GEM (全球地震模型 Global Earthquake Model) 与 AIR Worldwide 风险 API (回退表示)
 def fetch_gem_risk_data():
-    # In reality, this would make an HTTPS call to GEM/AIR APIs
-    # Here we directly use fallback data generation for simulation
+    # 实际应用中应通过 HTTPS 调用 GEM/AIR API
+    # 此处直接使用回退数据生成进行模拟
     return generate_fallback_risk_data()
 
 def generate_fallback_risk_data():
-    # Built-in 195 countries risk GeoJSON (2022) fallback
-    # Risk value distribution mean=5.3, std=1.8
-    # Returns standard GeoJSON
+    # 内置 195 个国家风险 GeoJSON (2022) 回退数据
+    # 风险值分布：均值=5.3，标准差=1.8
+    # 返回标准 GeoJSON 格式
     features = []
     
-    # We use a list of common country names to ensure the frontend can map them
+    # 使用常见国家名称列表，确保前端能够正确映射
     countries = [
         "China", "United States", "India", "Japan", "Germany", "United Kingdom", "France", 
         "Brazil", "Italy", "Canada", "Russia", "South Korea", "Australia", "Spain", "Mexico",
@@ -39,7 +39,7 @@ def generate_fallback_risk_data():
     ]
     
     for c in countries:
-        # generate random risk score with mean 5.3 and std 1.8
+        # 生成均值为 5.3、标准差为 1.8 的随机风险分数
         score = max(0.0, min(10.0, random.gauss(5.3, 1.8)))
         features.append({
             "type": "Feature",
@@ -54,7 +54,7 @@ def generate_fallback_risk_data():
     return {
         "type": "FeatureCollection",
         "features": features,
-        "meta": {"freshness_hour": 8760} # 1 year old
+        "meta": {"freshness_hour": 8760} # 数据时效：1年
     }
 
 @orchestrate_data("GlobalRiskMap", generate_fallback_risk_data, timeout=5.0, max_retries=3)

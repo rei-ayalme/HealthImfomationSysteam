@@ -3,15 +3,15 @@ import time
 from modules.core.orchestrator import orchestrate_data
 
 def fetch_census_micro_sample():
-    # Simulate fetch taking too long or failing
-    raise Exception("Simulated real data fetch failure")
+    # 模拟数据获取超时或失败场景
+    raise Exception("模拟真实数据获取失败")
 
 def generate_synthetic_population():
-    # IPF-based synthetic population (1M agents representation)
-    # Init < 3s
+    # 基于 IPF (迭代比例拟合) 的合成人口生成 (100万智能体表示)
+    # 初始化时间 < 3秒
     start_time = time.time()
     
-    # We generate a summary or a small sample to represent 1M agents to keep it fast in memory
+    # 生成摘要或小样本以表示100万智能体，保持内存占用低且运行快速
     sample_agents = []
     for _ in range(100):
         sample_agents.append({
@@ -24,7 +24,7 @@ def generate_synthetic_population():
         
     duration = time.time() - start_time
     if duration > 3.0:
-        pass # In real scenario, must be optimized
+        pass # 实际场景中需进行性能优化
         
     return {
         "status": "success",
