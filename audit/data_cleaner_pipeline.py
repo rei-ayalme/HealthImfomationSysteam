@@ -3,25 +3,25 @@
 """
 data_cleaner_pipeline.py
 ========================
-Full data-cleaning pipeline.
+完整数据清洗流水线
 
-Steps:
-  1. Load source file
-  2. Dedup (full-row + business-key)
-  3. Format standardisation
-  4. Missing-value imputation
-  5. Anomaly detection & correction (3-sigma + IQR + business bounds)
-  6. Schema compliance validation
-  7. Output cleaned table + change log + anomaly log
+步骤：
+  1. 加载源文件
+  2. 去重（整行 + 业务主键）
+  3. 格式标准化
+  4. 缺失值插补
+  5. 异常检测与修正（3-sigma + IQR + 业务边界）
+  6. 模式合规性验证
+  7. 输出清洗后表格 + 变更日志 + 异常日志
 
-Outputs (audit/):
+输出（audit/）：
   dedup_mapping.csv
   change_log.csv
   anomaly_correction_log.csv
   blocking_issues.txt
   cleaned_output.xlsx
 
-Usage:
+用法：
   python audit/data_cleaner_pipeline.py
   python audit/data_cleaner_pipeline.py --input data/processed/cleaned_health_data.xlsx
 """
@@ -39,7 +39,7 @@ import pandas as pd
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Paths
+# 路径
 # ---------------------------------------------------------------------------
 BASE_DIR  = Path(__file__).resolve().parent.parent
 AUDIT_DIR = BASE_DIR / "audit"
@@ -47,7 +47,7 @@ DATA_DIR  = BASE_DIR / "data"
 AUDIT_DIR.mkdir(exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Logging
+# 日志
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -57,12 +57,12 @@ logging.basicConfig(
 logger = logging.getLogger("cleaner")
 
 # ---------------------------------------------------------------------------
-# Task ID
+# 任务 ID
 # ---------------------------------------------------------------------------
 TASK_ID = f"CLN-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 # ---------------------------------------------------------------------------
-# Business bounds  {field: (lo, hi)}
+# 业务边界 {字段: (下限, 上限)}
 # ---------------------------------------------------------------------------
 BUSINESS_BOUNDS: dict = {
     "physicians_per_1000":    (0.0,  15.0),
@@ -89,13 +89,13 @@ REQUIRED_FIELDS = [
 DATE_KEYWORDS = ["date", "time", "created_at", "updated_at"]
 BOOL_KEYWORDS = ["status", "is_", "flag", "enabled", "active"]
 
-# Full-width -> ASCII translation table
+# 全角 -> ASCII 转换表
 _FW_IN  = ''.join(chr(0xFF01 + i) for i in range(94))
 _FW_OUT = ''.join(chr(0x21   + i) for i in range(94))
 FULLWIDTH = str.maketrans(_FW_IN, _FW_OUT)
 
 # ---------------------------------------------------------------------------
-# Audit collectors
+# 审计收集器
 # ---------------------------------------------------------------------------
 change_log:  list[dict] = []
 anomaly_log: list[dict] = []
@@ -120,7 +120,7 @@ def _log_anomaly(row_id, field: str, old, new, method: str, reason: str):
 
 
 # ---------------------------------------------------------------------------
-# Step 1 – Load
+# 步骤 1 – 加载
 # ---------------------------------------------------------------------------
 def load_data(file_path) -> pd.DataFrame:
     fp = Path(file_path)
@@ -139,7 +139,7 @@ def load_data(file_path) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 2 – Dedup
+# 步骤 2 – 去重
 # ---------------------------------------------------------------------------
 def dedup(
     df: pd.DataFrame,
@@ -150,7 +150,7 @@ def dedup(
     mapping_rows: list[dict] = []
     n0 = len(df)
 
-    # Full-row duplicates
+    # 整行重复
     mask = df.duplicated(keep="first")
     for idx in df[mask].index:
         gid = f"FULL-{uuid.uuid4().hex[:8]}"
@@ -164,7 +164,7 @@ def dedup(
     df = df[~mask].copy()
     logger.info(f"  Full-row dedup: removed {n0 - len(df)}, remaining {len(df)}")
 
-    # Business-key duplicates
+    # 业务主键重复
     if business_keys:
         valid = [k for k in business_keys if k in df.columns]
         if valid:
@@ -187,7 +187,7 @@ def dedup(
 
 
 # ---------------------------------------------------------------------------
-# Step 3 – Format standardisation
+# 步骤 3 – 格式标准化
 # ---------------------------------------------------------------------------
 def _is_date(col: str) -> bool:
     return any(k in col.lower() for k in DATE_KEYWORDS)
@@ -233,7 +233,7 @@ def standardize_formats(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 4 – Missing-value imputation
+# 步骤 4 – 缺失值插补
 # ---------------------------------------------------------------------------
 def handle_missing(
     df: pd.DataFrame,

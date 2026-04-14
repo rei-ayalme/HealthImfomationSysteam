@@ -274,6 +274,6 @@ def orchestrate_data(module_name, fallback_func, timeout=5.0, max_retries=3):
         return sync_wrapper
     return decorator
 
-# Quality Report API handler
+# 质量报告 API 处理器
 def get_quality_report():
     return monitor.get_daily_report()

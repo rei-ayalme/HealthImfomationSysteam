@@ -1,6 +1,6 @@
 """
-Utility functions for DeepAnalyze API Server
-Contains helper functions for file operations, workspace management, and more
+DeepAnalyze API 服务器工具函数
+包含文件操作、工作区管理等辅助函数
 """
 
 import os
@@ -24,14 +24,14 @@ from config import WORKSPACE_BASE_DIR, HTTP_SERVER_PORT
 
 
 def get_thread_workspace(thread_id: str) -> str:
-    """Get workspace directory for a thread"""
+    """获取线程工作区目录"""
     workspace_dir = os.path.join(WORKSPACE_BASE_DIR, thread_id)
     os.makedirs(workspace_dir, exist_ok=True)
     return workspace_dir
 
 
 def build_download_url(thread_id: str, rel_path: str) -> str:
-    """Build download URL for a file"""
+    """构建文件下载 URL"""
     try:
         encoded = quote(f"{thread_id}/{rel_path}", safe="/")
     except Exception:
@@ -40,12 +40,12 @@ def build_download_url(thread_id: str, rel_path: str) -> str:
 
 
 def uniquify_path(target: Path) -> Path:
-    """Return a unique path if target already exists"""
+    """若目标已存在则返回唯一路径"""
     return target
 
 
 def _normalize_openai_message_content(raw_content: Any) -> str:
-    """Normalize OpenAI-style message content into a plain string."""
+    """将 OpenAI 风格的消息内容规范化为纯字符串"""
     if isinstance(raw_content, list):
         parts: List[str] = []
         for item in raw_content:
@@ -60,7 +60,7 @@ def _normalize_openai_message_content(raw_content: Any) -> str:
 
 
 def extract_text_from_content(content: List[Dict[str, Any]]) -> str:
-    """Extract plain text from message content items."""
+    """从消息内容项中提取纯文本"""
     text_parts: List[str] = []
     for item in content or []:
         if isinstance(item, dict) and item.get("type") == "text":
@@ -69,7 +69,7 @@ def extract_text_from_content(content: List[Dict[str, Any]]) -> str:
 
 
 def collect_file_info(directory: str) -> str:
-    """Collect file information from directory"""
+    """收集目录中的文件信息"""
     all_file_info_str = ""
     dir_path = Path(directory)
     if not dir_path.exists():

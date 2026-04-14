@@ -11,9 +11,9 @@ def check_freshness(data_source_meta):
     return True, "Data is fresh"
 
 if __name__ == "__main__":
-    # Simulate checking the Global Life Expectancy data
+    # 模拟检查全球预期寿命数据新鲜度
     test_meta = {"freshness_hour": 18000}
     is_valid, msg = check_freshness(test_meta)
-    print(f"Validation result: {is_valid} - {msg}")
+    print(f"验证结果: {is_valid} - {msg}")
     if not is_valid:
-        print("Action: Triggering fallback strategy to UN 2019 historical trend extrapolation...")
+        print("操作: 触发回退策略，使用 UN 2019 历史趋势外推法...")

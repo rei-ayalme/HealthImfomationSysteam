@@ -2,14 +2,14 @@ import random
 from modules.core.orchestrator import orchestrate_data
 
 def fetch_amap_baidu_poi():
-    # Simulate API 302 or missing field
-    raise Exception("API returned 302 or missing fields")
+    # 模拟 API 返回 302 重定向或字段缺失错误
+    raise Exception("API 返回 302 或字段缺失")
 
 def generate_chengdu_poi_fallback():
-    # Built-in 2023Q4 Chengdu POI (9847 records)
-    # Just returning a sample representing 9847 records for demonstration
+    # 内置 2023年第四季度 成都 POI 数据 (9847 条记录)
+    # 返回代表性样本以演示 9847 条记录
     features = []
-    for i in range(100): # Sample
+    for i in range(100): # 样本数据
         features.append({
             "type": "Feature",
             "properties": {
@@ -26,7 +26,7 @@ def generate_chengdu_poi_fallback():
     return {
         "type": "FeatureCollection",
         "features": features,
-        "meta": {"record_count_represented": 9847, "freshness_hour": 4320} # 6 months
+        "meta": {"record_count_represented": 9847, "freshness_hour": 4320} # 数据时效：6个月
     }
 
 @orchestrate_data("ChengduE2SFCA", generate_chengdu_poi_fallback, timeout=5.0, max_retries=3)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Simple streaming chat test script.
-Supports streaming conversations with and without files.
+简单流式对话测试脚本
+支持带文件和不带文件的流式对话
 """
 
 import openai
@@ -16,16 +16,16 @@ import threading
 import time
 from pathlib import Path
 
-# Default configuration
+# 默认配置
 DEFAULT_API_BASE = os.getenv("DA_QUICKSTART_API_BASE", "http://localhost:8200/v1")
 DEFAULT_MODEL = os.getenv("DA_QUICKSTART_MODEL", "deepanalyze-8b")
 
-# Global client variable
+# 全局客户端变量
 client = None
 
 
 def check_api_server_connection(api_base):
-    """Check API server connectivity."""
+    """检查 API 服务器连接"""
     try:
         response = requests.get(f"{api_base}/models", timeout=3)
         return response.status_code == 200
@@ -34,7 +34,7 @@ def check_api_server_connection(api_base):
 
 
 def start_api_server():
-    """Start API server in background."""
+    """在后台启动 API 服务器"""
     script_dir = Path(__file__).parent
     main_py = script_dir / "main.py"
     
@@ -42,7 +42,7 @@ def start_api_server():
         return None
     
     try:
-        # Start server in background, silence output
+        # 在后台启动服务器，静默输出
         kwargs = {
             "cwd": str(script_dir),
             "stdout": subprocess.DEVNULL,
@@ -61,7 +61,7 @@ def start_api_server():
 
 
 def wait_for_server(api_base, max_wait=30, server_process=None):
-    """Wait for server to start; show progress so the console does not look frozen."""
+    """等待服务器启动；显示进度以免控制台看起来卡住"""
     for i in range(max_wait):
         if server_process is not None and server_process.poll() is not None:
             code = server_process.returncode
@@ -74,7 +74,7 @@ def wait_for_server(api_base, max_wait=30, server_process=None):
             if i > 0:
                 print()
             return True
-        # Same line updates so output stays readable
+        # 单行更新，保持输出可读
         print(f"\rWaiting for API at {api_base}... {i + 1}s / {max_wait}s", end="", flush=True)
         time.sleep(1)
     print()
@@ -82,7 +82,7 @@ def wait_for_server(api_base, max_wait=30, server_process=None):
 
 
 def get_supported_file_extensions():
-    """Supported file extensions."""
+    """支持的文件扩展名"""
     return [
         '.csv', '.txt', '.json', '.xlsx', '.xls', 
         '.pdf', '.doc', '.docx', '.py', '.js', '.html',
@@ -91,13 +91,13 @@ def get_supported_file_extensions():
 
 
 def is_supported_file(file_path):
-    """Check if file type is supported."""
+    """检查文件类型是否受支持"""
     ext = os.path.splitext(file_path)[1].lower()
     return ext in get_supported_file_extensions()
 
 
 def extract_zip_file(zip_path, extract_to):
-    """Extract ZIP file to target directory."""
+    """将 ZIP 文件解压到目标目录"""
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             file_list = zip_ref.namelist()
@@ -116,7 +116,7 @@ def extract_zip_file(zip_path, extract_to):
 
 
 def download_file_from_url(url, filename, temp_dir):
-    """Download file from URL to temp dir."""
+    """从 URL 下载文件到临时目录"""
     try:
         file_path = os.path.join(temp_dir, filename)
         response = requests.get(url, stream=True)
@@ -132,25 +132,25 @@ def download_file_from_url(url, filename, temp_dir):
 
 
 def process_streaming_chat(uploaded_files, user_instruction, api_key):
-    """Run streaming chat analysis."""
+    """运行流式对话分析"""
     global client
     
-    # Initialize client
+    # 初始化客户端
     client = openai.OpenAI(
         base_url=DEFAULT_API_BASE,
         api_key=api_key,
     )
     
-    print("🔄 Starting analysis...")
+    print("🔄 开始分析...")
     
-    # Create temp directory
+    # 创建临时目录
     temp_dir = tempfile.mkdtemp()
     files_to_upload = []
     file_objects = []
     supported_extensions = get_supported_file_extensions()
     
     try:
-        # Handle uploaded files
+        # 处理上传的文件
         if uploaded_files:
             for file_path in uploaded_files:
                 if not os.path.exists(file_path):
@@ -159,7 +159,7 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
                 file_name = os.path.basename(file_path)
                 file_ext = os.path.splitext(file_name)[1].lower()
                 
-                # Check for ZIP
+                # 检查 ZIP 文件
                 if file_ext == '.zip':
                     extract_dir = os.path.join(temp_dir, f"extracted_{os.path.splitext(file_name)[0]}")
                     os.makedirs(extract_dir, exist_ok=True)
@@ -186,7 +186,7 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
                         shutil.copy2(file_path, dest_path)
                         files_to_upload.append(dest_path)
             
-            # Upload files to API
+            # 上传文件到 API
             for file_path in files_to_upload:
                 try:
                     with open(file_path, "rb") as f:
@@ -197,19 +197,19 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
         
         file_names = [os.path.basename(path) for path in files_to_upload]
         
-        # Use provided or default instruction
+        # 使用提供的或默认的指令
         if not user_instruction.strip():
             if files_to_upload:
                 user_instruction = (
-                    f"Please analyze the following data files {', '.join(file_names)}, "
-                    "perform EDA, and generate visualizations. Focus on relationships, trends, and key insights."
+                    f"请分析以下数据文件 {', '.join(file_names)}, "
+                    "执行探索性数据分析（EDA）并生成可视化。关注关系、趋势和关键洞察。"
                 )
             else:
-                user_instruction = "Please conduct a conversational analysis and provide detailed insights."
+                user_instruction = "请进行对话式分析并提供详细洞察。"
         
         print("\n" + "=" * 60)
         
-        # Build messages
+        # 构建消息
         if files_to_upload:
             messages = [
                 {
@@ -221,10 +221,10 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
         else:
             messages = [{"role": "user", "content": user_instruction}]
         
-        # Pass api_key via extra_body
+        # 通过 extra_body 传递 api_key
         extra_body = {"api_key": api_key} if api_key else {}
         
-        # Create streaming request
+        # 创建流式请求
         try:
             stream = client.chat.completions.create(
                 model=DEFAULT_MODEL,
@@ -233,9 +233,9 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
                 extra_body=extra_body,
             )
         except openai.InternalServerError as e:
-            raise Exception(f"❌ API server error: {e}")
+            raise Exception(f"❌ API 服务器错误: {e}")
         except openai.APIError as e:
-            raise Exception(f"❌ API error: {e}")
+            raise Exception(f"❌ API 错误: {e}")
         except Exception as e:
             raise Exception(f"❌ Connection error: {e}")
         
@@ -243,7 +243,7 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
         collected_files = []
         downloadable_files = []
         
-        # Stream output
+        # 流式输出
         for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
@@ -255,7 +255,7 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
         
         print("\n" + "=" * 60)
         
-        # Download generated files
+        # 下载生成的文件
         if collected_files:
             for file_info in collected_files:
                 filename = file_info.get("name", f"generated_{len(downloadable_files)}.txt")
@@ -265,63 +265,63 @@ def process_streaming_chat(uploaded_files, user_instruction, api_key):
                     if local_path:
                         downloadable_files.append(local_path)
         
-        print(f"\n✅ Analysis complete (generated files: {len(collected_files)})")
+        print(f"\n✅ 分析完成（生成文件数: {len(collected_files)}）")
         
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n❌ 错误: {e}")
     finally:
-        # Cleanup temp files (optional)
+        # 清理临时文件（可选）
         # if temp_dir and os.path.exists(temp_dir):
         #     shutil.rmtree(temp_dir)
         pass
 
 
 def main():
-    """Entry point."""
-    # Check and start API server if needed
+    """入口点"""
+    # 检查并在需要时启动 API 服务器
     if not check_api_server_connection(DEFAULT_API_BASE):
-        print("Starting API server...")
+        print("正在启动 API 服务器...")
         server_process = start_api_server()
         if server_process:
             if wait_for_server(DEFAULT_API_BASE, server_process=server_process):
-                print("✅ API server started")
+                print("✅ API 服务器已启动")
             else:
-                print("❌ API server failed to start")
+                print("❌ API 服务器启动失败")
                 return
         else:
-            print("❌ Unable to start API server")
+            print("❌ 无法启动 API 服务器")
             return
     else:
-        print("✅ API server already running")
+        print("✅ API 服务器已在运行")
     
-    # Input API Key
-    api_key = input("\nEnter API Key: ").strip()
+    # 输入 API 密钥
+    api_key = input("\n请输入 API 密钥: ").strip()
     if not api_key:
-        print("❌ API Key is required")
+        print("❌ API 密钥是必需的")
         return
     
-    # Choose mode
-    print("\nSelect dialog type:")
-    print("  1. No-file dialog")
-    print("  2. Dialog with files")
-    choice = input("\nEnter choice (1 or 2): ").strip()
+    # 选择模式
+    print("\n选择对话类型:")
+    print("  1. 无文件对话")
+    print("  2. 带文件对话")
+    choice = input("\n请输入选择 (1 或 2): ").strip()
     
     uploaded_files = []
     if choice == "2":
-        file_input = input("\nEnter file paths (comma separated): ").strip()
+        file_input = input("\n请输入文件路径（逗号分隔）: ").strip()
         if file_input:
             uploaded_files = [f.strip() for f in file_input.split(',') if f.strip()]
     
-    # Input instruction
-    user_instruction = input("\nEnter analysis instruction (blank for default): ").strip()
+    # 输入指令
+    user_instruction = input("\n请输入分析指令（留空使用默认）: ").strip()
     
-    # Start streaming dialog
+    # 开始流式对话
     try:
         process_streaming_chat(uploaded_files, user_instruction, api_key)
     except KeyboardInterrupt:
-        print("\n\n⏹️  Interrupted")
+        print("\n\n⏹️  已中断")
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n❌ 错误: {e}")
 
 
 if __name__ == "__main__":

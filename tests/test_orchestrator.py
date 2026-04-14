@@ -4,7 +4,7 @@ import asyncio
 from unittest.mock import patch, MagicMock
 from modules.core.orchestrator import orchestrate_data, get_circuit_breaker, monitor, DataQualityMonitor
 
-# Helper to reset monitor and circuit breakers
+# 辅助函数：重置监控器和熔断器
 @pytest.fixture(autouse=True)
 def reset_state():
     global monitor
@@ -13,7 +13,7 @@ def reset_state():
     cb.record_success()
     yield
 
-# Dummy fallback function
+# 模拟回退函数
 def fallback_dummy():
     return [{"id": 1, "value": "fallback"}]
 
@@ -47,15 +47,15 @@ def test_circuit_breaker_trips():
     def fetch_error():
         raise ValueError("Simulated API Error")
 
-    # Trip the breaker
+    # 触发熔断器
     fetch_error()
     fetch_error()
     fetch_error()
     
     assert cb.state == "OPEN"
     
-    # Next call should be rejected immediately without calling the function
-    # To prove this, we could use a mock, but since the result is fallback anyway, we can just check state
+    # 下次调用应立即被拒绝而不执行函数
+    # 为证明这一点，可以使用 mock，但由于结果是回退，只需检查状态
     result = fetch_error()
     assert result[0]["value"] == "fallback"
     assert cb.state == "OPEN"

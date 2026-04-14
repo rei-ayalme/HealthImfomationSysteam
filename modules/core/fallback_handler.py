@@ -4,9 +4,9 @@ import json
 import logging
 import functools
 from datetime import timedelta
-from config.settings import REDIS_CONFIG  # Redis配置
+from config.settings import REDIS_CONFIG  # Redis 配置
 
-# 初始化Redis（生产环境用Redis，开发环境可用本地缓存）
+# 初始化 Redis（生产环境用 Redis，开发环境可用本地缓存）
 redis_client = redis.Redis(
     host=REDIS_CONFIG["host"],
     port=REDIS_CONFIG["port"],
@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 def set_fallback_data(key: str, data: dict, expire: int = 86400):
     """
-    设置兜底数据到Redis
-    :param key: 缓存键（如owid:physicians-per-1000-people:China）
+    设置兜底数据到 Redis
+    :param key: 缓存键（如 owid:physicians-per-1000-people:China）
     :param data: 兜底数据
-    :param expire: 过期时间（秒），默认1天
+    :param expire: 过期时间（秒），默认 1 天
     """
     redis_client.setex(key, timedelta(seconds=expire), json.dumps(data))
 

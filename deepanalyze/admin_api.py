@@ -1,6 +1,6 @@
 """
-Admin API for DeepAnalyze API Server
-Handles administrative endpoints like thread cleanup and statistics
+DeepAnalyze API 服务器管理 API
+处理管理端点，如线程清理和统计
 """
 
 import time
@@ -11,7 +11,7 @@ from models import ThreadCleanupRequest, ThreadCleanupResponse, ThreadStatsRespo
 from storage import storage
 
 
-# Create router for admin endpoints
+# 创建管理端点路由
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
 
 
@@ -20,8 +20,8 @@ async def manual_cleanup_threads(
     timeout_hours: int = Query(CLEANUP_TIMEOUT_HOURS, description="Timeout in hours for thread cleanup")
 ):
     """
-    Manual trigger for thread cleanup (Admin API)
-    Clean up threads that haven't been accessed for more than timeout_hours
+    手动触发线程清理（管理 API）
+    清理超过 timeout_hours 未访问的线程
     """
     try:
         cleaned_count = storage.cleanup_expired_threads(timeout_hours=timeout_hours)
@@ -43,16 +43,16 @@ async def manual_cleanup_threads(
 @router.get("/threads-stats", response_model=ThreadStatsResponse)
 async def get_threads_stats():
     """
-    Get statistics about threads (Admin API)
+    获取线程统计信息（管理 API）
     """
     with storage._lock:
         total_threads = len(storage.threads)
         now = int(time.time())
 
-        # Count threads by age categories
-        recent_threads = 0  # < 1 hour
-        old_threads = 0     # 1-12 hours
-        expired_threads = 0 # > 12 hours
+        # 按年龄类别统计线程
+        recent_threads = 0  # < 1 小时
+        old_threads = 0     # 1-12 小时
+        expired_threads = 0 # > 12 小时
 
         for thread_data in storage.threads.values():
             last_accessed = thread_data.get("last_accessed_at", thread_data.get("created_at", 0))

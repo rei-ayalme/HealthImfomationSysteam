@@ -36,28 +36,8 @@ env.bak/
 venv.bak/
 
 # ==================== 数据文件（隐私与体积考虑） ====================
-# 原始数据目录（包含敏感或大型数据文件）
-data/raw/*
-!data/raw/.gitkeep     # 保留目录结构
-
-# 处理后数据目录（可重新生成的中间文件）
-data/processed/*
-!data/processed/.gitkeep
-
-# 临时数据文件
-data/temp/
-data/cache/
-
-# 大型数据文件（超过500MB）
-data/**/WB_HNP.csv
-
-# GitHub 限制文件（超过100MB）
-data/osmnx_cache/*.graphml
-data/geojson/成都路网genjson/*.geojson
-
-# 保留地理数据（通常较小且必要）
-!data/geojson/         # 保留地理数据目录
-!data/geojson/**/*.geojson     # 保留所有geojson文件（但排除超大文件）
+# 整个 data 目录不上传到仓库
+data/
 
 # ==================== 数据库文件 ====================
 # SQLite 数据库文件

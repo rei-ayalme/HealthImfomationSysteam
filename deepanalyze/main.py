@@ -1,6 +1,6 @@
 """
-Main application entry point for DeepAnalyze API Server
-Sets up the FastAPI application and starts the server
+DeepAnalyze API 服务器主应用入口
+设置 FastAPI 应用并启动服务器
 """
 
 import time
@@ -17,14 +17,14 @@ from models import HealthResponse
 from utils import start_http_server
 from storage import storage
 
-# Safety constants
+# 安全常量
 # MAX_CLEANUP_ERRORS = 10
 # MAX_ITERATIONS = 1000
 # CLEANUP_BACKOFF_SECONDS = 30
 
 
 def _ensure_utf8_stdio():
-    """Windows consoles often use GBK; emoji in startup logs would raise UnicodeEncodeError."""
+    """Windows 控制台通常使用 GBK 编码；启动日志中的表情符号可能引发 UnicodeEncodeError"""
     if sys.platform != "win32":
         return
     for stream in (sys.stdout, sys.stderr):
@@ -37,10 +37,10 @@ def _ensure_utf8_stdio():
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application"""
+    """创建并配置 FastAPI 应用"""
     app = FastAPI(title=API_TITLE, version=API_VERSION)
 
-    # Add CORS middleware
+    # 添加 CORS 中间件
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Include all routers
+    # 引入所有路由
     from file_api import router as file_router
     from models_api import router as models_router
     from chat_api import router as chat_router
@@ -60,10 +60,10 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(admin_router)
 
-    # Health check endpoint
+    # 健康检查端点
     @app.get("/health", response_model=HealthResponse)
     async def health_check():
-        """Health check endpoint"""
+        """健康检查端点"""
         return HealthResponse(
             status="healthy",
             timestamp=int(time.time())
@@ -73,7 +73,7 @@ def create_app() -> FastAPI:
 
 
 def main():
-    """Main entry point to start the API server"""
+    """启动 API 服务器的主入口"""
     print("🚀 Starting DeepAnalyze OpenAI-Compatible API Server...")
     print(f"   - API Server: http://{API_HOST}:{API_PORT}")
     print(f"   - File Server: http://localhost:{HTTP_SERVER_PORT}")

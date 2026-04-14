@@ -1,6 +1,6 @@
 """
-Data models for DeepAnalyze API Server
-Contains all Pydantic models for OpenAI compatibility
+DeepAnalyze API 服务器数据模型
+包含所有用于 OpenAI 兼容性的 Pydantic 模型
 """
 
 from typing import List, Optional, Dict, Any, Literal
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class FileObject(BaseModel):
-    """OpenAI File Object"""
+    """OpenAI 文件对象"""
     id: str
     object: Literal["file"] = "file"
     bytes: int
@@ -18,7 +18,7 @@ class FileObject(BaseModel):
 
 
 class FileDeleteResponse(BaseModel):
-    """OpenAI File Delete Response"""
+    """OpenAI 文件删除响应"""
     id: str
     object: Literal["file"] = "file"
     deleted: bool
@@ -27,7 +27,7 @@ class FileDeleteResponse(BaseModel):
 
 
 class ThreadObject(BaseModel):
-    """OpenAI Thread Object"""
+    """OpenAI 线程对象"""
     id: str
     object: Literal["thread"] = "thread"
     created_at: int
@@ -38,7 +38,7 @@ class ThreadObject(BaseModel):
 
 
 class MessageObject(BaseModel):
-    """OpenAI Message Object"""
+    """OpenAI 消息对象"""
     id: str
     object: Literal["thread.message"] = "thread.message"
     created_at: int
@@ -52,7 +52,7 @@ class MessageObject(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
-    """Chat completion request model"""
+    """对话补全请求模型"""
     model: str
     messages: List[Dict[str, Any]]
     file_ids: Optional[List[str]] = Field(default=None)
@@ -61,20 +61,20 @@ class ChatCompletionRequest(BaseModel):
 
 
 class FileInfo(BaseModel):
-    """File information model for OpenAI compatibility"""
+    """用于 OpenAI 兼容性的文件信息模型"""
     filename: str
     url: str
 
 
 class ChatCompletionChoice(BaseModel):
-    """Chat completion choice model"""
+    """对话补全选项模型"""
     index: int
     message: Dict[str, Any]
     finish_reason: Optional[str] = None
 
 
 class ChatCompletionResponse(BaseModel):
-    """Chat completion response model"""
+    """对话补全响应模型"""
     id: str
     object: Literal["chat.completion"] = "chat.completion"
     created: int
@@ -85,7 +85,7 @@ class ChatCompletionResponse(BaseModel):
 
 
 class ChatCompletionChunk(BaseModel):
-    """Chat completion streaming chunk model"""
+    """对话补全流式分块模型"""
     id: str
     object: Literal["chat.completion.chunk"] = "chat.completion.chunk"
     created: int
@@ -95,7 +95,7 @@ class ChatCompletionChunk(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    """Health check response model"""
+    """健康检查响应模型"""
     status: str
     timestamp: int
 

@@ -1,6 +1,6 @@
 """
-Storage layer for DeepAnalyze API Server
-Handles in-memory storage for OpenAI objects
+DeepAnalyze API 服务器存储层
+处理 OpenAI 对象的内存存储
 """
 
 import os
@@ -18,7 +18,7 @@ from utils import get_thread_workspace, uniquify_path
 
 
 class Storage:
-    """Simple in-memory storage for OpenAI objects"""
+    """OpenAI 对象的简单内存存储"""
 
     def __init__(self):
         self.files: Dict[str, Dict[str, Any]] = {}
@@ -27,7 +27,7 @@ class Storage:
         self._lock = threading.Lock()
 
     def create_file(self, filename: str, filepath: str, purpose: str) -> FileObject:
-        """Create a file record"""
+        """创建文件记录"""
         with self._lock:
             file_id = f"file-{uuid.uuid4().hex[:24]}"
             file_size = os.path.getsize(filepath)
@@ -44,14 +44,14 @@ class Storage:
             return FileObject(**file_obj)
 
     def get_file(self, file_id: str) -> Optional[FileObject]:
-        """Get a file record"""
+        """获取文件记录"""
         with self._lock:
             if file_id in self.files:
                 return FileObject(**self.files[file_id])
             return None
 
     def delete_file(self, file_id: str) -> bool:
-        """Delete a file record"""
+        """删除文件记录"""
         with self._lock:
             if file_id in self.files:
                 filepath = self.files[file_id].get("filepath")
@@ -62,7 +62,7 @@ class Storage:
             return False
 
     def list_files(self, purpose: Optional[str] = None) -> List[FileObject]:
-        """List files with optional purpose filter"""
+        """列出文件，可按用途筛选"""
         with self._lock:
             files = list(self.files.values())
             if purpose:
@@ -76,7 +76,7 @@ class Storage:
         file_ids: Optional[List[str]] = None,
         tool_resources: Optional[Dict] = None
     ) -> ThreadObject:
-        """Create a thread record"""
+        """创建线程记录"""
         with self._lock:
             thread_id = f"thread-{uuid.uuid4().hex[:24]}"
             now = int(time.time())
@@ -92,12 +92,12 @@ class Storage:
             self.threads[thread_id] = thread
             self.messages[thread_id] = []
 
-            # Create workspace for this thread
+            # 为此线程创建工作区
             workspace_dir = get_thread_workspace(thread_id)
             os.makedirs(workspace_dir, exist_ok=True)
             os.makedirs(os.path.join(workspace_dir, "generated"), exist_ok=True)
 
-            # Copy files to thread workspace
+            # 复制文件到线程工作区
             for fid in (file_ids or []):
                 if fid in self.files:
                     file_data = self.files[fid]
@@ -109,22 +109,22 @@ class Storage:
             return ThreadObject(**thread)
 
     def get_thread(self, thread_id: str) -> Optional[ThreadObject]:
-        """Get a thread record"""
+        """获取线程记录"""
         with self._lock:
             if thread_id in self.threads:
-                # Update last accessed time
+                # 更新最后访问时间
                 self.threads[thread_id]["last_accessed_at"] = int(time.time())
                 return ThreadObject(**self.threads[thread_id])
             return None
 
     def delete_thread(self, thread_id: str) -> bool:
-        """Delete a thread record"""
+        """删除线程记录"""
         with self._lock:
             if thread_id in self.threads:
                 del self.threads[thread_id]
                 if thread_id in self.messages:
                     del self.messages[thread_id]
-                # Clean up workspace
+                # 清理工作区
                 workspace_dir = get_thread_workspace(thread_id)
                 if os.path.exists(workspace_dir):
                     shutil.rmtree(workspace_dir)
@@ -139,7 +139,7 @@ class Storage:
         file_ids: Optional[List[str]] = None,
         metadata: Optional[Dict] = None,
     ) -> MessageObject:
-        """Create a message record"""
+        """创建消息记录"""
         with self._lock:
             if thread_id not in self.threads:
                 raise ValueError(f"Thread {thread_id} not found")
@@ -161,7 +161,7 @@ class Storage:
             return MessageObject(**message)
 
     def list_messages(self, thread_id: str) -> List[MessageObject]:
-        """List messages in a thread"""
+        """列出线程中的消息"""
         with self._lock:
             if thread_id not in self.messages:
                 return []
@@ -169,7 +169,7 @@ class Storage:
 
     
     def cleanup_expired_threads(self, timeout_hours: float = 12) -> int:
-        """Clean up threads that haven't been accessed for more than timeout_hours"""
+        """清理超过 timeout_hours 未访问的线程"""
         with self._lock:
             now = int(time.time())
             timeout_seconds = int(timeout_hours * 3600)
@@ -183,15 +183,15 @@ class Storage:
         cleaned_count = 0
         for thread_id in expired_threads:
             try:
-                # Delete thread and its workspace
+                # 删除线程及其工作区
                 if self.delete_thread(thread_id):
                     cleaned_count += 1
-                    print(f"Cleaned up expired thread: {thread_id}")
+                    print(f"已清理过期线程: {thread_id}")
             except Exception as e:
                 print(f"Error cleaning up thread {thread_id}: {e}")
 
         return cleaned_count
 
 
-# Global storage instance
+# 全局存储实例
 storage = Storage()

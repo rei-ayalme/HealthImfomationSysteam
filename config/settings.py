@@ -26,11 +26,11 @@ class Settings:
         os.makedirs(path, exist_ok=True)
 
     # Redis 配置
-    # 默认使用本地Redis服务 (127.0.0.1:6379)
+    # 默认使用本地 Redis 服务 (127.0.0.1:6379)
     # 如需修改，请设置环境变量 REDIS_HOST 和 REDIS_PORT
     REDIS_CONFIG = {
         "host": os.getenv("REDIS_HOST", "127.0.0.1"),  # 默认本地地址
-        "port": int(os.getenv("REDIS_PORT", 6379)),     # Redis默认端口
+        "port": int(os.getenv("REDIS_PORT", 6379)),     # Redis 默认端口
         "password": os.getenv("REDIS_PASSWORD", None),
         "db": int(os.getenv("REDIS_DB", 0))
     }
@@ -41,7 +41,7 @@ class Settings:
         "buffer_pool": "/dev/dpio_buffer0",  # 硬件缓冲区设备节点
         "driver_module_name": "dpio_drv",  # 内核模块名称
         "test_frame_data": b"\xAA\x55\xDE\xAD\xBE\xEF",  # 测试帧数据
-        "timeout": 5  # 操作超时时间
+        "timeout": 5  # 操作超时时间（秒）
     }
 
     DATA_CONFIG = {
@@ -51,7 +51,7 @@ class Settings:
         "null_values": ["无数据", "NaN", "NA", "-", 0, -999],  # 识别为空值的标记
         "numeric_cols": ["value", "数值", "数量", "占比", "密度"],  # 需转为数值的列名关键词
         "date_cols": ["year", "年份", "日期", "时间"],  # 需转为日期的列名关键词
-        "standard_output_cols": ["country", "year", "indicator", "value", "region"]  # 标准化列名
+        "standard_output_cols": ["country", "year", "indicator", "value", "region"]  # 标准化输出列名
          }
 
     # 文件名配置
