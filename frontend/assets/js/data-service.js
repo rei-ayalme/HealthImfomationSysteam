@@ -8,7 +8,7 @@
  */
 
 const DataService = {
-    // API基础URL
+    // API基础URL - 使用统一配置
     baseURL: '',
 
     // 缓存存储
@@ -22,13 +22,8 @@ const DataService = {
      * 初始化数据服务
      */
     init() {
-        // 检测运行环境，设置正确的API基础URL
-        const hostname = window.location.hostname;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            this.baseURL = 'http://localhost:8000';
-        } else {
-            this.baseURL = '';
-        }
+        // 使用统一配置获取API基础URL
+        this.baseURL = AppConfig.getBaseUrl();
         console.log('[DataService] 初始化完成，API基础URL:', this.baseURL);
     },
 
@@ -346,6 +341,105 @@ const DataService = {
                 }
             };
         }
+    },
+
+    /**
+     * 获取微观层面的干预措施数据 (模拟 API 请求)
+     * @param {string} scenario - 场景类型 ('A', 'B', 'C')
+     * @returns {Promise<Array>} 措施数据列表
+     */
+    async getInterventionScenarios(scenario = 'C') {
+        // ---------------------------------------------------------
+        // 【未来真实对接时的代码】
+        // const response = await this._get(`/interventions?scenario=${scenario}`, {}, false);
+        // return response.data;
+        // ---------------------------------------------------------
+
+        // 【当前的 Mock 数据统一管理】
+        const mockData = {
+            'A': [ // 乐观情景
+                { name: '烟草税提高50%', value: [2.85, 15, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '全民减盐行动', value: [1.2, 12, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '学校体育强化', value: [3.5, 25, 'B级'], itemStyle: { color: '#52c41a' } },
+                { name: '高血压规范管理', value: [4.8, 20, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '工作场所健康', value: [6.5, 18, 'C级'], itemStyle: { color: '#faad14' } },
+                { name: '糖尿病筛查', value: [8.2, 30, 'B级'], itemStyle: { color: '#faad14' } },
+                { name: '空气污染治理', value: [15, 22, 'A级'], itemStyle: { color: '#f5222d' } }
+            ],
+            'B': [ // 保守情景
+                { name: '烟草税提高50%', value: [3.5, 22, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '全民减盐行动', value: [1.5, 18, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '学校体育强化', value: [4.2, 35, 'B级'], itemStyle: { color: '#52c41a' } },
+                { name: '高血压规范管理', value: [5.6, 28, 'A级'], itemStyle: { color: '#faad14' } },
+                { name: '工作场所健康', value: [7.8, 25, 'C级'], itemStyle: { color: '#faad14' } },
+                { name: '糖尿病筛查', value: [9.5, 40, 'B级'], itemStyle: { color: '#f5222d' } },
+                { name: '空气污染治理', value: [18, 30, 'A级'], itemStyle: { color: '#f5222d' } }
+            ],
+            'C': [ // 基准情景
+                { name: '烟草税提高50%', value: [1.5, 10, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '全民减盐行动', value: [0.8, 8, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '学校体育强化', value: [2.0, 15, 'B级'], itemStyle: { color: '#52c41a' } },
+                { name: '高血压规范管理', value: [3.2, 12, 'A级'], itemStyle: { color: '#52c41a' } },
+                { name: '工作场所健康', value: [4.5, 10, 'C级'], itemStyle: { color: '#52c41a' } },
+                { name: '糖尿病筛查', value: [5.8, 18, 'B级'], itemStyle: { color: '#faad14' } },
+                { name: '空气污染治理', value: [10, 15, 'A级'], itemStyle: { color: '#faad14' } }
+            ]
+        };
+
+        // 使用 Promise 和 setTimeout 模拟 300ms 的网络请求延迟，让体验更真实
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // 如果传入了不存在的场景，默认返回基准情景 C
+                resolve(mockData[scenario] || mockData['C']);
+            }, 300);
+        });
+    },
+
+    /**
+     * 获取疾病趋势折线图数据
+     * @param {string} diseaseType - 疾病类型标识 (例如: 'hypertension', 'diabetes')
+     * @returns {Promise<Array>} 对应疾病的趋势数据数组
+     */
+    async getDiseaseTrendData(diseaseType) {
+        // 【未来对接真实 API】
+        // const response = await this._get(`/trends?type=${diseaseType}`, {}, false);
+        // return response.data;
+
+        // 【当前集中管理的 Mock 数据，提取自原 HTML 文件】
+        const mockTrends = {
+            'hypertension': [31.0, 30.2, 29.5, 28.2, 27.5, 26.6, 25.8, 24.8], // 高血压
+            'diabetes': [35.2, 35.8, 36.5, 35.8, 35.2, 34.5, 33.8, 32.5],     // 糖尿病
+            'disease_3': [18.5, 19.2, 20.5, 21.2, 22.0, 22.8, 23.5, 22.8],    // 指标3
+            'disease_4': [42.5, 44.2, 46.5, 48.2, 50.5, 52.8, 54.2, 50.7],    // 指标4
+            'disease_5': [23.7, 24.5, 25.2, 26.0, 26.8, 27.5, 28.2, 27.5],    // 指标5
+            'default': [0, 0.5, 1, 1.2, 1.4]                                  // 兜底默认数据
+        };
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve(mockTrends[diseaseType] || mockTrends['default']);
+            }, 200); // 模拟网络延迟
+        });
+    },
+
+    /**
+     * 获取微观分析页面的核心仪表盘概览数据 (Mock兜底数据)
+     * @returns {Promise<Object>} 包含dalys, dea等指标的对象
+     */
+    async getMicroDashboardSummary() {
+        // 【未来对接真实 API】
+        // const response = await this._get(`/dashboard/micro-summary`, {}, false);
+        // return response.data;
+
+        // 提取自 L2390-2393 的兜底数据
+        const summaryData = {
+            dalys: { value: 31542, trend: -1.2, sparkline: [32000, 31800, 31542, 31200, 31000] },
+            top_disease: { name: "心血管疾病", ratio: 35.2 },
+            dea: { value: 0.82, trend: 2.1, sparkline: [0.75, 0.78, 0.82, 0.84, 0.85] },
+            prediction: { growth_rate: 1.5, target: "2030年降低30%" }
+        };
+
+        return new Promise(resolve => setTimeout(() => resolve(summaryData), 200));
     }
 };
 

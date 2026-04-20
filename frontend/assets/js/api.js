@@ -23,7 +23,8 @@ if (typeof Swal === 'undefined') {
  * 配置基础参数：基础URL、超时时间、默认请求头
  */
 const middlePlatform = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api',  // 中台API基础路径
+    // 动态获取配置文件中的URL
+    baseURL: AppConfig.getBaseUrl(),
     timeout: 15000,                       // 15秒超时设置，适应计算密集型操作
     headers: {                            // 添加默认请求头
         'Content-Type': 'application/json'
@@ -58,6 +59,7 @@ middlePlatform.interceptors.response.use(
     // 成功响应处理（HTTP状态码2xx）
     function (response) {
         const res = response.data;
+        const requestUrl = response.config?.url || '';
         
         // 验证响应数据结构完整性
         if (typeof res !== 'object' || res === null) {
@@ -68,6 +70,16 @@ middlePlatform.interceptors.response.use(
                 confirmButtonText: '确定'
             });
             return Promise.reject(new Error('Invalid response format'));
+        }
+        
+        // 【关键修复】对于静态资源（如GeoJSON文件），直接返回原始数据
+        // 这些资源不包含 code/data 标准格式包装
+        const staticResourcePaths = ['/geojson/', '/assets/', '/data/'];
+        const isStaticResource = staticResourcePaths.some(path => requestUrl.includes(path));
+        
+        if (isStaticResource) {
+            // 静态资源直接返回原始数据，不做格式验证
+            return res;
         }
         
         // 业务逻辑成功处理 (code === 200)

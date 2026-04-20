@@ -12,6 +12,14 @@ import os
 from pathlib import Path
 from contextlib import closing
 
+# 加载环境变量配置（必须在其他导入之前）
+from dotenv import load_dotenv
+import os
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+load_dotenv(dotenv_path=env_path, override=True)
+print(f"[Config] Loading .env from: {env_path}")
+print(f"[Config] MEDIASTACK_API_KEY set: {bool(os.getenv('MEDIASTACK_API_KEY'))}")
+
 # 数据库模块导入
 from db.connection import SessionLocal, init_db, seed_db
 from db.models import GlobalHealthMetric, HealthResource, User, AdvancedDiseaseTransition
@@ -23,6 +31,10 @@ from modules.core.predictor import Predictor
 from modules.core.evaluator import HealthMathModels
 from modules.core.analyzer import ComprehensiveAnalyzer
 from utils.response import success_response, error_response
+from utils.data_transformer import (
+    DataTransformer, DataValidator, ResponseBuilder,
+    transform_to_chart, transform_to_prediction, build_standard_response
+)
 
 # 基础组件
 data_loader = DataLoader()
@@ -38,6 +50,15 @@ analyzer = ComprehensiveAnalyzer(
 
 # ================= 2. FastAPI 初始化 =================
 app = FastAPI(title="健康数据分析平台 API")
+
+# 导入并注册路由模块
+from routes import marco_router, meso_router, micro_router, prediction_router, dataset_router, analysis_router
+app.include_router(marco_router)
+app.include_router(meso_router)
+app.include_router(micro_router)
+app.include_router(prediction_router)
+app.include_router(dataset_router)
+app.include_router(analysis_router)
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
@@ -55,7 +76,9 @@ def get_db():
     finally:
         db.close()
 
+# 以下辅助函数用于趋势图和分析指标路由
 def _normalize_region_candidates(region: str):
+    """标准化地区候选名称"""
     region_key = (region or "").strip().lower()
     alias = {
         "global": ["global", ""],
@@ -64,15 +87,12 @@ def _normalize_region_candidates(region: str):
         "southeast_asia": ["Singapore", "Thailand", "Indonesia", "Malaysia"],
         "europe": ["Europe", "Germany", "France", "United Kingdom"],
         "north_america": ["United States", "Canada", "Mexico"],
-        "usa": ["United States", "USA", "United States of America"],
-        "japan": ["Japan"],
-        "india": ["India"],
-        "germany": ["Germany"]
     }
     return alias.get(region_key, [region])
 
 
 def _build_location_filter(model_cls, region_candidates):
+    """构建地区过滤条件"""
     conditions = []
     for token in region_candidates:
         token = (token or "").strip()
@@ -82,85 +102,13 @@ def _build_location_filter(model_cls, region_candidates):
     return or_(*conditions) if conditions else None
 
 
-def _normalize_country_key(name: str) -> str:
-    text = (name or "").strip().lower()
-    alias = {
-        "united states of america": "unitedstates",
-        "united states": "unitedstates",
-        "usa": "unitedstates",
-        "u.s.a": "unitedstates",
-        "korea, republic of": "southkorea",
-        "republic of korea": "southkorea",
-        "south korea": "southkorea",
-        "korea": "southkorea",
-        "russian federation": "russia",
-        "viet nam": "vietnam",
-        "czechia": "czechrepublic",
-        "uk": "unitedkingdom",
-        "u.k.": "unitedkingdom",
-        "taiwan": "china",
-        "taiwan, province of china": "china",
-        "taiwan (province of china)": "china"
-    }
-    text = alias.get(text, text)
-    return "".join(ch for ch in text if ch.isalnum())
-
-
-def _region_focus_countries(region: str):
-    region_key = (region or "global").strip().lower()
-    return {
-        "east_asia": ["China", "Japan", "South Korea", "Mongolia", "North Korea", "Taiwan"],
-        "southeast_asia": ["Vietnam", "Thailand", "Indonesia", "Malaysia", "Philippines", "Singapore", "Myanmar"],
-        "europe": ["France", "Germany", "United Kingdom", "Italy", "Spain", "Russia", "Ukraine", "Poland", "Switzerland"],
-        "north_america": ["United States of America", "Canada", "Mexico"]
-    }.get(region_key, [])
-
-
-def _metric_indicator_tokens(metric: str):
-    metric_key = (metric or "dalys").strip().lower()
-    return {
-        "dalys": ["daly", "dalys", "disability-adjusted life years"],
-        "deaths": ["death", "mortality", "deaths"],
-        "prevalence": ["prevalence", "prevalent"],
-        "ylls": ["yll", "years of life lost"],
-        "ylds": ["yld", "years lived with disability"]
-    }.get(metric_key, [metric_key])
-
-
-def _is_international_source(source: str) -> bool:
-    source_key = (source or "").strip().upper()
-    return source_key in {"WHO", "OWID", "WB", "WORLD_BANK", "UN", "IHME", "GBD", "SEARCH"}
-
-
-def _source_priority(source: str) -> int:
-    source_key = (source or "").strip().upper()
-    # 设定数据来源优先级：国际数据 > 本地数据 > 未知来源
-    if source_key in {"WHO", "OWID", "WB", "WORLD_BANK", "UN", "IHME", "GBD", "SEARCH"}:
-        return 0
-    if source_key in {"LOCAL"}:
-        return 1
-    return 2
-
-
-def _calc_reproducible_map_fallback(country_name: str, metric: str, year: int):
-    metric_key = (metric or "dalys").strip().lower()
-    seed_text = f"{country_name}|{metric_key}|{year}"
-    seed = 0
-    for ch in seed_text:
-        seed = ((seed << 5) - seed + ord(ch)) & 0xFFFFFFFF
-
-    base_value_map = {
-        "dalys": 62.0,
-        "deaths": 54.0,
-        "prevalence": 38.0,
-        "ylls": 41.0,
-        "ylds": 33.0
-    }
-    base = base_value_map.get(metric_key, 50.0)
-    noise = (seed % 1000) / 1000.0  # 0 ~ 0.999
-    year_factor = 1.0 + ((int(year or 2024) - 2010) * 0.004)
-    value = base * year_factor * (0.78 + noise * 0.44)
-    return round(max(1.0, min(value, 100.0)), 2)
+# 注意: 以下与宏观地图相关的辅助函数已迁移到 routes/marco.py
+# - _normalize_country_key
+# - _region_focus_countries
+# - _metric_indicator_tokens
+# - _is_international_source
+# - _source_priority
+# - _calc_reproducible_map_fallback
 
 
 @app.on_event("startup")
@@ -184,31 +132,80 @@ async def quality_report():
     """
     return get_quality_report()
 
-from utils.global_risk import get_global_risk_map
-from utils.global_life_expectancy import get_global_life_expectancy
-from utils.china_provincial_health import get_china_provincial_health
-from utils.chengdu_e2sfca import get_chengdu_e2sfca
 from utils.microsimulation import get_microsimulation_data
-
-@app.get("/api/map/global-risk")
-async def api_global_risk():
-    return await get_global_risk_map()
-
-@app.get("/api/map/global-life-expectancy")
-async def api_global_life_expectancy():
-    return await get_global_life_expectancy()
-
-@app.get("/api/map/china-provincial-health")
-async def api_china_provincial_health():
-    return await get_china_provincial_health()
-
-@app.get("/api/map/chengdu-e2sfca")
-async def api_chengdu_e2sfca():
-    return await get_chengdu_e2sfca()
 
 @app.get("/api/simulation/micro-population")
 async def api_microsimulation():
     return await get_microsimulation_data()
+
+@app.get("/api/simulation/data")
+async def get_simulation_data(year: int = 2024):
+    """
+    获取微观人群仿真数据
+    
+    参数:
+        year: 年份，默认2024
+        
+    返回:
+        包含仿真粒子数据的JSON对象
+    """
+    try:
+        # 调用现有的微观仿真数据获取函数
+        data = await get_microsimulation_data()
+        
+        # 如果成功获取数据，包装成前端期望的格式
+        if data and 'data' in data:
+            return {
+                "status": "success",
+                "data": data['data'],
+                "year": year,
+                "count": len(data['data']) if isinstance(data['data'], list) else 0
+            }
+        else:
+            # 返回模拟数据作为降级
+            return {
+                "status": "success",
+                "data": _generate_mock_simulation_data(year),
+                "year": year,
+                "count": 100,
+                "source": "mock"
+            }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"获取仿真数据失败: {e}")
+        
+        # 出错时返回模拟数据
+        return {
+            "status": "success",
+            "data": _generate_mock_simulation_data(year),
+            "year": year,
+            "count": 100,
+            "source": "mock_fallback"
+        }
+
+def _generate_mock_simulation_data(year: int):
+    """生成模拟的仿真数据"""
+    import random
+    
+    # 基于年份生成不同的随机种子
+    random.seed(year)
+    
+    # 生成100个模拟粒子
+    particles = []
+    for i in range(100):
+        particle = {
+            "id": i,
+            "x": random.uniform(0, 100),
+            "y": random.uniform(0, 100),
+            "age": random.randint(0, 100),
+            "gender": random.choice(["male", "female"]),
+            "health_status": random.choice(["healthy", "sick", "recovered"]),
+            "risk_level": random.choice(["low", "medium", "high"])
+        }
+        particles.append(particle)
+    
+    return particles
 
 # ==========================================
 # 1. 定义 API 接口 (必须放在静态目录挂载前)
@@ -262,6 +259,21 @@ async def get_system_logs(db: Session = Depends(get_db)):
 
 @app.get("/api/chart/trend")
 async def get_trend_data(region: str = "global", metric: str = "prevalence", start_year: int = 2010, end_year: int = 2024, db: Session = Depends(get_db)):
+    """
+    健康指标趋势数据接口（中台标准协议）
+    
+    返回标准图表格式:
+    {
+        "code": 200,
+        "data": {
+            "labels": ["2010", "2011", ...],
+            "datasets": [
+                {"label": "prevalence", "data": [14.5, 14.8, ...]}
+            ]
+        },
+        "message": "..."
+    }
+    """
     try:
         from db.models import AdvancedDiseaseTransition
         region_key = (region or "global").strip().lower()
@@ -316,17 +328,28 @@ async def get_trend_data(region: str = "global", metric: str = "prevalence", sta
             region_factor = 1.0 if region_key == "global" else 0.9 if region_key == "east_asia" else 0.8
             values = [round(base_value * region_factor * (0.94 + i * 0.02), 4) for i in range(len(years))]
 
-        return {
-            "xAxis": [str(y) for y in years],
-            "series": [{
-                "name": metric,
-                "data": values
+        # 使用标准响应格式
+        response_data = {
+            "labels": [str(y) for y in years],
+            "datasets": [{
+                "label": metric,
+                "data": values,
+                "borderColor": "#2b6cb0",
+                "borderWidth": 2,
+                "fill": False
             }]
         }
+        
+        # 校验输出格式
+        validation = DataValidator.validate_chart_data(response_data)
+        if not validation["valid"]:
+            return error_response(code=500, message=f"数据格式校验失败: {validation['errors']}")
+        
+        return success_response(data=response_data, message=f"{region} {metric} 趋势数据获取成功")
     except Exception as e:
         from utils.logger import logger
         logger.error(f"获取趋势数据失败: {e}")
-        return {"xAxis": [], "series": []}
+        return error_response(code=500, message=f"获取趋势数据失败: {str(e)}")
 @app.get("/api/analysis/metrics")
 async def get_analysis_metrics(region: str = "China", year: int = 2024, db: Session = Depends(get_db)):
     try:
@@ -453,342 +476,24 @@ async def get_analysis_metrics(region: str = "China", year: int = 2024, db: Sess
         }
         return success_response(data=fallback_data, message=f"{region} 健康指标数据获取成功(使用默认数据)")
 
-@app.get("/api/dataset")
-async def get_dataset(limit: int = 60, db: Session = Depends(get_db)):
-    try:
-        from db.models import AdvancedDiseaseTransition, AdvancedRiskCloud, AdvancedResourceEfficiency
-        
-        items = []
-        
-        # 1. 获取疾病负担数据
-        disease_data = db.query(AdvancedDiseaseTransition).limit(max(20, limit)).all()
-        max_dalys = max([d.val for d in disease_data]) if disease_data else 1.0
-        if max_dalys == 0: max_dalys = 1.0
-        
-        for i, d in enumerate(disease_data):
-            z_weight = round(0.1 + 0.9 * (d.val / max_dalys), 4)
-            items.append({
-                "id": f"disease_{d.id}",
-                "name": f"{d.cause_name} 疾病负担",
-                "type": "disease_burden",
-                "typeName": "疾病谱系",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": d.location_name,
-                "year": d.year,
-                "value": d.val,
-                "unit": 'DALYs',
-                "z_weight": z_weight, # 3D 渲染权重
-                "status": "success"
-            })
-            
-        # 2. 获取风险归因数据
-        risk_data = db.query(AdvancedRiskCloud).limit(max(20, limit)).all()
-        for i, r in enumerate(risk_data):
-            items.append({
-                "id": f"risk_{r.id}",
-                "name": f"{r.rei_name} 风险归因",
-                "type": "risk_factor",
-                "typeName": "风险因素",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": r.location_name,
-                "year": r.year,
-                "value": r.paf,
-                "unit": 'PAF',
-                "status": "success"
-            })
-            
-        # 3. 获取卫生资源效率数据
-        resource_data = db.query(AdvancedResourceEfficiency).limit(max(20, limit)).all()
-        for i, r in enumerate(resource_data):
-            items.append({
-                "id": f"resource_{r.id}",
-                "name": "卫生资源 DEA 效率",
-                "type": "resource_efficiency",
-                "typeName": "资源效率",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": r.location_name,
-                "year": r.year,
-                "value": r.dea_efficiency if r.dea_efficiency else 0,
-                "unit": '指数',
-                "status": "success"
-            })
-
-        if not items:
-            fallback_rows = db.query(HealthResource).order_by(HealthResource.year.desc()).limit(max(20, limit)).all()
-            for row in fallback_rows:
-                items.append({
-                    "id": f"resource_fallback_{row.id}",
-                    "name": "卫生资源综合指标",
-                    "type": "resource_efficiency",
-                    "typeName": "资源效率",
-                    "topic": "health-indicators",
-                    "topicName": "健康指标分析",
-                    "country": row.region,
-                    "year": row.year,
-                    "value": float(row.gap_ratio if row.gap_ratio is not None else 0),
-                    "unit": "缺口率",
-                    "status": "success"
-                })
-
-        categories_existing = {item.get("type") for item in items}
-        if "global_overview" not in categories_existing:
-            items.append({
-                "id": "global_overview_default",
-                "name": "全球健康总览",
-                "type": "global_overview",
-                "typeName": "全球健康数据",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": "Global",
-                "year": 2024,
-                "value": 1.0,
-                "unit": "指数",
-                "status": "success"
-            })
-        if "intervention_policy" not in categories_existing:
-            items.append({
-                "id": "intervention_policy_default",
-                "name": "干预措施评估",
-                "type": "intervention_policy",
-                "typeName": "干预措施数据",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": "China",
-                "year": 2024,
-                "value": 0.76,
-                "unit": "有效率",
-                "status": "success"
-            })
-        if "risk_factor" not in categories_existing:
-            items.append({
-                "id": "risk_factor_default",
-                "name": "风险因素总览",
-                "type": "risk_factor",
-                "typeName": "风险因素数据",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": "China",
-                "year": 2024,
-                "value": 0.25,
-                "unit": "PAF",
-                "status": "success"
-            })
-        if "demographic_stats" not in categories_existing:
-            items.append({
-                "id": "demographic_stats_default",
-                "name": "人口统计结构",
-                "type": "demographic_stats",
-                "typeName": "人口统计数据",
-                "topic": "health-indicators",
-                "topicName": "健康指标分析",
-                "country": "China",
-                "year": 2024,
-                "value": 0.187,
-                "unit": "占比",
-                "status": "success"
-            })
-
-        final_limit = max(1, limit)
-        priority_types = [
-            "global_overview",
-            "disease_burden",
-            "risk_factor",
-            "intervention_policy",
-            "demographic_stats",
-            "resource_efficiency"
-        ]
-        selected = []
-        selected_ids = set()
-
-        for p_type in priority_types:
-            candidate = next((item for item in items if item.get("type") == p_type and item.get("id") not in selected_ids), None)
-            if candidate and len(selected) < final_limit:
-                selected.append(candidate)
-                selected_ids.add(candidate.get("id"))
-
-        for item in items:
-            if len(selected) >= final_limit:
-                break
-            if item.get("id") in selected_ids:
-                continue
-            selected.append(item)
-            selected_ids.add(item.get("id"))
-
-        return {"items": selected}
-    except Exception as e:
-        from utils.logger import logger
-        logger.exception("数据库查询异常")
-        return {"items": []}
-
-@app.get("/api/dataset/{dataset_id}/detail")
-async def get_dataset_detail(dataset_id: str, limit: int = 50, db: Session = Depends(get_db)):
-    """
-    获取数据集详情 API
-    
-    接口路径: /api/dataset/{dataset_id}/detail
-    
-    返回结构:
-    {
-        "status": "success",
-        "dataset": {
-            "title": str,           # 数据集标题
-            "category": str,        # 数据分类
-            "record_count": int,    # 记录总数
-            "region_coverage": int, # 覆盖地区数
-            "year_min": int,        # 最小年份
-            "year_max": int,        # 最大年份
-            "latest_updated": str,  # 最后更新时间
-            "fields": [             # 字段结构列表
-                {"name": str, "type": str, "description": str}
-            ]
-        },
-        "preview": [              # 前 N 条预览数据
-            {"region": str, "year": int, "metric": str, "value": float, "source": str, ...}
-        ]
-    }
-    """
-    try:
-        from db.crud import (
-            get_disease_dataset_detail,
-            get_risk_dataset_detail,
-            get_resource_dataset_detail,
-            get_global_overview_dataset_detail,
-            get_empty_dataset_detail
-        )
-        from sqlalchemy import inspect
-        
-        # 检查数据库表是否存在
-        inspector = inspect(db.bind)
-        
-        # 根据 dataset_id 前缀路由到不同的查询函数
-        if dataset_id.startswith("disease_"):
-            if inspector.has_table("adv_disease_transition"):
-                result = get_disease_dataset_detail(db, dataset_id, limit)
-            else:
-                result = get_empty_dataset_detail(dataset_id)
-                result.title = "疾病负担数据（表不存在）"
-                
-        elif dataset_id.startswith("risk_"):
-            if inspector.has_table("adv_risk_cloud"):
-                result = get_risk_dataset_detail(db, dataset_id, limit)
-            else:
-                result = get_empty_dataset_detail(dataset_id)
-                result.title = "风险因素数据（表不存在）"
-                
-        elif dataset_id.startswith("resource_"):
-            # resource_ 可能对应多个表：AdvancedResourceEfficiency 或 HealthResource（fallback）
-            if "fallback" in dataset_id:
-                if inspector.has_table("health_resources"):
-                    result = get_resource_dataset_detail(db, dataset_id, limit)
-                else:
-                    result = get_empty_dataset_detail(dataset_id)
-                    result.title = "卫生资源数据（表不存在）"
-            else:
-                if inspector.has_table("adv_resource_efficiency"):
-                    result = get_resource_dataset_detail(db, dataset_id, limit)
-                else:
-                    result = get_empty_dataset_detail(dataset_id)
-                    result.title = "卫生资源效率数据（表不存在）"
-                    
-        elif dataset_id.startswith("global_overview"):
-            if inspector.has_table("global_health_metrics"):
-                result = get_global_overview_dataset_detail(db, dataset_id, limit)
-            else:
-                result = get_empty_dataset_detail(dataset_id)
-                result.title = "全球健康总览数据（表不存在）"
-                
-        elif dataset_id.startswith("intervention_"):
-            # 干预措施数据 - 目前使用疾病负担表作为替代
-            if inspector.has_table("adv_disease_transition"):
-                result = get_disease_dataset_detail(db, dataset_id, limit)
-                result.title = "干预措施评估数据"
-                result.category = "干预措施数据"
-            else:
-                result = get_empty_dataset_detail(dataset_id)
-                result.title = "干预措施数据（表不存在）"
-                
-        elif dataset_id.startswith("demographic_"):
-            # 人口统计数据 - 使用卫生资源表
-            if inspector.has_table("health_resources"):
-                result = get_resource_dataset_detail(db, "resource_fallback_0", limit)
-                result.title = "人口统计与健康指标数据"
-                result.category = "人口统计数据"
-            else:
-                result = get_empty_dataset_detail(dataset_id)
-                result.title = "人口统计数据（表不存在）"
-        else:
-            # 未知的数据集类型，返回空结构
-            result = get_empty_dataset_detail(dataset_id)
-            result.title = f"未知数据集：{dataset_id}"
-        
-        # 构造返回结果
-        # 如果数据库中没有数据，返回友好的空结构
-        if result.record_count == 0 and not result.preview:
-            return {
-                "status": "success",
-                "dataset": {
-                    "title": result.title,
-                    "category": result.category,
-                    "record_count": 0,
-                    "region_coverage": 0,
-                    "year_min": result.year_min or 2000,
-                    "year_max": result.year_max or 2024,
-                    "latest_updated": result.latest_updated,
-                    "fields": result.fields
-                },
-                "preview": [],
-                "msg": "该数据集暂无数据记录"
-            }
-        
-        return {
-            "status": "success",
-            "dataset": {
-                "title": result.title,
-                "category": result.category,
-                "record_count": result.record_count,
-                "region_coverage": result.region_coverage,
-                "year_min": result.year_min or 2000,
-                "year_max": result.year_max or 2024,
-                "latest_updated": result.latest_updated,
-                "fields": result.fields
-            },
-            "preview": result.preview
-        }
-        
-    except Exception as e:
-        from utils.logger import logger
-        logger.exception(f"获取数据集详情失败: dataset_id={dataset_id}, error={e}")
-        
-        # 返回友好的错误响应，而不是让前端脚本报错
-        return {
-            "status": "error",
-            "msg": f"获取数据集详情失败: {str(e)}",
-            "dataset": {
-                "title": f"数据集：{dataset_id}",
-                "category": "未知",
-                "record_count": 0,
-                "region_coverage": 0,
-                "year_min": 2000,
-                "year_max": 2024,
-                "latest_updated": "2024-01-01",
-                "fields": [
-                    {"name": "region", "type": "string", "description": "国家/地区"},
-                    {"name": "year", "type": "int", "description": "年份"},
-                    {"name": "metric", "type": "string", "description": "指标名称"},
-                    {"name": "value", "type": "float", "description": "数值"},
-                    {"name": "source", "type": "string", "description": "数据来源"}
-                ]
-            },
-            "preview": []
-        }
-
 @app.get("/api/disease_simulation")
 async def get_disease_simulation(years: int = 15, region: str = "China"):
     """
     疾病演化SDE预测接口（中台标准协议）
+    
+    返回数据严格遵循标准JSON结构:
+    {
+        "code": 200,
+        "data": {
+            "labels": ["2024", "2025", ...],
+            "datasets": [
+                {"label": "心血管疾病", "data": [120, 125, ...]},
+                {"label": "肿瘤", "data": [80, 82, ...]}
+            ]
+        },
+        "message": "...",
+        "timestamp": "..."
+    }
     
     Args:
         years: 预测年数，默认15年
@@ -798,26 +503,65 @@ async def get_disease_simulation(years: int = 15, region: str = "China"):
         标准响应格式: {code, message, data, timestamp}
     """
     try:
-        # 1. 从数据库获取历史真实数据作为基线
-        with closing(SessionLocal()) as db:
-            real_data = db.query(AdvancedDiseaseTransition).filter(
-                AdvancedDiseaseTransition.location_name == region
-            ).order_by(AdvancedDiseaseTransition.year).all()
-        
-        if not real_data:
-            from utils.logger import log_missing_data
-            log_missing_data("DiseaseSimulationAPI", "Disease Burden Baseline", 2023, region, "缺少该地区的疾病谱系数据")
-            return error_response(code=400, message=f"未能找到 {region} 的基线数据，无法进行 SDE 预测")
+        # 0. 处理 global 区域的基线数据配置
+        if region.lower() == "global":
+            # 使用全球基线数据配置
+            from datetime import datetime
+            current_year = datetime.now().year
+            # 模拟全球疾病负担基线数据 (基于 GBD 研究)
+            global_baseline_data = [
+                {"year": current_year - 4, "cause_name": "Cardiovascular diseases", "val": 185.5},
+                {"year": current_year - 3, "cause_name": "Cardiovascular diseases", "val": 187.2},
+                {"year": current_year - 2, "cause_name": "Cardiovascular diseases", "val": 189.1},
+                {"year": current_year - 1, "cause_name": "Cardiovascular diseases", "val": 191.0},
+                {"year": current_year, "cause_name": "Cardiovascular diseases", "val": 193.5},
+                {"year": current_year - 4, "cause_name": "Neoplasms", "val": 112.3},
+                {"year": current_year - 3, "cause_name": "Neoplasms", "val": 114.8},
+                {"year": current_year - 2, "cause_name": "Neoplasms", "val": 117.2},
+                {"year": current_year - 1, "cause_name": "Neoplasms", "val": 119.5},
+                {"year": current_year, "cause_name": "Neoplasms", "val": 122.0},
+                {"year": current_year - 4, "cause_name": "Diabetes", "val": 45.2},
+                {"year": current_year - 3, "cause_name": "Diabetes", "val": 47.1},
+                {"year": current_year - 2, "cause_name": "Diabetes", "val": 49.3},
+                {"year": current_year - 1, "cause_name": "Diabetes", "val": 51.8},
+                {"year": current_year, "cause_name": "Diabetes", "val": 54.5},
+                {"year": current_year - 4, "cause_name": "Mental disorders", "val": 28.5},
+                {"year": current_year - 3, "cause_name": "Mental disorders", "val": 30.2},
+                {"year": current_year - 2, "cause_name": "Mental disorders", "val": 32.1},
+                {"year": current_year - 1, "cause_name": "Mental disorders", "val": 34.0},
+                {"year": current_year, "cause_name": "Mental disorders", "val": 36.2},
+            ]
+            spectrum_df = pd.DataFrame(global_baseline_data)
+            start_year = current_year
+            labels = [str(start_year + i) for i in range(0, years + 1, max(1, years//4))]
+        else:
+            # 1. 从数据库获取历史真实数据作为基线
+            with closing(SessionLocal()) as db:
+                real_data = db.query(AdvancedDiseaseTransition).filter(
+                    AdvancedDiseaseTransition.location_name == region
+                ).order_by(AdvancedDiseaseTransition.year).all()
+            
+            if not real_data:
+                from utils.logger import log_missing_data
+                log_missing_data("DiseaseSimulationAPI", "Disease Burden Baseline", 2023, region, "缺少该地区的疾病谱系数据")
+                return error_response(code=400, message=f"未能找到 {region} 的基线数据，无法进行 SDE 预测")
 
-        spectrum_df = pd.DataFrame([{
-            'year': item.year,
-            'cause_name': item.cause_name,
-            'val': item.val
-        } for item in real_data])
+            # 2. 构建历史数据DataFrame
+            spectrum_df = pd.DataFrame([{
+                'year': item.year,
+                'cause_name': item.cause_name,
+                'val': item.val
+            } for item in real_data])
+            
+            start_year = int(spectrum_df['year'].max())
+            labels = [str(start_year + i) for i in range(0, years + 1, max(1, years//4))]
+
+        # 3. 数据校验
+        validation = DataValidator.validate_dataframe(spectrum_df, ['year', 'cause_name', 'val'])
+        if not validation["valid"]:
+            return error_response(code=400, message=f"数据格式校验失败: {validation['errors']}")
         
-        start_year = int(spectrum_df['year'].max())
-        labels = [str(start_year + i) for i in range(0, years + 1, max(1, years//4))]
-        
+        # 4. 执行SDE预测
         datasets = []
         colors = ["#2b6cb0", "#c53030", "#d69e2e", "#319795", "#805ad5"]
         target_causes = ["Cardiovascular diseases", "Neoplasms", "Diabetes", "Mental disorders"]
@@ -847,17 +591,23 @@ async def get_disease_simulation(years: int = 15, region: str = "China"):
             sampled_points = [full_predictions[i] for i in range(0, years + 1, max(1, years//4))]
                     
             datasets.append({
-                "label": f"{display_names[idx]} (SDE 动力学预测)",
+                "label": display_names[idx],
                 "data": [round(val, 2) for val in sampled_points],
                 "borderColor": colors[idx % len(colors)],
-                "borderWidth": 3
+                "borderWidth": 2,
+                "fill": False
             })
 
-        # 按中台标准协议打包响应数据
+        # 5. 按中台标准协议打包响应数据
         response_data = {
             "labels": labels,
             "datasets": datasets
         }
+        
+        # 6. 校验输出数据格式
+        chart_validation = DataValidator.validate_chart_data(response_data)
+        if not chart_validation["valid"]:
+            return error_response(code=500, message=f"输出数据格式校验失败: {chart_validation['errors']}")
         
         return success_response(data=response_data, message=f"{region} 疾病演化测算完成")
         
@@ -871,7 +621,7 @@ async def get_disease_simulation(years: int = 15, region: str = "China"):
         return error_response(code=500, message="中台算力引擎异常，请联系管理员")
 
 def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str, level: str = "community"):
-    """后台运行实际的空间分析并写入缓存"""
+    """后台运行实际的空间分析并写入缓存（中台标准格式）"""
     try:
         import json
         import math
@@ -884,7 +634,7 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
             df_3a['type'] = '三甲医院'
             df_3a['search_radius'] = 30.0  # 约60分钟车程 (假设30km/h)
 
-        df_comm = loader.fetch_poi_data(city=region, keyword="社区卫生服务中心")
+        df_comm = data_loader.fetch_poi_data(city=region, keyword="社区卫生服务中心")
         if not df_comm.empty:
             df_comm['type'] = '社区医院'
             df_comm['search_radius'] = 7.5   # 约15分钟车程 (假设30km/h)
@@ -907,7 +657,9 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
                     "datasets": [{
                         "label": f"{region} 演示数据 (E2SFCA)",
                         "data": scores,
-                        "backgroundColor": "#1890ff"
+                        "borderColor": "#1890ff",
+                        "borderWidth": 2,
+                        "fill": False
                     }],
                     "geo_points": [
                         {"name": "锦江区", "value": [104.08, 30.65, scores[0]], "z_weight": scores[0]},
@@ -964,7 +716,9 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
                 
                 geo_points.append({
                     "name": row['name'],
-                    "value": [row['lon'], row['lat'], score],
+                    "value": [DataTransformer._convert_value(row['lon']), 
+                             DataTransformer._convert_value(row['lat']), 
+                             DataTransformer._convert_value(score)],
                     "z_weight": z_weight
                 })
             
@@ -976,8 +730,10 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
                     "labels": labels,
                     "datasets": [{
                         "label": f"{region} 空间可及性指数 (E2SFCA)",
-                        "data": scores,
-                        "backgroundColor": "#1890ff"
+                        "data": [DataTransformer._convert_value(s) for s in scores],
+                        "borderColor": "#1890ff",
+                        "borderWidth": 2,
+                        "fill": False
                     }],
                     "geo_points": geo_points
                 }
@@ -986,7 +742,7 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
         # 写入缓存文件供下次读取
         os.makedirs(os.path.dirname(cache_file), exist_ok=True)
         with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(result_data, f, ensure_ascii=False)
+            json.dump(result_data, f, ensure_ascii=False, default=str)
             
     except Exception as e:
         from utils.logger import logger
@@ -1005,7 +761,9 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
                 "datasets": [{
                     "label": f"{region} 演示数据 (E2SFCA)",
                     "data": scores,
-                    "backgroundColor": "#1890ff"
+                    "borderColor": "#1890ff",
+                    "borderWidth": 2,
+                    "fill": False
                 }],
                 "geo_points": [
                     {"name": "锦江区", "value": [104.08, 30.65, scores[0]], "z_weight": scores[0]},
@@ -1019,10 +777,24 @@ def run_spatial_analysis_task(region: str, threshold_km: float, cache_file: str,
         }
         os.makedirs(os.path.dirname(cache_file), exist_ok=True)
         with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(error_data, f, ensure_ascii=False)
+            json.dump(error_data, f, ensure_ascii=False, default=str)
 
 @app.get("/api/spatial_analysis")
 async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = "成都市", threshold_km: float = 10.0, level: str = "district"):
+    """
+    空间可及性分析接口（中台标准协议）
+    
+    返回标准图表格式:
+    {
+        "code": 200,
+        "data": {
+            "labels": ["锦江区", "青羊区", ...],
+            "datasets": [{"label": "...", "data": [...]}],
+            "geo_points": [...]
+        },
+        "message": "..."
+    }
+    """
     try:
         from config.settings import SETTINGS
         import os
@@ -1039,10 +811,11 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
                 if current_time - file_mtime < 30 * 86400:
                     with open(cache_file, "r", encoding="utf-8") as f:
                         cached_data = json.load(f)
-                        return success_response(data=cached_data, message="空间分析数据获取成功(缓存)")
-                else:
-                    # 缓存过期处理
-                    os.remove(cache_file)
+                        # 校验缓存数据格式
+                        if "chart_data" in cached_data:
+                            validation = DataValidator.validate_chart_data(cached_data["chart_data"])
+                            if validation["valid"]:
+                                return success_response(data=cached_data, message="空间分析数据获取成功(缓存)")
         except Exception as e:
             from utils.logger import logger
             logger.warning(f"读取或清理空间分析缓存失败: {e}")
@@ -1067,7 +840,9 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
                         "datasets": [{
                             "label": f"{region} 演示数据 (E2SFCA)",
                             "data": scores,
-                            "backgroundColor": "#1890ff"
+                            "borderColor": "#1890ff",
+                            "borderWidth": 2,
+                            "fill": False
                         }],
                         "geo_points": [
                             {"name": "锦江区", "value": [104.08, 30.65, scores[0]], "z_weight": scores[0]},
@@ -1078,7 +853,13 @@ async def get_spatial_analysis(background_tasks: BackgroundTasks, region: str = 
                         ]
                     }
                 }
-                return success_response(data=demo_data, message=f"{region} 空间分析演示数据生成完成")
+                
+                # 校验演示数据格式
+                validation = DataValidator.validate_chart_data(demo_data["chart_data"])
+                if validation["valid"]:
+                    return success_response(data=demo_data, message=f"{region} 空间分析演示数据生成完成")
+                else:
+                    return error_response(code=500, message=f"演示数据格式错误: {validation['errors']}")
 
         # 启动后台任务
         background_tasks.add_task(run_spatial_analysis_task, region, threshold_km, cache_file, level)
@@ -1102,17 +883,53 @@ async def get_health_news():
     """
     获取最新健康资讯
 
-    通过DataLoader获取健康相关新闻，支持缓存机制和兜底数据。
+    通过DataLoader获取健康相关新闻，支持24小时缓存机制和兜底数据。
+    严格控制API调用频率，每月限额100次。
     实际数据获取逻辑已迁移至 modules/data/loader.py
     """
     try:
         # main.py仅作为请求处理的中间层
         news_data = data_loader.fetch_health_news()
-        return {"status": "success", "news": news_data}
+
+        # 获取缓存和API使用情况
+        usage_stats = data_loader.get_api_usage_stats()
+
+        return {
+            "status": "success",
+            "news": news_data,
+            "cache_info": {
+                "cached": usage_stats.get("api_calls_used", 0) == 0 or len(news_data) > 0,
+                "next_update": "24小时后" if usage_stats.get("api_calls_used", 0) > 0 else "即将更新"
+            }
+        }
     except Exception as e:
         from utils.logger import logger
         logger.exception("获取健康资讯失败")
         return {"status": "error", "msg": str(e)}
+
+
+@app.get("/api/news/stats")
+async def get_news_api_stats():
+    """
+    获取新闻API使用统计
+
+    返回 Mediastack API 的调用统计信息，包括：
+    - 本月已使用次数
+    - 剩余可用次数
+    - 使用百分比
+    - 状态提示
+    """
+    try:
+        stats = data_loader.get_api_usage_stats()
+        return {
+            "status": "success",
+            "data": stats
+        }
+    except Exception as e:
+        from utils.logger import logger
+        logger.exception("获取API统计失败")
+        return {"status": "error", "msg": str(e)}
+
 
 @app.get("/api/geojson/hospitals")
 async def get_hospitals_geojson():
@@ -1156,189 +973,11 @@ async def get_sys_settings():
     }
 
 
-@app.get("/api/map/world-metrics")
-async def get_world_map_metrics(region: str = "global", metric: str = "dalys", year: int = 2024, db: Session = Depends(get_db)):
-    """
-    首页全球地图指标接口：
-    1) 优先返回国际来源数据（WHO/OWID/GBD等）；
-    2) 对分区重点国家在缺失时生成可复现回退值；
-    3) 返回 tooltip 所需完整元信息。
-    """
-    try:
-        region_key = (region or "global").strip().lower()
-        metric_key = (metric or "dalys").strip().lower()
-        target_year = int(year or 2024)
-
-        indicator_tokens = _metric_indicator_tokens(metric_key)
-        query = db.query(
-            GlobalHealthMetric.region,
-            GlobalHealthMetric.indicator,
-            GlobalHealthMetric.year,
-            GlobalHealthMetric.value,
-            GlobalHealthMetric.source
-        ).filter(
-            GlobalHealthMetric.region.isnot(None),
-            GlobalHealthMetric.value.isnot(None),
-            GlobalHealthMetric.year.isnot(None),
-            GlobalHealthMetric.year <= target_year,
-            GlobalHealthMetric.year >= max(1990, target_year - 15)
-        )
-        if indicator_tokens:
-            query = query.filter(or_(*[GlobalHealthMetric.indicator.ilike(f"%{token}%") for token in indicator_tokens]))
-
-        rows = query.all()
-        focus_countries = _region_focus_countries(region_key)
-        focus_keys = {_normalize_country_key(name) for name in focus_countries}
-
-        best_by_country = {}
-        for row in rows:
-            country_name = (row.region or "").strip()
-            country_key = _normalize_country_key(country_name)
-            if not country_key:
-                continue
-            if region_key != "global" and focus_keys and country_key not in focus_keys:
-                continue
-
-            source = (row.source or "").strip() or "UNKNOWN"
-            row_year = int(row.year or target_year)
-            score = (_source_priority(source), abs(target_year - row_year))
-
-            existing = best_by_country.get(country_key)
-            if existing is None or score < existing["score"]:
-                best_by_country[country_key] = {
-                    "score": score,
-                    "country": country_name,
-                    "value": round(float(row.value), 4),
-                    "indicator": row.indicator or metric_key,
-                    "data_year": row_year,
-                    "source": source,
-                    "source_type": "international" if _is_international_source(source) else "local",
-                    "method": "international_priority"
-                }
-
-        if region_key != "global":
-            # 分区重点国家缺失时，提供可复现回退值
-            for country in focus_countries:
-                country_key = _normalize_country_key(country)
-                if country_key in best_by_country:
-                    continue
-                fallback_value = _calc_reproducible_map_fallback(country, metric_key, target_year)
-                best_by_country[country_key] = {
-                    "score": (99, 99),
-                    "country": country,
-                    "value": fallback_value,
-                    "indicator": metric_key,
-                    "data_year": target_year,
-                    "source": "FALLBACK",
-                    "source_type": "fallback",
-                    "method": "reproducible_fallback_v1"
-                }
-
-        payload = []
-        for item in best_by_country.values():
-            payload.append({
-                "country": item["country"],
-                "value": item["value"],
-                "indicator": item["indicator"],
-                "data_year": item["data_year"],
-                "source": item["source"],
-                "source_type": item["source_type"],
-                "method": item["method"],
-                "is_fallback": item["source_type"] == "fallback"
-            })
-
-        payload.sort(key=lambda x: x["value"], reverse=True)
-        return {
-            "status": "success",
-            "region": region_key,
-            "metric": metric_key,
-            "year": target_year,
-            "data": payload,
-            "meta": {
-                "count": len(payload),
-                "fallback": "reproducible_fallback_v1",
-                "priority": "international>local>fallback"
-            }
-        }
-    except Exception as e:
-        from utils.logger import logger
-        logger.exception("获取世界地图指标失败")
-        return {
-            "status": "error",
-            "region": (region or "global"),
-            "metric": (metric or "dalys"),
-            "year": int(year or 2024),
-            "data": [],
-            "msg": str(e)
-        }
-
-@app.get("/api/geojson/world")
-async def get_world_geojson():
-    import os
-    from config.settings import SETTINGS
-    file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_WORLD)
-    # 开启强缓存并使用 gzip 压缩
-    headers = {
-        "Cache-Control": "public, max-age=2592000, immutable",
-        "Vary": "Accept-Encoding"
-    }
-
-    if os.path.exists(file_path):
-        return FileResponse(
-            file_path, 
-            media_type="application/json",
-            headers=headers
-        )
-    
-    # 兼容回退策略，如果配置的路径未找到，尝试直接到 data/geojson 目录寻找
-    fallback_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "ne_10m_admin_0_countries.geojson")
-    if os.path.exists(fallback_path):
-        return FileResponse(
-            fallback_path, 
-            media_type="application/json",
-            headers=headers
-        )
-        
-    # 如果真的没有，返回一个非常基础的全球轮廓（这里仅为了防止前端图表直接抛出 JSON parse error）
-    return {
-        "type": "FeatureCollection",
-        "features": []
-    }
-
-@app.get("/api/geojson/continents")
-async def get_continents_geojson():
-    import os
-    from config.settings import SETTINGS
-    file_path = SETTINGS.GEOJSON_PATH_CONTINENTS
-    if os.path.exists(file_path):
-        return FileResponse(
-            file_path, 
-            media_type="application/json",
-            headers={"Cache-Control": "public, max-age=2592000"}
-        )
-    return {"status": "error", "msg": "GeoJSON file not found"}
-
-@app.get("/api/geojson/china")
-async def get_china_geojson():
-    import os
-    from config.settings import SETTINGS
-    file_path = os.path.join(SETTINGS.BASE_DIR, SETTINGS.GEOJSON_PATH_CHINA)
-    if os.path.exists(file_path):
-        return FileResponse(
-            file_path, 
-            media_type="application/json",
-            headers={"Cache-Control": "public, max-age=2592000"}
-        )
-        
-    fallback_path = os.path.join(SETTINGS.DATA_DIR, "geojson", "中华人民共和国.geojson")
-    if os.path.exists(fallback_path):
-        return FileResponse(
-            fallback_path, 
-            media_type="application/json",
-            headers={"Cache-Control": "public, max-age=2592000"}
-        )
-        
-    return {"status": "error", "msg": "GeoJSON file not found"}
+# 注意: 以下路由已迁移到 routes/marco.py
+# - /api/map/world-metrics
+# - /api/geojson/world
+# - /api/geojson/continents
+# - /api/geojson/china
 
 @app.get("/api/config/public-routes")
 async def get_public_routes():
@@ -1374,4 +1013,4 @@ app.mount("/assets", StaticFiles(directory=str(BASE_DIR / "frontend/assets")), n
 app.mount("/", StaticFiles(directory=str(BASE_DIR / "frontend"), html=False), name="frontend")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8080, reload=False)

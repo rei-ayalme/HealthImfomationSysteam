@@ -19,8 +19,19 @@
     <script src="https://fastly.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/assets/js/data-service.js"></script>
+    <!-- 1. 首先声明全局配置变量 -->
+    <script>
+        window.AppConfig = {
+            API_BASE: '/api' // 使用相对路径
+        };
+    </script>
+    <!-- 2. 加载基础工具库 -->
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/common.js"></script>
+    <!-- 3. 加载API服务层 -->
     <script src="/assets/js/api.js"></script>
+    <!-- 4. 最后加载数据服务层 -->
+    <script src="/assets/js/data-service.js"></script>
     <style>
         
 
@@ -837,7 +848,6 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
-    <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
@@ -947,48 +957,48 @@
                         <span class="stat-label">2030年疾病负担预测</span>
                         <span class="stat-icon">📈</span>
                     </div>
-                    <div class="stat-value">31.2亿</div>
+                    <div class="stat-value" id="pred-dalys-val">--</div>
                     <div class="stat-change negative">
-                        <span>↑</span>
-                        <span>+9.5% (vs 2024)</span>
+                        <span id="pred-dalys-arrow">↑</span>
+                        <span id="pred-dalys-trend">等待计算...</span>
                     </div>
-                    <div class="stat-source">DALYs (95% CI: 29.5-33.1)</div>
+                    <div class="stat-source">DALYs (后端API计算)</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span class="stat-label">预期寿命预测(2030)</span>
                         <span class="stat-icon">👴</span>
                     </div>
-                    <div class="stat-value">76.5岁</div>
+                    <div class="stat-value" id="pred-life-val">--</div>
                     <div class="stat-change positive">
-                        <span>↑</span>
-                        <span>+1.8岁 (vs 2024)</span>
+                        <span id="pred-life-arrow">↑</span>
+                        <span id="pred-life-trend">等待计算...</span>
                     </div>
-                    <div class="stat-source">95% CI: 75.8-77.2</div>
+                    <div class="stat-source">后端API计算</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-label">年均增长率</span>
+                        <span class="stat-label">干预效果评估</span>
                         <span class="stat-icon">📊</span>
                     </div>
-                    <div class="stat-value">1.5%</div>
-                    <div class="stat-change negative">
+                    <div class="stat-value" id="pred-impact-val">--</div>
+                    <div class="stat-change">
                         <span>→</span>
-                        <span>2024-2030期间</span>
+                        <span id="pred-impact-desc">调整滑块计算</span>
                     </div>
-                    <div class="stat-source">基准情景预测</div>
+                    <div class="stat-source">基于当前干预强度</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-label">模型准确率</span>
+                        <span class="stat-label">预测模型</span>
                         <span class="stat-icon">🎯</span>
                     </div>
-                    <div class="stat-value">97.2%</div>
+                    <div class="stat-value" id="pred-model-val">Ensemble</div>
                     <div class="stat-change positive">
                         <span>✓</span>
-                        <span>MAPE: 3.2%</span>
+                        <span>多模型融合</span>
                     </div>
-                    <div class="stat-source">回测验证2015-2024</div>
+                    <div class="stat-source">实时计算驱动</div>
                 </div>
             </div>
 
@@ -1098,38 +1108,32 @@
                 <div class="intervention-panel">
                     <div class="intervention-controls">
                         <div class="control-group">
-                            <label class="control-label" for="interventionType">干预措施</label>
-                            <select class="control-select" id="interventionType">
-                                <option value="none">无干预（基准）</option>
-                                <option value="tobacco">烟草控制（提高税率50%）</option>
-                                <option value="salt">全民减盐行动（减30%）</option>
-                                <option value="exercise">促进身体活动（达标率+20%）</option>
-                                <option value="vaccine">疫苗接种覆盖（+15%）</option>
-                                <option value="combined">综合干预（多措施组合）</option>
+                            <label class="control-label" for="model-selector">预测模型</label>
+                            <select class="control-select" id="model-selector">
+                                <option value="Ensemble" selected>Ensemble 多模型融合</option>
+                                <option value="SDE">SDE 随机微分方程</option>
+                                <option value="BAPC">BAPC 贝叶斯模型</option>
+                                <option value="DeepAnalyze">DeepAnalyze 深度学习</option>
                             </select>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="intensitySlider">实施强度</label>
-                            <input type="range" class="control-slider" id="intensitySlider" min="0" max="100"
-                                value="50">
-                            <span class="slider-value">50%</span>
+                            <label class="control-label" for="slider-tobacco">烟草控制力度</label>
+                            <input type="range" class="control-slider" id="slider-tobacco" min="0" max="100" value="0">
+                            <span class="slider-value" id="value-tobacco">0%</span>
                         </div>
                         <div class="control-group">
-                            <label class="control-label" for="startYear">实施年份</label>
-                            <select class="control-select" id="startYear">
-                                <option value="2025">2025</option>
-                                <option value="2030">2030</option>
-                                <option value="2035">2035</option>
-                            </select>
+                            <label class="control-label" for="slider-salt">食盐减少力度</label>
+                            <input type="range" class="control-slider" id="slider-salt" min="0" max="100" value="0">
+                            <span class="slider-value" id="value-salt">0%</span>
                         </div>
-                        <button class="simulate-btn" onclick="runInterventionSimulation()">
-                            <span>▶️</span> 运行模拟
+                        <button class="simulate-btn" onclick="runPredictionEngine()">
+                            <span>▶️</span> 运行预测引擎
                         </button>
                     </div>
                     <div class="intervention-results" id="interventionResults">
                         <div class="result-placeholder">
                             <span class="placeholder-icon">🎯</span>
-                            <p>选择干预措施并运行模拟，查看预期健康收益</p>
+                            <p>调整干预参数并运行预测，查看预期健康收益</p>
                         </div>
                     </div>
                 </div>
@@ -1348,14 +1352,26 @@
                 header.appendChild(banner);
             }
             try {
-                const response = await fetch(`${PREDICTION_API_BASE_URL}/report/auto?region=${region}&metric=${metricCode}&start_year=2005&end_year=2024`);
+                // 调用 AI 分析报告接口 (Ollama 驱动)
+                const response = await fetch(`${PREDICTION_API_BASE_URL}/api/analysis/report/auto?region=${region}&metric=${metricCode}&start_year=2005&end_year=2024`);
                 const payload = await response.json();
-                if (!response.ok || !payload?.report?.summary) throw new Error();
-                latestPredictionReport = payload.report;
-                const findings = (payload.report.findings || []).slice(0, 2);
+                
+                // 检查响应状态
+                if (!response.ok || payload.status !== 'success') throw new Error(payload.error || '报告生成失败');
+                
+                // 判断是否使用 AI 生成
+                const isAI = payload.model_source && payload.model_source.includes('Ollama');
+                const badge = isAI ? '<span style="background:#52c41a;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">AI生成</span>' : '<span style="background:#faad14;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">模板</span>';
+                
+                latestPredictionReport = {
+                    title: `${region} 地区 ${metricCode} 预测分析报告`,
+                    summary: payload.report,
+                    method: payload.model_source
+                };
                 banner.innerHTML = `
-                    <div style="font-weight:600;margin-bottom:6px;">报告摘要：${payload.report.summary}</div>
-                    <div style="margin-bottom:8px;">${findings.map(item => `• ${item}`).join('<br>')}</div>
+                    <div style="font-weight:600;margin-bottom:6px;">预测分析报告 ${badge}</div>
+                    <div style="margin-bottom:8px;line-height:1.5;">${payload.report}</div>
+                    <div style="opacity:0.7;font-size:11px;margin-bottom:8px;">来源: ${payload.model_source || 'Unknown'}</div>
                     <button onclick="exportPredictionReport()" style="border:none;background:#722ed1;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;">导出报告摘要</button>
                 `;
             } catch (e) {
@@ -2275,9 +2291,172 @@
         }
 
         // 滑块值更新
-        document.getElementById('intensitySlider')?.addEventListener('input', function () {
-            document.querySelector('.slider-value').textContent = this.value + '%';
+        document.getElementById('slider-tobacco')?.addEventListener('input', function () {
+            document.getElementById('value-tobacco').textContent = this.value + '%';
         });
+        document.getElementById('slider-salt')?.addEventListener('input', function () {
+            document.getElementById('value-salt').textContent = this.value + '%';
+        });
+
+        /**
+         * 预测模拟引擎驱动
+         * 解决报告中提到的 P0 级任务：预测模型参数 API 化
+         * 从"绘图员"变为"控制台" - 所有计算交由后端处理
+         */
+        async function runPredictionSimulation() {
+            // 1. 获取滑块或输入框的干预值 (0-100 转换为 0.0-1.0)
+            const tobaccoVal = parseFloat(document.querySelector('#slider-tobacco')?.value || 0) / 100;
+            const saltVal = parseFloat(document.querySelector('#slider-salt')?.value || 0) / 100;
+            const modelType = document.getElementById('model-selector')?.value || 'Ensemble';
+
+            // 更新干预效果评估卡片
+            const impactPercent = Math.round((tobaccoVal * 0.4 + saltVal * 0.3) * 100);
+            document.getElementById('pred-impact-val').textContent = impactPercent + '%';
+            document.getElementById('pred-impact-desc').textContent = `烟草${(tobaccoVal*100).toFixed(0)}% + 食盐${(saltVal*100).toFixed(0)}%`;
+            document.getElementById('pred-model-val').textContent = modelType;
+
+            try {
+                const response = await fetch('/api/v1/prediction/simulate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tobacco: tobaccoVal, salt: saltVal, model_type: modelType })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const res = await response.json();
+
+                if (res.status !== 'success') {
+                    throw new Error(res.detail || '预测引擎返回错误');
+                }
+
+                // 2. 动态更新预测卡片 (解决报告 1.1 节硬编码问题)
+                document.querySelector('#pred-dalys-val').innerHTML = `${res.metrics.dalys_2030.value} <small>${res.metrics.dalys_2030.unit}</small>`;
+                document.querySelector('#pred-life-val').innerHTML = `${res.metrics.life_exp_2030.value} <small>${res.metrics.life_exp_2030.unit}</small>`;
+
+                // 更新趋势指示
+                document.getElementById('pred-dalys-trend').textContent = res.metrics.dalys_2030.change;
+                document.getElementById('pred-dalys-arrow').textContent = res.metrics.dalys_2030.change.startsWith('-') ? '↓' : '↑';
+                document.getElementById('pred-life-trend').textContent = res.metrics.life_exp_2030.change;
+                document.getElementById('pred-life-arrow').textContent = res.metrics.life_exp_2030.change.startsWith('+') ? '↑' : '→';
+
+                // 3. 渲染双线对比图 (ECharts)
+                // 增加健壮性校验，参考 micro-analysis-echarts-issues-report.md
+                if (res.curves && res.curves.years && res.curves.years.length > 0) {
+                    renderPredictionChart(res.curves);
+                }
+
+                // 4. 更新分析文本
+                const insightEl = document.querySelector('.ai-insight-text') || document.getElementById('dynamic-insight');
+                if (insightEl) {
+                    insightEl.innerText = res.ai_insight;
+                }
+
+                // 同时更新干预结果区域
+                const resultsDiv = document.getElementById('interventionResults');
+                if (resultsDiv) {
+                    resultsDiv.innerHTML = `
+                        <div class="simulation-result">
+                            <div class="result-title">🎯 预测结果 (${modelType}模型)</div>
+                            <div class="result-metrics">
+                                <div class="result-metric">
+                                    <div class="metric-label">2030年疾病负担</div>
+                                    <div class="metric-value" style="color: #52c41a;">${res.metrics.dalys_2030.value}${res.metrics.dalys_2030.unit}</div>
+                                    <div style="font-size: 11px; color: #8c8c8c;">${res.metrics.dalys_2030.change}</div>
+                                </div>
+                                <div class="result-metric">
+                                    <div class="metric-label">预期寿命</div>
+                                    <div class="metric-value" style="color: #1890ff;">${res.metrics.life_exp_2030.value}${res.metrics.life_exp_2030.unit}</div>
+                                    <div style="font-size: 11px; color: #8c8c8c;">${res.metrics.life_exp_2030.change}</div>
+                                </div>
+                            </div>
+                            <div class="ai-insight-text" style="background: #fafafa; padding: 12px; margin-bottom: 16px; border-radius: 8px; font-size: 13px; color: #595959; border-left: 3px solid #1890ff;">
+                                <strong>AI 洞察：</strong>${res.ai_insight}
+                            </div>
+                            <div class="result-chart" id="prediction-chart-box" style="height: 200px;"></div>
+                        </div>
+                    `;
+                    renderPredictionChart(res.curves);
+                }
+
+                showNotification('预测计算完成！', 'success');
+
+            } catch (err) {
+                console.error("预测模型推演失败:", err);
+                showNotification('预测引擎请求失败: ' + err.message, 'error');
+            }
+        }
+
+        /**
+         * 预测页面大核心：向 Python 请求推演结果并重绘图表
+         * 已重构为调用 runPredictionSimulation
+         */
+        async function runPredictionEngine() {
+            const btn = document.querySelector('.simulate-btn');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> 计算中...';
+
+            await runPredictionSimulation();
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>▶️</span> 运行预测引擎';
+        }
+
+        function renderPredictionChart(data) {
+            const chartDom = document.getElementById('prediction-chart-box');
+            if (!chartDom || !window.echarts) return;
+
+            const chart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+            
+            // 确保数据格式正确
+            const years = data.years || [];
+            const baseline = data.baseline || [];
+            const intervention = data.intervention || data.simulated || [];
+            
+            chart.setOption({
+                tooltip: { 
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        let result = params[0].axisValue + '<br/>';
+                        params.forEach(function(item) {
+                            result += item.marker + ' ' + item.seriesName + ': ' + item.value + '<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: { data: ['基线预测 (无干预)', '干预后模拟'], bottom: 0, textStyle: { fontSize: 10 } },
+                grid: { left: '3%', right: '4%', bottom: '20%', top: '10%', containLabel: true },
+                xAxis: { type: 'category', data: years, axisLabel: { fontSize: 10 } },
+                yAxis: { type: 'value', name: '疾病负担 (亿DALYs)', nameTextStyle: { fontSize: 10 }, axisLabel: { fontSize: 10 } },
+                series: [
+                    { 
+                        name: '基线预测 (无干预)', 
+                        type: 'line', 
+                        data: baseline, 
+                        lineStyle: { type: 'dashed', width: 2 }, 
+                        itemStyle: { color: '#8c8c8c' }, 
+                        symbol: 'none' 
+                    },
+                    { 
+                        name: '干预后模拟', 
+                        type: 'line', 
+                        data: intervention, 
+                        smooth: true, 
+                        areaStyle: { 
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
+                                { offset: 1, color: 'rgba(82, 196, 26, 0.05)' }
+                            ])
+                        }, 
+                        lineStyle: { width: 2 }, 
+                        itemStyle: { color: '#52c41a' } 
+                    }
+                ]
+            });
+        }
 
         // 显示通知
         function showNotification(message, type) {
@@ -2597,8 +2776,18 @@
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
             }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
         `;
         document.head.appendChild(style);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                runPredictionEngine();
+            }, 500);
+        });
 
         (function syncNavState() {
             const current = location.pathname.split('/').pop() || 'index.html';

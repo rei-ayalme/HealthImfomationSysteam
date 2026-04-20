@@ -14,9 +14,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>健康数据洞察平台</title>
-    <script src="/assets/js/echarts.min.js"></script>
     <link rel="stylesheet" href="/assets/css/common.css">
+    <!-- 1. 首先声明全局配置变量 -->
+    <script>
+        window.AppConfig = {
+            API_BASE: '/api/v1'
+        };
+    </script>
+    <!-- 2. 引入axios库 -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 3. 加载基础工具库 -->
+    <script src="/assets/js/echarts.min.js"></script>
     <script src="/assets/js/common.js"></script>
+    <!-- 4. 加载API服务层 -->
+    <script src="/assets/js/api.js"></script>
+    <!-- 5. 最后加载数据服务层 -->
     <script src="/assets/js/data-service.js"></script>
     <style>
         .user-actions {
@@ -541,13 +553,18 @@
             north_america: '北美健康概览：医疗可及性较高，然而健康差距与行为风险对结果存在持续影响。'
         };
 
+        // 中文健康资讯静态兜底数据
         const newsPool = [
-            { t: '慢性病防控策略更新', d: '多维度综合干预有助于降低心脑血管与代谢相关疾病的长期负担。' },
-            { t: '控烟政策带来健康收益', d: '提升烟草税与公共场所禁烟能够在较短周期内改善健康结局。' },
-            { t: '减盐行动的协同效应', d: '与健康教育结合时，减少高血压相关疾病负担的效果更稳定。' },
-            { t: '疫苗接种覆盖提升的意义', d: '提高关键人群的免疫水平，可显著降低可预防传染病的发生。' },
-            { t: '健康不平等监测与治理', d: '通过数据驱动的资源再分配，能够缓解不同群体间的健康差距。' },
-            { t: '健康行为改变的关键因素', d: '提高健康素养与可及性是促进行为长期转变的重要前提。' }
+            { t: '健康生活方式指南', d: '保持规律作息、均衡饮食和适量运动是维护健康的基础。建议每周进行至少150分钟中等强度运动，多摄入蔬菜水果，减少高盐高脂食品。' },
+            { t: '慢性病预防要点', d: '定期体检、控制体重、戒烟限酒可有效预防心脑血管疾病和糖尿病等慢性疾病。建议40岁以上人群每年进行一次全面体检。' },
+            { t: '心理健康同样重要', d: '保持良好心态，学会压力管理，必要时寻求专业心理支持，是全面健康的重要组成部分。每天留出时间放松心情，与亲友交流。' },
+            { t: '控烟政策带来健康收益', d: '提升烟草税与公共场所禁烟能够在较短周期内改善健康结局。戒烟20分钟后心率下降，1年后冠心病风险降低50%。' },
+            { t: '减盐行动的协同效应', d: '与健康教育结合时，减少高血压相关疾病负担的效果更稳定。建议每日盐摄入量不超过5克，注意加工食品中的隐形盐。' },
+            { t: '疫苗接种覆盖提升的意义', d: '提高关键人群的免疫水平，可显著降低可预防传染病的发生。按时接种疫苗是预防传染病最经济有效的手段。' },
+            { t: '健康不平等监测与治理', d: '通过数据驱动的资源再分配，能够缓解不同群体间的健康差距。关注弱势群体健康需求，促进医疗服务均等化。' },
+            { t: '健康行为改变的关键因素', d: '提高健康素养与可及性是促进行为长期转变的重要前提。从小培养健康习惯，家庭和学校健康教育至关重要。' },
+            { t: '科学运动促进健康', d: '适度运动能增强免疫力、改善心血管功能、控制体重。建议选择适合自己的运动方式，循序渐进，持之以恒。' },
+            { t: '合理膳食营养均衡', d: '食物多样、谷类为主，多吃蔬果、奶类、大豆，适量吃鱼、禽、蛋、瘦肉。少盐少油，控糖限酒，足量饮水。' }
         ];
 
         // 将从后端动态获取指标数据
@@ -952,10 +969,14 @@
                             box.className = 'news-item';
                             box.style.cursor = 'pointer';
                             box.onclick = () => window.open(item.url, '_blank');
+                            // 格式化日期显示
+                            const pubDate = item.publishedAt ? item.publishedAt.slice(0,10) : '今日';
+                            // 格式化来源显示
+                            const sourceName = item.source || '未知来源';
                             box.innerHTML = `
                                 <h4>${item.title}</h4>
                                 <p>${item.description}</p>
-                                <span style="font-size: 11px; color: #bfbfbf;">来源: ${item.source} | ${item.publishedAt.slice(0,10)}</span>
+                                <span style="font-size: 11px; color: #bfbfbf;">来源: ${sourceName} | ${pubDate}</span>
                             `;
                             newsList.appendChild(box);
                         });
@@ -966,7 +987,7 @@
                 console.warn('获取真实资讯失败，降级使用静态数据', e);
             }
 
-            // 降级静态数据
+            // 降级静态数据 - 显示中文预置资讯
             newsList.innerHTML = '';
             const pool = (Array.isArray(newsPool) ? newsPool : []);
             const filteredStatic = pool.filter(item => !key || (item?.t || '').includes(key) || (item?.d || '').includes(key));
@@ -976,12 +997,18 @@
                 return;
             }
 
+            // 显示静态数据提示
+            const tipBox = document.createElement('div');
+            tipBox.style.cssText = 'grid-column: 1 / -1; padding: 8px 12px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #d46b08;';
+            tipBox.innerHTML = 'ℹ️ 当前显示系统预置健康资讯。网络恢复后将自动获取最新新闻。';
+            newsList.appendChild(tipBox);
+
             filteredStatic.forEach(item => {
                 const box = document.createElement('div');
                 box.className = 'news-item';
                 box.style.cursor = 'pointer';
-                box.onclick = () => alert('当前为模拟静态数据，无真实链接。');
-                box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p><span style="font-size: 11px; color: #bfbfbf;">来源: 平台资讯库</span>`;
+                box.onclick = () => alert('当前为系统预置健康资讯，仅供参考。');
+                box.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p><span style="font-size: 11px; color: #bfbfbf;">来源: 健康知识库</span>`;
                 newsList.appendChild(box);
             });
         }
@@ -1045,11 +1072,14 @@
                 if (!geoJsonRes.ok) {
                     throw new Error('网络响应不正常');
                 }
-                const geoJson = await geoJsonRes.json();
+                const geoJsonResponse = await geoJsonRes.json();
 
-                if (geoJson.status === "error") {
-                    throw new Error(geoJson.msg);
+                if (geoJsonResponse.status === "error") {
+                    throw new Error(geoJsonResponse.msg);
                 }
+
+                // 提取实际的 GeoJSON 数据（后端返回格式为 {status, path, msg, data}）
+                const geoJson = geoJsonResponse.data;
 
                 if (!geoJson || !Array.isArray(geoJson.features) || geoJson.features.length === 0) {
                     mapChart.hideLoading();

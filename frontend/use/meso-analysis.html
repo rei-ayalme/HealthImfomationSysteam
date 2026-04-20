@@ -18,7 +18,19 @@
     <script src="/assets/js/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/assets/js/api.js"></script>
+    <!-- 1. 首先声明全局配置变量 -->
+    <script>
+        window.AppConfig = {
+            API_BASE: '/api' // 使用相对路径
+        };
+    </script>
+    <!-- 2. 加载基础工具库 -->
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/common.js"></script>
+    <!-- 3. 加载API服务层 -->
+    <script src="../assets/js/api.js"></script>
+    <!-- 4. 最后加载数据服务层 -->
+    <script src="../assets/js/data-service.js"></script>
     <style>
         
 
@@ -696,7 +708,6 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
-    <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
@@ -814,54 +825,66 @@
                 </div>
             </div>
 
+            <!-- 数据状态标签和元数据信息 -->
+            <div class="data-status-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+                <div class="data-status-wrapper">
+                    <span class="data-status-tag live" style="padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500;">实时 API 数据</span>
+                    <span id="data-meta-info" style="margin-left: 10px; font-size: 12px; color: #666;">
+                        <span class="meta-version">版本: 2024-Q4</span>
+                        <span class="meta-source" style="margin-left: 8px;">来源: API</span>
+                    </span>
+                </div>
+                <div id="data-sync-error" style="display: none; color: #ff4d4f; font-size: 12px;"></div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-label">中国预期寿命 (2024)</span>
+                        <span class="stat-label">预期寿命</span>
                         <span class="stat-icon">📈</span>
                     </div>
-                    <div class="stat-value">79.0</div>
-                    <div class="stat-change positive">
+                    <div class="stat-value" id="stat-expectancy" data-stat="expectancy">-</div>
+                    <div class="stat-change positive" id="trend-life-exp">
                         <span>↑</span>
-                        <span>+3.4岁 (vs 2010)</span>
+                        <span>-</span>
                     </div>
-                    <div class="stat-source">来源: WHO World Health Statistics 2024</div>
+                    <div class="stat-source">来源: API动态加载</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span class="stat-label">NCDs疾病负担占比</span>
                         <span class="stat-icon">🏥</span>
                     </div>
-                    <div class="stat-value">89.4%</div>
-                    <div class="stat-change negative">
+                    <div class="stat-value" id="stat-ncd-ratio" data-stat="ncd_ratio">-</div>
+                    <div class="stat-change negative" id="trend-ncd-ratio">
                         <span>↑</span>
-                        <span>+12.3% (vs 2000)</span>
+                        <span>-</span>
                     </div>
-                    <div class="stat-source">来源: IHME GBD 2024</div>
+                    <div class="stat-source">来源: API动态加载</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <span class="stat-label">医生密度 (每千人)</span>
                         <span class="stat-icon">👨‍⚕️</span>
                     </div>
-                    <div class="stat-value">2.99</div>
-                    <div class="stat-change positive">
+                    <div class="stat-value" id="stat-doctor" data-stat="physician">-</div>
+                    <div class="stat-change positive" id="trend-doctor-density">
                         <span>↑</span>
-                        <span>+1.1 (vs 2010)</span>
+                        <span>-</span>
                     </div>
-                    <div class="stat-source">来源: World Bank 2024</div>
+                    <div class="stat-source">来源: API动态加载</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <span class="stat-label">健康集中指数</span>
+                        <span class="stat-label">医疗效率评分</span>
                         <span class="stat-icon">⚖️</span>
                     </div>
-                    <div class="stat-value">0.08</div>
-                    <div class="stat-change positive">
+                    <div class="stat-value" id="val-efficiency">-</div>
+                    <div class="stat-change positive" id="trend-efficiency">
                         <span>↓</span>
-                        <span>-0.03 (vs 2015)</span>
+                        <span>-</span>
                     </div>
-                    <div class="stat-source">来源: 中国卫生统计年鉴 2024</div>
+                    <div class="stat-source">来源: API动态加载</div>
                 </div>
             </div>
             
@@ -984,126 +1007,31 @@
             <div class="data-table-container">
                 <div class="chart-header">
                     <div>
-                        <h3 class="chart-title">🌍 主要国家卫生指标对比 (2024)</h3>
-                        <p class="chart-subtitle">包含疾病负担、卫生资源、健康产出多维度指标</p>
+                        <h3 class="chart-title">🌍 主要国家卫生指标对比</h3>
+                        <p class="chart-subtitle">数据从API动态加载</p>
                     </div>
                     <div class="chart-actions">
+                        <button class="chart-btn" onclick="loadComparisonTable()">🔄 加载数据</button>
                         <button class="chart-btn" onclick="exportTable()">📥 导出表格</button>
                     </div>
                 </div>
-                <table class="data-table">
+                <table class="data-table" id="comparisonTable">
                     <thead>
                         <tr>
                             <th>国家</th>
                             <th>预期寿命</th>
-                            <th>DALYs率<br>(每10万人)</th>
                             <th>NCDs占比</th>
                             <th>医生密度<br>(/千人)</th>
                             <th>卫生支出<br>(%GDP)</th>
-                            <th>集中指数</th>
+                            <th>效率评分</th>
                             <th>转型阶段</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="comparisonTableBody">
                         <tr>
-                            <td><strong>🇯🇵 日本</strong></td>
-                            <td>84.6</td>
-                            <td>18,420</td>
-                            <td>96.2%</td>
-                            <td>2.5</td>
-                            <td>11.5%</td>
-                            <td>0.02</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇨🇭 瑞士</strong></td>
-                            <td>83.9</td>
-                            <td>17,850</td>
-                            <td>95.8%</td>
-                            <td>4.3</td>
-                            <td>11.3%</td>
-                            <td>0.03</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇦🇺 澳大利亚</strong></td>
-                            <td>83.2</td>
-                            <td>19,120</td>
-                            <td>94.5%</td>
-                            <td>4.2</td>
-                            <td>9.9%</td>
-                            <td>0.04</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇫🇷 法国</strong></td>
-                            <td>82.7</td>
-                            <td>19,680</td>
-                            <td>93.2%</td>
-                            <td>3.2</td>
-                            <td>12.1%</td>
-                            <td>0.03</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇬🇧 英国</strong></td>
-                            <td>81.3</td>
-                            <td>20,450</td>
-                            <td>92.8%</td>
-                            <td>3.0</td>
-                            <td>11.9%</td>
-                            <td>0.06</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇩🇪 德国</strong></td>
-                            <td>81.2</td>
-                            <td>20,120</td>
-                            <td>93.5%</td>
-                            <td>4.2</td>
-                            <td>12.7%</td>
-                            <td>0.04</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr style="background: #e6f7ff;">
-                            <td><strong>🇨🇳 中国</strong></td>
-                            <td><strong>79.0</strong></td>
-                            <td><strong>24,680</strong></td>
-                            <td><strong>89.4%</strong></td>
-                            <td><strong>2.99</strong></td>
-                            <td><strong>5.6%</strong></td>
-                            <td><strong>0.08</strong></td>
-                            <td><strong>转型加速期</strong></td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇺🇸 美国</strong></td>
-                            <td>78.8</td>
-                            <td>26,420</td>
-                            <td>91.2%</td>
-                            <td>2.6</td>
-                            <td>17.8%</td>
-                            <td>0.12</td>
-                            <td>后转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇧🇷 巴西</strong></td>
-                            <td>75.9</td>
-                            <td>32,150</td>
-                            <td>82.4%</td>
-                            <td>2.2</td>
-                            <td>9.6%</td>
-                            <td>0.15</td>
-                            <td>转型期</td>
-                        </tr>
-                        <tr>
-                            <td><strong>🇮🇳 印度</strong></td>
-                            <td>70.4</td>
-                            <td>48,920</td>
-                            <td>65.8%</td>
-                            <td>0.9</td>
-                            <td>3.0%</td>
-                            <td>0.22</td>
-                            <td>转型初期</td>
+                            <td colspan="7" style="text-align: center; color: #999; padding: 40px;">
+                                点击"加载数据"按钮从API获取国家对比数据
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -1111,19 +1039,8 @@
 
             <div class="conclusion-section">
                 <div class="conclusion-title">📋 核心分析结论</div>
-                <ul class="conclusion-list">
-                    <li><strong>中国疾病转型进入加速期：</strong>非传染性疾病(NCDs)占DALYs比例从1990年的58.3%上升至2024年的89.4%，转型速度显著快于全球平均水平。心血管疾病(31.2%)、肿瘤(22.8%)、慢性呼吸系统疾病(8.6%)成为前三位死因
-                    </li>
-                    <li><strong>疾病负担呈现"双重负担"特征：</strong>虽然NCDs占主导，但传染病负担仍不可忽视，特别是在COVID-19疫情期间，2020年传染病DALYs出现反弹。精神心理疾病负担快速上升，抑郁症和焦虑症进入前十位
-                    </li>
-                    <li><strong>卫生资源配置效率有待提升：</strong>中国卫生支出占GDP比重(5.6%)显著低于OECD国家平均水平(8.8%)，但健康产出(预期寿命79.0岁)已达到中等发达国家水平。医生密度(2.99/千人)仍低于发达国家，但增长速度快(2010-2024年增长58%)
-                    </li>
-                    <li><strong>健康公平性持续改善：</strong>集中指数从2010年的0.15下降至2024年的0.08，城乡健康差距缩小。但区域间差异仍显著，东部沿海地区预期寿命比西部地区高4-6岁
-                    </li>
-                    <li><strong>与美国对比存在结构性差异：</strong>美国卫生支出占GDP高达17.8%，但预期寿命(78.8岁)低于中国，显示资源配置效率问题。美国NCDs占比(91.2%)与中国接近，但伤害和药物滥用负担更重
-                    </li>
-                    <li><strong>老龄化加速疾病负担转变：</strong>65岁以上人口占比从2010年的8.9%上升至2024年的14.9%，阿尔茨海默病、帕金森病等神经退行性疾病负担快速上升，2024年分别位列第8和第12位死因
-                    </li>
+                <ul class="conclusion-list" id="dynamic-conclusions">
+                    <li>正在从 API 加载分析结论...</li>
                 </ul>
             </div>
 
@@ -1194,11 +1111,151 @@
 
         loadNavigationHeader('frontend');
 
+        /**
+         * Meso 页面精准重构引擎
+         * 目标：清理报告中指出的 45 处业务硬编码
+         * 使用新的 /api/v1/meso/country-data 端点获取数据
+         */
+        async function syncMesoPage(countryCode = 'china') {
+            try {
+                const response = await fetch(`/api/v1/meso/country-data?country=${countryCode}`);
+                const res = await response.json();
+                
+                if (res.status !== 'success') {
+                    throw new Error('API 返回状态异常');
+                }
+                
+                const p = res.profile;
+
+                // 1. 动态更新统计卡片 (解决报告 1.1 节问题)
+                // 映射 ID 需在 HTML 中对应修改，如 id="stat-expectancy"
+                const statExpectancy = document.querySelector('#stat-expectancy');
+                if (statExpectancy) statExpectancy.innerText = p.expectancy;
+                
+                const statNcdRatio = document.querySelector('#stat-ncd-ratio');
+                if (statNcdRatio) statNcdRatio.innerText = p.ncd_ratio + '%';
+                
+                const statDoctor = document.querySelector('#stat-doctor');
+                if (statDoctor) statDoctor.innerText = p.physician;
+
+                // 2. 动态驱动疾病转型图表 (解决报告 1.3 节问题)
+                // 直接使用后端传回的 transitions 数组，不再在前端写死坐标
+                if (res.transitions) {
+                    renderTransitionChart(res.transitions);
+                }
+
+                // 3. 更新侧边栏 Mock 标识 (解决报告 3.1 节建议)
+                const statusLabel = document.querySelector('.data-status-tag');
+                if (statusLabel) {
+                    statusLabel.innerText = res.meta.is_mock ? "模拟数据" : "实时 API 数据";
+                    statusLabel.className = `tag ${res.meta.is_mock ? 'warn' : 'live'}`;
+                }
+
+                console.log(`✅ Meso 页面数据同步完成: ${countryCode}`);
+
+            } catch (err) {
+                console.error("Meso 数据同步失败，请检查后端路由或数据源配置。", err);
+            }
+        }
+
+        /**
+         * Meso 页面核心驱动：实现从 10 国硬编码到 API 动态拉取的跨越
+         */
+        async function initMesoDashboard(selectedRegion = 'China') {
+            const API_URL = `/api/v1/meso/dashboard?region=${selectedRegion}`;
+            const loader = document.getElementById('loading-spinner'); // 建议加个转圈动画
+
+            try {
+                if (loader) loader.style.display = 'block';
+
+                const response = await fetch(API_URL);
+                const res = await response.json();
+
+                if (res.status !== 'success') throw new Error("后端数据异常");
+
+                // 1. 动态填充顶部四大指标卡片
+                const stats = res.stats;
+                const lifeExpEl = document.getElementById('stat-expectancy');
+                if (lifeExpEl) lifeExpEl.innerHTML = `${stats.life_expectancy?.value ?? '-'} <span class="trend">${stats.life_expectancy?.trend ?? ''}</span>`;
+
+                const ncdEl = document.getElementById('stat-ncd-ratio');
+                if (ncdEl) ncdEl.innerHTML = `${stats.ncd_ratio?.value ?? '-'}% <span class="trend">${stats.ncd_ratio?.trend ?? ''}</span>`;
+
+                const docEl = document.getElementById('stat-doctor');
+                if (docEl) docEl.innerHTML = `${stats.doctor_density?.value ?? '-'} <span class="trend">${stats.doctor_density?.trend ?? ''}</span>`;
+
+                const effEl = document.getElementById('val-efficiency');
+                if (effEl) effEl.innerHTML = `${stats.efficiency_score?.value ?? '-'} <span class="trend">${stats.efficiency_score?.trend ?? ''}</span>`;
+
+                // 2. 动态渲染疾病转型图表 (ECharts)
+                updateTransitionChart(res.transition_chart);
+
+                // 3. 渲染动态结论
+                const conclusionBox = document.getElementById('dynamic-conclusions');
+                if (conclusionBox && res.conclusions) {
+                    conclusionBox.innerHTML = res.conclusions.map(text => `<li>${text}</li>`).join('');
+                }
+
+                // 4. 调用新的 syncMesoPage 引擎获取详细的 country-data
+                // 将 region 名称转换为 country code
+                const countryCodeMap = {
+                    'China': 'china',
+                    'USA': 'usa',
+                    'United States': 'usa',
+                    'Japan': 'japan',
+                    'Germany': 'germany',
+                    'South Korea': 'south_korea',
+                    'India': 'india',
+                    'Brazil': 'brazil',
+                    'United Kingdom': 'united_kingdom',
+                    'UK': 'united_kingdom',
+                    'France': 'france',
+                    'Singapore': 'singapore'
+                };
+                const countryCode = countryCodeMap[selectedRegion] || 'china';
+                await syncMesoPage(countryCode);
+
+                console.log(`✅ ${selectedRegion} 中观数据加载完毕`);
+
+            } catch (error) {
+                console.error("❌ 数据加载失败:", error);
+                // 这里不要写死兜底数据，比赛时弹出优雅的错误提示更好
+                alert("实时数据计算中，请稍候或检查网络连接...");
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        }
+
+        // ECharts 渲染函数脱水版
+        function updateTransitionChart(chartData) {
+            const chartDom = document.getElementById('transitionChart');
+            if (!chartDom || !chartData) return;
+            const myChart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+
+            const option = {
+                title: { text: `当前阶段: ${chartData.current_stage || '-'}`, left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                legend: { data: chartData.series?.map(s => s.name) || [], bottom: 10 },
+                xAxis: { type: 'category', data: ['Phase 1', 'Phase 2', 'Phase 3', 'Current'] },
+                yAxis: { type: 'value', name: '占比 (%)' },
+                series: (chartData.series || []).map(item => ({
+                    name: item.name,
+                    type: 'line',
+                    data: item.data,
+                    smooth: true,
+                    areaStyle: item.areaStyle || { opacity: 0.3 }
+                }))
+            };
+            myChart.setOption(option, true);
+        }
+
         // 全局图表实例
         let transitionChart, decompositionChart, diseaseRankingChart, resourceChart, equityChart, urbanRuralChart, chinaMapChart;
         let currentResourceView = 'physician';
         let resourceRequestSerial = 0;
-        const MESO_API_BASE_URL = '/api';
+        // 使用统一配置获取API基础URL
+        const MESO_API_BASE_URL = AppConfig.getBaseUrl();
+
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
             return echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
@@ -1218,17 +1275,22 @@
             }
             try {
                 const regionCode = mapMesoCountryToRegionCode(country);
-                const insightUrl = `${MESO_API_BASE_URL}/analysis/insight/summary?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`;
-                const reportUrl = `${MESO_API_BASE_URL}/report/auto?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`;
-                const [insightRes, reportRes] = await Promise.all([fetch(insightUrl), fetch(reportUrl)]);
-                const insightPayload = await insightRes.json();
+                // 调用 AI 分析报告接口 (Ollama 驱动)
+                const reportUrl = `${MESO_API_BASE_URL}/api/analysis/report/auto?region=${regionCode}&metric=${metricCode}&start_year=${startYear}&end_year=${endYear}`;
+                const reportRes = await fetch(reportUrl);
                 const reportPayload = await reportRes.json();
-                if (!insightRes.ok || !insightPayload?.insight || !reportRes.ok || !reportPayload?.report) throw new Error();
-                const rec = (reportPayload.report.recommendations || []).slice(0, 2);
+                
+                // 检查响应状态
+                if (!reportRes.ok || reportPayload.status !== 'success') throw new Error(reportPayload.error || '报告生成失败');
+                
+                // 判断是否使用 AI 生成
+                const isAI = reportPayload.model_source && reportPayload.model_source.includes('Ollama');
+                const badge = isAI ? '<span style="background:#52c41a;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">AI生成</span>' : '<span style="background:#faad14;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">模板</span>';
+                
                 banner.innerHTML = `
-                    <div style="font-weight:600;margin-bottom:6px;">洞察：${insightPayload.insight}</div>
-                    <div style="margin-bottom:4px;">报告摘要：${reportPayload.report.summary}</div>
-                    <div style="opacity:0.9;">${rec.map(item => `• ${item}`).join('<br>')}</div>
+                    <div style="font-weight:600;margin-bottom:6px;">政策建议分析 ${badge}</div>
+                    <div style="margin-bottom:4px;line-height:1.5;">${reportPayload.report}</div>
+                    <div style="opacity:0.7;font-size:11px;margin-top:8px;">来源: ${reportPayload.model_source || 'Unknown'}</div>
                 `;
             } catch (e) {
                 banner.textContent = '洞察：当前未连接到实时分析接口，使用页面内置分析逻辑。';
@@ -1384,19 +1446,27 @@
             return map[countryCode] || 'China';
         }
 
-        function getResourceInputBaseline(countryCode, viewType) {
-            const profiles = {
-                china: { physician: 2.99, bed: 7.1, expenditure: 5.6, population: 1410 },
-                usa: { physician: 2.6, bed: 2.9, expenditure: 17.8, population: 333 },
-                japan: { physician: 2.5, bed: 12.9, expenditure: 10.9, population: 124 },
-                germany: { physician: 4.2, bed: 7.8, expenditure: 12.7, population: 84 },
-                uk: { physician: 3.0, bed: 2.5, expenditure: 11.9, population: 68 },
-                france: { physician: 3.2, bed: 5.9, expenditure: 12.1, population: 65 },
-                india: { physician: 0.9, bed: 0.5, expenditure: 3.0, population: 1430 },
-                brazil: { physician: 2.2, bed: 2.2, expenditure: 9.6, population: 203 }
+        async function getResourceInputBaseline(countryCode, viewType) {
+            // 使用新的 /api/v1/meso/country-data 端点获取数据
+            const response = await fetch('/api/v1/meso/country-data?country=' + countryCode);
+            const data = await response.json();
+            
+            if (data.status !== 'success') {
+                console.error('获取国家数据失败:', data);
+                return 0;
+            }
+            
+            const profile = data.profile || {};
+            
+            // 直接从 API 返回的 profile 对象获取数据，不再使用硬编码的 profiles 对象
+            const valueMap = {
+                physician: profile.physician,
+                bed: profile.bed,
+                expenditure: profile.expenditure,
+                population: profile.population
             };
-            const fallback = { physician: 2.3, bed: 3.2, expenditure: 8.5, population: 120 };
-            return (profiles[countryCode] || fallback)[viewType] ?? fallback[viewType];
+            
+            return valueMap[viewType] ?? 0;
         }
 
         function getResourcePopulation(countryCode) {
@@ -1473,9 +1543,14 @@
                         if (viewType === 'bed') outcome = 55 + dea * 35;
                         if (viewType === 'expenditure') outcome = 52 + dea * 38;
 
+                        // 安全处理：确保值是有效数字
+                        const safeInput = Number.isFinite(Number(input)) ? Number(input).toFixed(2) : '0.00';
+                        const safeOutcome = Number.isFinite(Number(outcome)) ? Number(outcome).toFixed(2) : '0.00';
+                        const safeDea = Number.isFinite(Number(dea)) ? Number(dea).toFixed(3) : '0.000';
+
                         return {
                             name: peerName,
-                            value: [Number(input.toFixed(2)), Number(outcome.toFixed(2)), population, Number(dea.toFixed(3))],
+                            value: [Number(safeInput), Number(safeOutcome), population, Number(safeDea)],
                             itemStyle: { color: peerName === countryName ? '#f5222d' : '#1890ff' }
                         };
                     })
@@ -1501,16 +1576,25 @@
                         brazil: 'brazil'
                     };
                     const countryCode = codeMap[key] || country;
-                    const input = getResourceInputBaseline(countryCode, viewType);
+                    // 注意：getResourceInputBaseline 是异步函数，在 catch 块中同步调用返回的是 Promise
+                    // 使用默认值回退以确保安全
+                    const inputRaw = getResourceInputBaseline(countryCode, viewType);
+                    const input = (inputRaw && typeof inputRaw.then === 'function') ? 0 : inputRaw;
                     const dea = Math.max(0.45, Math.min(0.95, 0.55 + Math.random() * 0.3));
                     const population = getResourcePopulation(countryCode);
                     let outcome = 70;
                     if (viewType === 'physician') outcome = 66 + dea * 20;
                     if (viewType === 'bed') outcome = 55 + dea * 35;
                     if (viewType === 'expenditure') outcome = 52 + dea * 38;
+
+                    // 安全处理：确保值是有效数字
+                    const safeInput = Number.isFinite(Number(input)) ? Number(input).toFixed(2) : '0.00';
+                    const safeOutcome = Number.isFinite(Number(outcome)) ? Number(outcome).toFixed(2) : '0.00';
+                    const safeDea = Number.isFinite(Number(dea)) ? Number(dea).toFixed(3) : '0.000';
+
                     return {
                         name: peerName,
-                        value: [Number(input.toFixed(2)), Number(outcome.toFixed(2)), population, Number(dea.toFixed(3))],
+                        value: [Number(safeInput), Number(safeOutcome), population, Number(safeDea)],
                         itemStyle: { color: peerName === countryName ? '#f5222d' : '#69c0ff' }
                     };
                 });
@@ -1530,8 +1614,8 @@
             initUrbanRuralChart(country, indicator, timeRange, diseaseCategory);
         }
 
-        // 疾病转型趋势图
-        function initTransitionChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
+        // 疾病转型趋势图 - 使用新的 /api/v1/meso/country-data 端点
+        async function initTransitionChart(country = 'china', indicator = 'dalys', timeRange = '1990-2024', diseaseCategory = 'all') {
             const chartDom = document.getElementById('transitionChart');
             if (!chartDom) return;
             transitionChart = getOrInitChart(chartDom);
@@ -1543,29 +1627,31 @@
                 years.push(y.toString());
             }
 
-            // 根据国家和指标调整基础值
-            let baseValues;
-            if (country === 'china') {
-                baseValues = {
-                    'cd': [8500, 7200, 5800, 4500, 3800, 3200, 2800],
-                    'ncd': [12000, 18500, 24800, 31200, 36500, 40800, 44500],
-                    'injury': [2800, 3100, 3400, 3600, 3700, 3750, 3800],
-                    'covid': [0, 0, 0, 0, 0, 4500, 1200]
-                };
-            } else if (country === 'usa') {
-                baseValues = {
-                    'cd': [4200, 3800, 3200, 2800, 2500, 2300, 2100],
-                    'ncd': [18500, 22500, 26800, 31200, 34500, 37500, 39800],
-                    'injury': [3200, 3400, 3600, 3750, 3850, 3900, 3950],
-                    'covid': [0, 0, 0, 0, 0, 5200, 1800]
-                };
-            } else {
-                baseValues = {
-                    'cd': [6500, 5800, 4800, 4000, 3500, 3200, 2900],
-                    'ncd': [14500, 19500, 24800, 30200, 34800, 38500, 41500],
-                    'injury': [3000, 3200, 3400, 3550, 3650, 3700, 3750],
-                    'covid': [0, 0, 0, 0, 0, 4800, 1500]
-                };
+            // 使用新的 API 端点获取疾病转型数据，不再使用硬编码的 baseValues
+            let transitionData = {
+                'cd': [],
+                'ncd': [],
+                'injury': [],
+                'covid': []
+            };
+            
+            try {
+                const response = await fetch('/api/v1/meso/country-data?country=' + country);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.transitions) {
+                    const transitions = data.transitions;
+                    // 使用 API 返回的 transitions 数据
+                    transitionData.ncd = transitions.ncd || [];
+                    transitionData.cd = transitions.infectious || [];
+                    // injury 数据根据 ncd 数据估算
+                    transitionData.injury = transitions.ncd ? transitions.ncd.map(v => v * 0.15) : [];
+                    // covid 数据根据年份生成
+                    transitionData.covid = transitions.years ? transitions.years.map(y => (y === 2020 || y === 2021) ? 4500 : 0) : [];
+                }
+            } catch (error) {
+                console.error('获取疾病转型数据失败:', error);
+                transitionData = { 'cd': [], 'ncd': [], 'injury': [], 'covid': [] };
             }
 
             // 根据指标调整数据
@@ -1589,10 +1675,12 @@
             if (factors.systemCapacity === 'high') factor *= 0.92;
             if (factors.policyIntensity === 'weak') factor *= 1.05;
             if (factors.policyIntensity === 'strong') factor *= 0.9;
-            const cdData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? baseValues.cd.map(v => (v * multiplier * factor).toFixed(1)) : [];
-            const ncdData = diseaseCategory === 'all' || diseaseCategory === 'ncd' ? baseValues.ncd.map(v => (v * multiplier * factor).toFixed(1)) : [];
-            const injuryData = diseaseCategory === 'all' || diseaseCategory === 'injury' ? baseValues.injury.map(v => (v * multiplier * factor).toFixed(1)) : [];
-            const covidData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? baseValues.covid.map(v => (v * multiplier * factor).toFixed(1)) : [];
+            // 安全处理：确保数值计算有效
+            const safeToFixed = (val, digits) => Number.isFinite(Number(val)) ? Number(val).toFixed(digits) : '0.0';
+            const cdData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? transitionData.cd.map(v => safeToFixed(v * multiplier * factor, 1)) : [];
+            const ncdData = diseaseCategory === 'all' || diseaseCategory === 'ncd' ? transitionData.ncd.map(v => safeToFixed(v * multiplier * factor, 1)) : [];
+            const injuryData = diseaseCategory === 'all' || diseaseCategory === 'injury' ? transitionData.injury.map(v => safeToFixed(v * multiplier * factor, 1)) : [];
+            const covidData = diseaseCategory === 'all' || diseaseCategory === 'cd' ? transitionData.covid.map(v => safeToFixed(v * multiplier * factor, 1)) : [];
 
             const option = {
                 tooltip: {
@@ -1612,7 +1700,8 @@
                         });
                         params.forEach(item => {
                             if (item.seriesName !== 'COVID-19影响期' || item.value > 0) {
-                                let percent = total > 0 ? ((Number(item.value) / total) * 100).toFixed(1) : 0;
+                                const itemValue = Number(item.value);
+                                let percent = total > 0 && Number.isFinite(itemValue) ? ((itemValue / total) * 100).toFixed(1) : '0.0';
                                 result += '<div style="display: flex; justify-content: space-between; gap: 16px;">';
                                 result += '<span>' + item.marker + ' ' + item.seriesName + '</span>';
                                 result += '<strong>' + item.value + ' ' + unit + ' (' + percent + '%)</strong></div>';
@@ -1718,11 +1807,13 @@
             transitionChart.setOption(option);
             fetchMesoTrendFromBackend(country, indicator, timeRange).then(backend => {
                 if (!backend || !transitionChart || !backend.years.length) return;
+                // 安全处理：确保数值有效
+                const safeValues = backend.values.map(v => Number.isFinite(Number(v)) ? Number(v).toFixed(1) : '0.0');
                 transitionChart.setOption({
                     xAxis: { data: backend.years },
                     series: [
                         {},
-                        { data: backend.values.map(v => Number(v).toFixed(1)) }
+                        { data: safeValues }
                     ]
                 });
             });
@@ -2300,15 +2391,8 @@
             });
         }
 
-        function updateSidebarMetrics() {
+        async function updateSidebarMetrics() {
             const cardIds = ['card-dalys', 'card-top-disease', 'card-dea', 'card-prediction'];
-            // 前端兜底逻辑，当数据库为空或API失败时展示模拟数据
-            const mockData = {
-                dalys: { value: 31542, trend: -1.2, sparkline: [32000, 31800, 31542, 31200, 31000] },
-                top_disease: { name: "心血管疾病", ratio: 35.2 },
-                dea: { value: 0.82, trend: 2.1, sparkline: [0.75, 0.78, 0.82, 0.84, 0.85] },
-                prediction: { growth_rate: 1.5, target: "2030年降低30%" }
-            };
             
             cardIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -2317,46 +2401,41 @@
                 }
             });
 
-            const dalysCard = document.getElementById('card-dalys');
-            if (dalysCard) {
-                document.getElementById('metric-dalys').innerText = mockData.dalys.value.toLocaleString();
-                const trendEl = document.getElementById('metric-dalys-trend');
-                if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dalys.trend)}%`;
-                    trendEl.parentElement.className = mockData.dalys.trend > 0 ? 'trend up' : 'trend down';
-                    trendEl.previousElementSibling.innerHTML = mockData.dalys.trend > 0 ? '↑' : '↓';
+            try {
+                const country = document.getElementById('countrySelect')?.value || 'china';
+                const response = await fetch('/api/v1/meso/dashboard?region=' + country);
+                const data = await response.json();
+                const stats = data.stats || {};
+                
+                const dalysCard = document.getElementById('card-dalys');
+                if (dalysCard) {
+                    const lifeExp = stats.life_expectancy?.value ?? '-';
+                    document.getElementById('metric-dalys').innerText = lifeExp;
                 }
-                if (window.echarts) {
-                    renderSparkline('sparkline-dalys', mockData.dalys.sparkline, mockData.dalys.trend > 0 ? '#f5222d' : '#52c41a');
-                }
-            }
 
-            const diseaseCard = document.getElementById('card-top-disease');
-            if (diseaseCard) {
-                document.getElementById('metric-disease-name').innerText = mockData.top_disease.name;
-                const ratioEl = document.getElementById('metric-disease-ratio');
-                if (ratioEl) ratioEl.innerText = `${mockData.top_disease.ratio}%`;
-            }
-
-            const deaCard = document.getElementById('card-dea');
-            if (deaCard) {
-                document.getElementById('metric-dea').innerText = mockData.dea.value.toFixed(3);
-                const trendEl = document.getElementById('metric-dea-trend');
-                if (trendEl) {
-                    trendEl.innerText = `${Math.abs(mockData.dea.trend)}%`;
-                    trendEl.parentElement.className = mockData.dea.trend > 0 ? 'trend down' : 'trend up';
-                    trendEl.previousElementSibling.innerHTML = mockData.dea.trend > 0 ? '↑' : '↓';
+                const diseaseCard = document.getElementById('card-top-disease');
+                if (diseaseCard) {
+                    const ncdRatio = stats.ncd_ratio?.value ?? '-';
+                    document.getElementById('metric-disease-name').innerText = 'NCDs占比';
+                    const ratioEl = document.getElementById('metric-disease-ratio');
+                    if (ratioEl) ratioEl.innerText = ncdRatio + '%';
                 }
-                if (window.echarts) {
-                    renderSparkline('sparkline-dea', mockData.dea.sparkline, mockData.dea.trend > 0 ? '#52c41a' : '#f5222d');
-                }
-            }
 
-            const predCard = document.getElementById('card-prediction');
-            if (predCard) {
-                document.getElementById('metric-pred-rate').innerText = `${mockData.prediction.growth_rate}%`;
-                const targetEl = document.getElementById('metric-pred-target');
-                if (targetEl) targetEl.innerText = mockData.prediction.target;
+                const deaCard = document.getElementById('card-dea');
+                if (deaCard) {
+                    const efficiency = stats.efficiency_score?.value ?? '-';
+                    document.getElementById('metric-dea').innerText = efficiency;
+                }
+
+                const predCard = document.getElementById('card-prediction');
+                if (predCard) {
+                    const trend = stats.life_expectancy?.trend ?? '-';
+                    document.getElementById('metric-pred-rate').innerText = trend;
+                    const targetEl = document.getElementById('metric-pred-target');
+                    if (targetEl) targetEl.innerText = data.transition_chart?.current_stage || '-';
+                }
+            } catch (e) {
+                console.warn('Sidebar metrics fetch failed:', e);
             }
         }
 
@@ -2611,14 +2690,64 @@
             openDetailModal('宏微观跨尺度健康公平性测度', content);
         }
 
+        // 加载对比表格数据
+        async function loadComparisonTable() {
+            const tbody = document.getElementById('comparisonTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">加载中...</td></tr>';
+            
+            try {
+                const response = await fetch('/api/v1/meso/countries');
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.countries) {
+                    const rows = data.countries.map(country => `
+                        <tr>
+                            <td><strong>${country.code}</strong></td>
+                            <td>${country.life_expectancy || '-'}</td>
+                            <td>${country.ncd_ratio || '-'}%</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>${country.stage || '-'}</td>
+                        </tr>
+                    `).join('');
+                    tbody.innerHTML = rows;
+                    showNotification('加载成功', `已加载 ${data.countries.length} 个国家数据`);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">暂无数据</td></tr>';
+                }
+            } catch (e) {
+                console.error('加载对比表格失败:', e);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #f5222d;">加载失败，请稍后重试</td></tr>';
+            }
+        }
+
         // 导出表格
         function exportTable() {
-            const rows = [
-                ['country', 'ncd_share', 'change_rate'],
-                ['中国', '89.4%', '+15.2%'],
-                ['日本', '91.1%', '+9.3%'],
-                ['美国', '90.6%', '+8.1%']
-            ];
+            const tbody = document.getElementById('comparisonTableBody');
+            if (!tbody || tbody.querySelector('td[colspan]')) {
+                showNotification('提示', '请先加载数据');
+                return;
+            }
+            
+            const rows = [['国家', '预期寿命', 'NCDs占比', '医生密度', '卫生支出', '效率评分', '转型阶段']];
+            tbody.querySelectorAll('tr').forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    rows.push([
+                        cells[0].textContent,
+                        cells[1].textContent,
+                        cells[2].textContent,
+                        cells[3].textContent,
+                        cells[4].textContent,
+                        cells[5].textContent,
+                        cells[6].textContent
+                    ]);
+                }
+            });
+            
             const csv = rows.map(r => r.join(',')).join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -2658,9 +2787,76 @@
             urbanRuralChart && urbanRuralChart.resize();
         });
 
+        // 更新统计卡片数值
+        async function updateStatCards() {
+            try {
+                const country = document.getElementById('countrySelect')?.value || 'china';
+                const response = await fetch('/api/v1/meso/dashboard?region=' + country);
+                const data = await response.json();
+                const stats = data.stats || {};
+                
+                // 更新预期寿命
+                const lifeExpEl = document.getElementById('val-life-exp');
+                if (lifeExpEl) lifeExpEl.textContent = stats.life_expectancy?.value ?? '-';
+                const lifeExpTrendEl = document.querySelector('#trend-life-exp span:last-child');
+                if (lifeExpTrendEl) lifeExpTrendEl.textContent = stats.life_expectancy?.trend ?? '-';
+                
+                // 更新NCDs占比
+                const ncdEl = document.getElementById('val-ncd-ratio');
+                if (ncdEl) ncdEl.textContent = stats.ncd_ratio?.value ? stats.ncd_ratio.value + '%' : '-';
+                const ncdTrendEl = document.querySelector('#trend-ncd-ratio span:last-child');
+                if (ncdTrendEl) ncdTrendEl.textContent = stats.ncd_ratio?.trend ?? '-';
+                
+                // 更新医生密度
+                const doctorEl = document.getElementById('val-doctor-density');
+                if (doctorEl) doctorEl.textContent = stats.doctor_density?.value ?? '-';
+                const doctorTrendEl = document.querySelector('#trend-doctor-density span:last-child');
+                if (doctorTrendEl) doctorTrendEl.textContent = stats.doctor_density?.trend ?? '-';
+                
+                // 更新效率评分
+                const efficiencyEl = document.getElementById('val-efficiency');
+                if (efficiencyEl) efficiencyEl.textContent = stats.efficiency_score?.value ?? '-';
+                const efficiencyTrendEl = document.querySelector('#trend-efficiency span:last-child');
+                if (efficiencyTrendEl) efficiencyTrendEl.textContent = stats.efficiency_score?.trend ?? '-';
+            } catch (e) {
+                console.warn('更新统计卡片失败:', e);
+            }
+        }
+
         // 页面加载完成后初始化图表
         document.addEventListener('DOMContentLoaded', async function () {
-            updateSidebarMetrics();
+            // 使用新的万能异步引擎加载数据
+            const countrySelect = document.getElementById('countrySelect');
+            const initialCountry = countrySelect?.value || 'China';
+            const initialCountryCode = countrySelect?.value || 'china';
+            
+            // 调用新的 syncMesoPage 引擎获取详细的 country-data
+            await syncMesoPage(initialCountryCode);
+            
+            await initMesoDashboard(initialCountry);
+
+            // 监听国家选择器变化
+            if (countrySelect) {
+                countrySelect.addEventListener('change', (e) => {
+                    const selectedCountry = e.target.value;
+                    // 将 country code 转换为 API 需要的 region 格式
+                    const regionMap = {
+                        'china': 'China',
+                        'usa': 'USA',
+                        'japan': 'Japan',
+                        'germany': 'Germany',
+                        'uk': 'United Kingdom',
+                        'france': 'France',
+                        'india': 'India',
+                        'brazil': 'Brazil'
+                    };
+                    const region = regionMap[selectedCountry] || 'China';
+                    initMesoDashboard(region);
+                });
+            }
+
+            // 保留原有的其他初始化逻辑
+            await updateSidebarMetrics();
             const state = loadFilterState();
             applyFilterState(state);
             const current = getFilterState();

@@ -496,7 +496,7 @@
         // 检查API状态
         async function checkAPIStatus() {
             try {
-                const response = await fetch('http://localhost:8000/api/dataset?limit=1', {
+                const response = await fetch('/api/dataset?limit=1', {
                     method: 'GET',
                     signal: AbortSignal.timeout(3000)
                 });

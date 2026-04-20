@@ -5,5 +5,6 @@
 """
 
 from .response import success_response, error_response, ResponseCode
+from .data_handler import MicroDataHandler
 
-__all__ = ['success_response', 'error_response', 'ResponseCode']
+__all__ = ['success_response', 'error_response', 'ResponseCode', 'MicroDataHandler']

@@ -38,8 +38,9 @@ async def create_file(
 
     try:
         with open(file_path, "wb") as f:
- content = await file.read()
-            f.write(content)
+            f.write(await file.read())
+
+
 
         file_obj = storage.create_file(file.filename, file_path, purpose)
         return file_obj

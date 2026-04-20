@@ -297,25 +297,11 @@
 
         /* 响应式设计 */
         @media (max-width: 768px) {
-<<<<<<< HEAD
-            .main-content {
-                padding: 16px;
-            }
-
-            .page-header {
-                flex-direction: column;
-                gap: 16px;
-                align-items: flex-start;
-            }
-
-            .charts-section {
-=======
             
             
             
             
             .stats-grid {
->>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
                 grid-template-columns: 1fr;
             }
 
@@ -806,43 +792,6 @@
             trendChart.resize();
             dataDistributionChart.resize();
         });
-<<<<<<< HEAD
-=======
-
-        // 绑定全局搜索栏事件
-        const searchInput = document.querySelector('.search-input');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const keyword = this.value.trim();
-                    if (keyword) {
-                        showToast(`正在全站检索: ${keyword}`, 'info');
-                        // 模拟检索延迟
-                        setTimeout(() => {
-                            showToast(`未找到关于 "${keyword}" 的相关模块或数据记录`, 'warning');
-                        }, 800);
-                    }
-                }
-            });
-        }
-    </script>
-    
-    <script>
-        (function syncAdminNavState() {
-            const current = location.pathname.split('/').pop() || 'index.html';
-            document.querySelectorAll('.nav-menu .nav-item').forEach(link => {
-                link.classList.remove('active');
-                const href = link.getAttribute('href');
-                if (href && href.endsWith(current)) {
-                    link.classList.add('active');
-                    const pageTitle = document.getElementById('dynamicPageTitle');
-                    if (pageTitle) {
-                        pageTitle.textContent = link.querySelector('.nav-text').textContent;
-                    }
-                }
-            });
-        })();
->>>>>>> 07f07ef8396c30328be0292ce9853dbd45b59892
     </script>
 </body>
 </html>

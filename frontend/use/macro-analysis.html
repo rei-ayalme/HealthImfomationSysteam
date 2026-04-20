@@ -18,7 +18,19 @@
     <script src="/assets/js/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/assets/js/api.js"></script>
+    <!-- 1. 首先声明全局配置变量 -->
+    <script>
+        window.AppConfig = {
+            API_BASE: '/api' // 使用相对路径
+        };
+    </script>
+    <!-- 2. 加载基础工具库 -->
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/common.js"></script>
+    <!-- 3. 加载API服务层 -->
+    <script src="../assets/js/api.js"></script>
+    <!-- 4. 最后加载数据服务层 -->
+    <script src="../assets/js/data-service.js"></script>
     <style>
         
 
@@ -529,7 +541,6 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/common.css">
-    <script src="/assets/js/common.js"></script>
 </head>
 
 <body>
@@ -779,8 +790,9 @@
 
         loadNavigationHeader('frontend');
 
-        // API基础URL
-        const API_BASE_URL = '/api';
+        // 使用统一配置获取API基础URL
+        const API_BASE_URL = AppConfig.getBaseUrl();
+
         function getOrInitChart(chartDom) {
             if (!chartDom || !window.echarts) return null;
             const chart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
@@ -816,17 +828,22 @@
                 header.appendChild(banner);
             }
             try {
-                const insightUrl = `${API_BASE_URL}/analysis/insight/summary?region=${regionCode}&metric=dalys&start_year=${state.startYear}&end_year=${state.endYear}`;
-                const reportUrl = `${API_BASE_URL}/report/auto?region=${regionCode}&metric=dalys&start_year=${state.startYear}&end_year=${state.endYear}`;
-                const [insightRes, reportRes] = await Promise.all([fetch(insightUrl), fetch(reportUrl)]);
-                const insightPayload = await insightRes.json();
+                // 调用 AI 分析报告接口 (Ollama 驱动)
+                const reportUrl = `${API_BASE_URL}/api/analysis/report/auto?region=${regionCode}&metric=dalys&start_year=${state.startYear}&end_year=${state.endYear}`;
+                const reportRes = await fetch(reportUrl);
                 const reportPayload = await reportRes.json();
-                if (!insightRes.ok || !insightPayload?.insight || !reportRes.ok || !reportPayload?.report) throw new Error();
-                const findings = (reportPayload.report.findings || []).slice(0, 2);
+                
+                // 检查响应状态
+                if (!reportRes.ok || reportPayload.status !== 'success') throw new Error(reportPayload.error || '报告生成失败');
+                
+                // 判断是否使用 AI 生成
+                const isAI = reportPayload.model_source && reportPayload.model_source.includes('Ollama');
+                const badge = isAI ? '<span style="background:#52c41a;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">AI生成</span>' : '<span style="background:#faad14;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:8px;">模板</span>';
+                
                 banner.innerHTML = `
-                    <div style="font-weight:600;margin-bottom:6px;">洞察：${insightPayload.insight}</div>
-                    <div style="margin-bottom:4px;">报告摘要：${reportPayload.report.summary}</div>
-                    <div style="opacity:0.9;">${findings.map(item => `• ${item}`).join('<br>')}</div>
+                    <div style="font-weight:600;margin-bottom:6px;">政策建议分析 ${badge}</div>
+                    <div style="margin-bottom:4px;line-height:1.5;">${reportPayload.report}</div>
+                    <div style="opacity:0.7;font-size:11px;margin-top:8px;">来源: ${reportPayload.model_source || 'Unknown'}</div>
                 `;
             } catch (e) {
                 banner.textContent = '洞察：当前未连接到实时分析接口，正在使用页面内置分析逻辑。';
@@ -1333,7 +1350,9 @@
                 if (geoLevel === 'region' && !continentsGeoJsonLoaded) {
                     const response = await fetch('/api/geojson/continents');
                     if (response.ok) {
-                        const geoJson = await response.json();
+                        const geoJsonResponse = await response.json();
+                        // 提取实际的 GeoJSON 数据（后端返回格式为 {status, path, msg, data}）
+                        const geoJson = geoJsonResponse.data || geoJsonResponse;
                         if (geoJson && Array.isArray(geoJson.features)) {
                             geoJson.features.forEach(f => {
                                 const props = f?.properties;
@@ -1349,7 +1368,9 @@
                 else if (!geoJsonLoaded) {
                     const response = await fetch('/api/geojson/world');
                     if (response.ok) {
-                        const geoJson = await response.json();
+                        const geoJsonResponse = await response.json();
+                        // 提取实际的 GeoJSON 数据（后端返回格式为 {status, path, msg, data}）
+                        const geoJson = geoJsonResponse.data || geoJsonResponse;
                         if (geoJson && Array.isArray(geoJson.features)) {
                             geoJson.features.forEach(f => {
                                 const props = f?.properties;

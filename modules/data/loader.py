@@ -1172,58 +1172,290 @@ class DataLoader:
                 out[col] = pd.to_numeric(out[col], errors="coerce")
         return out.reset_index(drop=True)
 
-    # ==================== 健康资讯获取（从main.py迁移） ====================
+    # ==================== 健康资讯获取（带24小时缓存机制） ====================
+
+    def _get_news_cache_key(self) -> str:
+        """生成新闻缓存键（按天）"""
+        today = datetime.now().strftime("%Y-%m-%d")
+        return f"mediastack:news:{today}"
+
+    def _get_api_usage_key(self) -> str:
+        """生成API调用计数键（按月）"""
+        month = datetime.now().strftime("%Y-%m")
+        return f"mediastack:usage:{month}"
+
+    def _get_cached_news(self) -> Optional[List[dict]]:
+        """从缓存获取新闻数据"""
+        try:
+            cache_key = self._get_news_cache_key()
+
+            # 尝试从 Redis 获取
+            if self._redis_client:
+                cached_data = self._redis_client.get(cache_key)
+                if cached_data:
+                    self.logger.info(f"[NewsCache] 缓存命中: {cache_key}")
+                    return json.loads(cached_data)
+
+            # 从内存缓存获取
+            if cache_key in self._fallback_cache:
+                timestamp = self._cache_timestamps.get(cache_key, 0)
+                if time.time() - timestamp < 86400:  # 24小时过期
+                    self.logger.info(f"[NewsCache] 内存缓存命中: {cache_key}")
+                    return self._fallback_cache[cache_key]
+
+        except Exception as e:
+            self.logger.warning(f"[NewsCache] 获取缓存失败: {e}")
+
+        return None
+
+    def _set_cached_news(self, news_list: List[dict]) -> bool:
+        """缓存新闻数据（24小时）"""
+        try:
+            cache_key = self._get_news_cache_key()
+
+            # 尝试保存到 Redis（24小时过期）
+            if self._redis_client:
+                self._redis_client.setex(
+                    cache_key,
+                    timedelta(hours=24),
+                    json.dumps(news_list, ensure_ascii=False)
+                )
+                self.logger.info(f"[NewsCache] 已更新Redis缓存: {cache_key}")
+                return True
+
+            # 保存到内存缓存
+            self._fallback_cache[cache_key] = news_list
+            self._cache_timestamps[cache_key] = time.time()
+            self.logger.info(f"[NewsCache] 已更新内存缓存: {cache_key}")
+            return True
+
+        except Exception as e:
+            self.logger.warning(f"[NewsCache] 设置缓存失败: {e}")
+            return False
+
+    def _increment_api_usage(self) -> int:
+        """增加API调用计数，返回当前计数"""
+        try:
+            usage_key = self._get_api_usage_key()
+
+            # 使用 Redis 计数器
+            if self._redis_client:
+                count = self._redis_client.incr(usage_key)
+                # 设置过期时间为月底
+                now = datetime.now()
+                next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+                ttl = int((next_month - now).total_seconds())
+                self._redis_client.expire(usage_key, ttl)
+                return count
+
+            # 内存计数器
+            if not hasattr(self, '_api_usage_counter'):
+                self._api_usage_counter = {}
+            self._api_usage_counter[usage_key] = self._api_usage_counter.get(usage_key, 0) + 1
+            return self._api_usage_counter[usage_key]
+
+        except Exception as e:
+            self.logger.warning(f"[APIUsage] 计数失败: {e}")
+            return -1
+
+    def get_api_usage_stats(self) -> Dict[str, Any]:
+        """获取API调用统计信息"""
+        try:
+            usage_key = self._get_api_usage_key()
+            current_month = datetime.now().strftime("%Y-%m")
+
+            # 获取当前月份调用次数
+            if self._redis_client:
+                count = int(self._redis_client.get(usage_key) or 0)
+                ttl = self._redis_client.ttl(usage_key)
+            else:
+                count = getattr(self, '_api_usage_counter', {}).get(usage_key, 0)
+                ttl = -1
+
+            return {
+                "current_month": current_month,
+                "api_calls_used": count,
+                "api_calls_limit": 100,  # 每月限额
+                "api_calls_remaining": max(0, 100 - count),
+                "usage_percentage": round((count / 100) * 100, 2),
+                "cache_ttl_seconds": ttl,
+                "status": "normal" if count < 80 else "warning" if count < 95 else "critical"
+            }
+
+        except Exception as e:
+            self.logger.error(f"[APIUsage] 获取统计失败: {e}")
+            return {
+                "current_month": datetime.now().strftime("%Y-%m"),
+                "api_calls_used": -1,
+                "error": str(e)
+            }
 
     def fetch_health_news(self, limit: int = 5) -> List[dict]:
         """
-        统一处理外部健康新闻API的请求与响应，实现超时控制与错误处理机制
+        获取健康资讯（带24小时缓存机制）
+
+        实现策略：
+        1. 优先从缓存获取（24小时有效）
+        2. 缓存未命中时才调用 Mediastack API
+        3. 严格监控API调用次数（每月限额100次）
+        4. API调用失败时返回缓存数据或兜底数据
 
         参数:
             limit: int - 请求的新闻数量，默认为5条
 
         返回:
-            List[dict] - 包含新闻信息的字典列表，每条新闻应包含"title"、"source"和"date"键
-                         当API不可用时返回包含友好提示的兜底数据
+            List[dict] - 包含新闻信息的字典列表
         """
+        # 第一步：检查缓存
+        cached_news = self._get_cached_news()
+        if cached_news is not None:
+            self.logger.info(f"[NewsCache] 返回缓存数据，共 {len(cached_news)} 条")
+            return cached_news
+
+        # 第二步：检查API调用额度
+        usage_stats = self.get_api_usage_stats()
+        if usage_stats["api_calls_remaining"] <= 0:
+            self.logger.warning(f"[APIUsage] API调用额度已用完: {usage_stats['api_calls_used']}/100")
+            return [{
+                "title": "API调用额度已用完",
+                "description": f"本月已使用 {usage_stats['api_calls_used']} 次API调用，额度已耗尽。请下月再试或联系管理员。",
+                "source": "System",
+                "publishedAt": datetime.now().isoformat(),
+                "url": "#"
+            }]
+
+        # 第三步：调用 Mediastack API
         try:
-            # 从环境变量获取API密钥，确保安全配置
             api_key = os.getenv("MEDIASTACK_API_KEY", "")
 
-            # 处理API密钥未配置的情况
+            # API Key 未配置
             if not api_key:
-                return [{"title": "系统提示：未配置新闻API Key", "source": "HIS System", "date": "今天"}]
+                self.logger.warning("[NewsAPI] API Key 未配置")
+                return [{
+                    "title": "系统提示：未配置新闻API Key",
+                    "description": "请在环境变量中配置 MEDIASTACK_API_KEY 以获取真实健康资讯",
+                    "source": "HIS System",
+                    "publishedAt": datetime.now().isoformat(),
+                    "url": "#"
+                }]
 
-            # 构建完整的API请求URL
-            url = f"http://api.mediastack.com/v1/news?access_key={api_key}&keywords=health,hospital,medical&countries=cn&limit={limit}"
+            # 构建请求URL - 获取中国地区健康新闻
+            url = f"http://api.mediastack.com/v1/news?access_key={api_key}&keywords=health&countries=cn&limit={limit}"
+            
+            self.logger.info(f"[NewsAPI] 发起API请求(中国地区): {url.split('?')[0]}")
 
-            # 发送GET请求，设置5秒超时防止系统阻塞
+            # 发送请求
             response = requests.get(url, timeout=5)
-
-            # 检查HTTP响应状态码，非2xx状态将抛出HTTPError
             response.raise_for_status()
-
-            # 解析JSON响应数据
             data = response.json()
 
-            # 提取并格式化新闻数据
+            # 处理响应数据
             articles = data.get("data", [])
+            
+            # 检查是否有中文内容（标题包含中文字符）
+            def has_chinese(text):
+                if not text:
+                    return False
+                return any('\u4e00' <= char <= '\u9fff' for char in text)
+            
+            chinese_articles = [a for a in articles if has_chinese(a.get("title", ""))]
+            
+            # 如果没有中文新闻，使用中文兜底数据
+            if not chinese_articles:
+                self.logger.info("[NewsAPI] 未获取到中文健康新闻，使用系统预置中文资讯")
+                fallback_news = [
+                    {
+                        "title": "每日健康资讯 - 系统推荐",
+                        "description": "今日暂无新的中文健康新闻，为您推荐系统预置健康资讯。保持良好的生活习惯是健康的基础。建议规律作息、均衡饮食、适量运动。",
+                        "source": "健康资讯系统",
+                        "publishedAt": datetime.now().isoformat(),
+                        "url": "#"
+                    },
+                    {
+                        "title": "健康生活方式指南",
+                        "description": "保持规律作息、均衡饮食和适量运动是维护健康的基础。建议每周进行至少150分钟中等强度运动，多摄入蔬菜水果，减少高盐高脂食品。",
+                        "source": "健康知识库",
+                        "publishedAt": datetime.now().isoformat(),
+                        "url": "#"
+                    },
+                    {
+                        "title": "慢性病预防要点",
+                        "description": "定期体检、控制体重、戒烟限酒可有效预防心脑血管疾病和糖尿病等慢性疾病。建议40岁以上人群每年进行一次全面体检。",
+                        "source": "健康知识库",
+                        "publishedAt": datetime.now().isoformat(),
+                        "url": "#"
+                    },
+                    {
+                        "title": "心理健康同样重要",
+                        "description": "保持良好心态，学会压力管理，必要时寻求专业心理支持，是全面健康的重要组成部分。每天留出时间放松心情，与亲友交流。",
+                        "source": "健康知识库",
+                        "publishedAt": datetime.now().isoformat(),
+                        "url": "#"
+                    },
+                    {
+                        "title": "科学运动促进健康",
+                        "description": "适度运动能增强免疫力、改善心血管功能、控制体重。建议选择适合自己的运动方式，循序渐进，持之以恒。",
+                        "source": "健康知识库",
+                        "publishedAt": datetime.now().isoformat(),
+                        "url": "#"
+                    }
+                ]
+                return fallback_news
+            
+            # 使用中文新闻
+            articles = chinese_articles
+            
             news_list = []
             for article in articles:
                 news_list.append({
                     "title": article.get("title", "无标题"),
+                    "description": article.get("description", "暂无描述")[:100] + "..." if article.get("description") else "暂无描述",
                     "source": article.get("source", "未知来源"),
-                    "date": article.get("published_at", "未知日期")[:10]  # 只取日期部分
+                    "publishedAt": article.get("published_at", datetime.now().isoformat()),
+                    "url": article.get("url", "#")
                 })
+
+            # 增加API调用计数
+            new_count = self._increment_api_usage()
+            self.logger.info(f"[APIUsage] 本次调用后计数: {new_count}/100")
+
+            # 缓存数据
+            self._set_cached_news(news_list)
+            self.logger.info(f"[NewsAPI] 成功获取 {len(news_list)} 条新闻")
 
             return news_list
 
         except requests.exceptions.RequestException as e:
-            # 记录详细错误信息以便调试
-            self.logger.error(f"获取健康资讯失败: {str(e)}")
+            self.logger.error(f"[NewsAPI] API请求失败: {str(e)}")
 
-            # 实现优雅降级策略，返回兜底数据避免前端展示异常
-            return [{
-                "title": "当前网络无法获取最新资讯",
-                "source": "System",
-                "date": "刚刚"
-            }]
+            # 返回中文兜底数据 - 丰富的健康资讯
+            return [
+                {
+                    "title": "网络连接异常 - 显示备用资讯",
+                    "description": "当前无法连接到新闻服务器，显示预置健康资讯。系统将在网络恢复后自动更新内容。",
+                    "source": "系统提示",
+                    "publishedAt": datetime.now().isoformat(),
+                    "url": "#"
+                },
+                {
+                    "title": "健康生活方式指南",
+                    "description": "保持规律作息、均衡饮食和适量运动是维护健康的基础。建议每周进行至少150分钟中等强度运动。",
+                    "source": "健康知识库",
+                    "publishedAt": datetime.now().isoformat(),
+                    "url": "#"
+                },
+                {
+                    "title": "慢性病预防要点",
+                    "description": "定期体检、控制体重、戒烟限酒可有效预防心脑血管疾病和糖尿病等慢性疾病。",
+                    "source": "健康知识库",
+                    "publishedAt": datetime.now().isoformat(),
+                    "url": "#"
+                },
+                {
+                    "title": "心理健康同样重要",
+                    "description": "保持良好心态，学会压力管理，必要时寻求专业心理支持，是全面健康的重要组成部分。",
+                    "source": "健康知识库",
+                    "publishedAt": datetime.now().isoformat(),
+                    "url": "#"
+                }
+            ]

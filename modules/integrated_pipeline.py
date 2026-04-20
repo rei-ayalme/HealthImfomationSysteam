@@ -284,6 +284,20 @@ class HealthDataPipeline:
         # ---------------------------------------------------------
         logger.info("3. 执行线性规划算法求 DEA 综合技术效率...")
         
+        # 使用新的 EfficiencyEvaluator 类进行 DEA 计算
+        # 修正要点 (2026-04-17):
+        # - 投入指标: 床位数、卫生技术人员数、总人口(服务基数)
+        # - 产出指标: 总诊疗人次、出院人数
+        # - 将人口从产出指标移至投入指标，解决人口大地区效率虚高问题
+        from modules.core.evaluator import EfficiencyEvaluator, DEAInputOutputConfig
+        
+        # 创建 DEA 配置，明确投入产出指标
+        dea_config = DEAInputOutputConfig(
+            input_columns=['hospital_beds_per_1000', 'physicians_per_1000', 'population'],
+            output_columns=['total_outpatient_visits', 'discharged_patients']
+        )
+        evaluator = EfficiencyEvaluator(config=dea_config)
+        
         # 为了测试真实 DEA 模型，我们构造或者从本地清洗好的省份数据中提取 X 和 Y 矩阵
         # 此处我们模拟从 cleaned_health_data.xlsx 中读取省级数据
         from config.settings import SETTINGS
@@ -294,26 +308,54 @@ class HealthDataPipeline:
                 # 假设提取 2020 年的省级数据进行 DEA 计算
                 df_dea = local_df[local_df['year'] == 2020].copy()
                 if not df_dea.empty:
-                    # 确保投入产出不能为 0
-                    X_dea = df_dea[['physicians_per_1000', 'hospital_beds_per_1000', 'nurses_per_1000']].fillna(0.1).replace(0, 0.1).values
-                    # 这里假设以 population (或其他可用指标) 作为简单的产出替代，实际应使用真实的诊疗/出院人数
-                    Y_dea = df_dea[['population']].fillna(0.1).replace(0, 0.1).values
+                    # 检查是否有产出指标列，如果没有则使用模拟数据
+                    has_output_cols = any(col in df_dea.columns for col in ['total_outpatient_visits', 'discharged_patients', 'outpatient_visits', 'discharges'])
                     
-                    efficiencies = HealthMathModels.calculate_dea_efficiency(X_dea, Y_dea)
-                    df_dea['dea_efficiency'] = efficiencies
+                    if has_output_cols:
+                        # 使用新的 EfficiencyEvaluator 计算 DEA 效率
+                        result_df = evaluator.calculate_dea_efficiency_from_df(
+                            df_dea,
+                            dmu_col='region_name' if 'region_name' in df_dea.columns else 'region',
+                            return_details=False
+                        )
+                        df_dea['dea_efficiency'] = result_df['dea_efficiency']
+                        efficiencies = result_df['dea_efficiency'].values
+                    else:
+                        # 如果没有真实的产出数据，使用基于投入比例的模拟效率
+                        # 注意：这仅用于演示，实际应用中应使用真实的诊疗/出院数据
+                        logger.warning("-> 缺少真实产出数据(诊疗人次/出院人数)，使用基于投入产出比的模拟效率")
+                        X_dea = df_dea[['physicians_per_1000', 'hospital_beds_per_1000']].fillna(0.1).replace(0, 0.1).values
+                        # 模拟产出数据 (基于投入的随机比例)
+                        np.random.seed(42)
+                        Y_dea = X_dea * np.random.uniform(0.5, 1.5, X_dea.shape)
+                        efficiencies = HealthMathModels.calculate_dea_efficiency(X_dea, Y_dea)
+                        df_dea['dea_efficiency'] = efficiencies
+                    
                     logger.info(f"-> 本地省份级 DEA 计算完成，共处理 {len(df_dea)} 个省/市，发现 {sum(efficiencies >= 0.99)} 个效率标杆。")
             except Exception as e:
                 logger.warning(f"-> 读取本地数据计算 DEA 失败: {e}")
         
         if not resource_df.empty:
-            # 投入变量 (医生、床位、卫生支出)
-            X = resource_df[['physicians_per_1000', 'hospital_beds_per_1000', 'health_expenditure_per_capita']].fillna(0.1).replace(0, 0.1).values
-            # 产出变量 (健康期望寿命 HALE)
-            Y = resource_df[['hale']].fillna(0.1).replace(0, 0.1).values
-
-            # 真实计算
-            efficiencies = HealthMathModels.calculate_dea_efficiency(X, Y)
-            resource_df['dea_efficiency'] = efficiencies
+            # 检查是否有产出指标列
+            has_output_cols = any(col in resource_df.columns for col in ['total_outpatient_visits', 'discharged_patients'])
+            
+            if has_output_cols:
+                # 使用新的 EfficiencyEvaluator 计算 DEA 效率
+                result_df = evaluator.calculate_dea_efficiency_from_df(
+                    resource_df,
+                    dmu_col='location_name' if 'location_name' in resource_df.columns else 'Location',
+                    return_details=False
+                )
+                resource_df['dea_efficiency'] = result_df['dea_efficiency']
+                efficiencies = result_df['dea_efficiency'].values
+            else:
+                # 回退到使用 HALE 作为产出指标 (国际对比场景)
+                logger.warning("-> 国际数据缺少真实产出指标，使用 HALE 作为替代产出指标")
+                X = resource_df[['physicians_per_1000', 'hospital_beds_per_1000', 'health_expenditure_per_capita']].fillna(0.1).replace(0, 0.1).values
+                Y = resource_df[['hale']].fillna(0.1).replace(0, 0.1).values
+                efficiencies = HealthMathModels.calculate_dea_efficiency(X, Y)
+                resource_df['dea_efficiency'] = efficiencies
+            
             logger.info(f"-> 国际对比 DEA 计算完成，发现 {sum(efficiencies >= 0.99)} 个效率标杆地区。")
 
         # ---------------------------------------------------------

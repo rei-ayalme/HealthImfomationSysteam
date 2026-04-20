@@ -4,15 +4,94 @@ DEA/2SFCA 数学引擎
 包含医疗资源配置核心数学模型：
 - CCR-DEA 效率评估
 - E2SFCA 空间可及性计算
+
+算法逻辑变更记录 (2026-04-17):
+- 修正 DEA 投入/产出指标定义，解决人口数误作为产出指标的问题
+- 投入指标: bed_count, physician_count, population (服务基数)
+- 产出指标: total_outpatient_visits, discharged_patients
 """
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import linprog
 import logging
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Tuple
+from dataclasses import dataclass
 
 logger = logging.getLogger("health_system.algorithms")
+
+
+@dataclass
+class DEAInputOutputConfig:
+    """DEA 投入产出指标配置类
+    
+    用于标准化 DEA 分析中的投入和产出指标定义，
+    确保指标分类符合医疗资源配置效率评估的业务逻辑。
+    
+    变更历史:
+        - 2026-04-17: 将 population 从产出指标移至投入指标，
+                     修正了人口规模大的地区效率评分虚高的问题
+    """
+    # 投入指标 (Inputs) - 医疗资源投入和服务基数
+    input_columns: List[str] = None
+    
+    # 产出指标 (Outputs) - 医疗服务产出
+    output_columns: List[str] = None
+    
+    # 指标列名映射 (支持多种数据源的不同列名)
+    column_mappings: Dict[str, List[str]] = None
+    
+    def __post_init__(self):
+        if self.input_columns is None:
+            # 默认投入指标: 床位数、卫生技术人员数、总人口(服务基数)
+            self.input_columns = [
+                'bed_count',           # 床位数
+                'physician_count',     # 卫生技术人员数
+                'population'           # 总人口 (服务基数/环境变量)
+            ]
+        
+        if self.output_columns is None:
+            # 默认产出指标: 总诊疗人次、出院人数
+            self.output_columns = [
+                'total_outpatient_visits',  # 总诊疗人次
+                'discharged_patients'       # 出院人数
+            ]
+        
+        if self.column_mappings is None:
+            # 支持多种列名变体，适配不同数据源
+            self.column_mappings = {
+                'bed_count': ['bed_count', 'beds', 'hospital_beds', 'hospital_beds_per_1000', '床位'],
+                'physician_count': ['physician_count', 'physicians', 'health_workers', 'physicians_per_1000', '卫生技术人员'],
+                'population': ['population', 'pop', '总人口', '人口数', 'population_count'],
+                'total_outpatient_visits': ['total_outpatient_visits', 'outpatient_visits', '诊疗人次', 'outpatient'],
+                'discharged_patients': ['discharged_patients', 'discharges', '出院人数', 'discharged']
+            }
+    
+    def get_available_columns(self, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
+        """从数据框中识别可用的投入和产出列
+        
+        Args:
+            df: 输入数据框
+            
+        Returns:
+            (available_inputs, available_outputs): 实际存在的列名列表
+        """
+        available_inputs = []
+        available_outputs = []
+        
+        df_columns_lower = [c.lower() for c in df.columns]
+        
+        for std_col, variants in self.column_mappings.items():
+            for variant in variants:
+                if variant.lower() in df_columns_lower:
+                    actual_col = df.columns[df_columns_lower.index(variant.lower())]
+                    if std_col in self.input_columns:
+                        available_inputs.append(actual_col)
+                    elif std_col in self.output_columns:
+                        available_outputs.append(actual_col)
+                    break
+        
+        return available_inputs, available_outputs
 
 
 class HealthMathModels:
@@ -22,43 +101,191 @@ class HealthMathModels:
     """
 
     @staticmethod
-    def calculate_dea_efficiency(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
+    def validate_dea_data(X: np.ndarray, Y: np.ndarray, dmu_names: Optional[List[str]] = None) -> Tuple[bool, str, np.ndarray, np.ndarray]:
+        """验证 DEA 输入数据的合法性
+        
+        检查项目:
+        1. 矩阵非空且维度正确
+        2. 无 NaN 值
+        3. 无 Infinity 值
+        4. 所有值为非负数
+        5. 每行至少有一个非零值
+        
+        Args:
+            X: 投入矩阵 (n_dmus x m_inputs)
+            Y: 产出矩阵 (n_dmus x s_outputs)
+            dmu_names: DMU名称列表，用于错误报告
+            
+        Returns:
+            (is_valid, error_msg, X_clean, Y_clean): 验证结果和清洗后的数据
+        """
+        if dmu_names is None:
+            dmu_names = [f"DMU_{i}" for i in range(max(X.shape[0] if X.size > 0 else 0, Y.shape[0] if Y.size > 0 else 0))]
+        
+        # 1. 检查矩阵非空
+        if X.size == 0 or Y.size == 0:
+            return False, "投入或产出矩阵为空", X, Y
+        
+        n_dmus_x, m_inputs = X.shape
+        n_dmus_y, s_outputs = Y.shape
+        
+        # 2. 检查维度匹配
+        if n_dmus_x != n_dmus_y:
+            return False, f"投入矩阵DMU数量({n_dmus_x})与产出矩阵DMU数量({n_dmus_y})不匹配", X, Y
+        
+        n_dmus = n_dmus_x
+        
+        # 3. 检查 NaN 和 Infinity
+        x_nan_mask = np.isnan(X)
+        y_nan_mask = np.isnan(Y)
+        x_inf_mask = np.isinf(X)
+        y_inf_mask = np.isinf(Y)
+        
+        if np.any(x_nan_mask) or np.any(y_nan_mask):
+            nan_x_indices = np.where(np.any(x_nan_mask, axis=1))[0]
+            nan_y_indices = np.where(np.any(y_nan_mask, axis=1))[0]
+            nan_dmus = set(nan_x_indices) | set(nan_y_indices)
+            nan_names = [dmu_names[i] for i in nan_dmus if i < len(dmu_names)]
+            logger.warning(f"DEA数据包含NaN值，DMU: {nan_names}")
+        
+        if np.any(x_inf_mask) or np.any(y_inf_mask):
+            inf_x_indices = np.where(np.any(x_inf_mask, axis=1))[0]
+            inf_y_indices = np.where(np.any(y_inf_mask, axis=1))[0]
+            inf_dmus = set(inf_x_indices) | set(inf_y_indices)
+            inf_names = [dmu_names[i] for i in inf_dmus if i < len(dmu_names)]
+            logger.warning(f"DEA数据包含Infinity值，DMU: {inf_names}")
+        
+        # 4. 清洗数据: 替换 NaN 和 Infinity
+        # 确保转换为浮点数以避免整数截断问题
+        X_clean = X.astype(float).copy()
+        Y_clean = Y.astype(float).copy()
+        
+        # 用列均值替换 NaN
+        for j in range(m_inputs):
+            col_mean = np.nanmean(X_clean[:, j])
+            if np.isnan(col_mean):
+                col_mean = 0.1
+            X_clean[np.isnan(X_clean[:, j]), j] = col_mean
+        
+        for j in range(s_outputs):
+            col_mean = np.nanmean(Y_clean[:, j])
+            if np.isnan(col_mean):
+                col_mean = 0.1
+            Y_clean[np.isnan(Y_clean[:, j]), j] = col_mean
+        
+        # 替换 Infinity 为一个大数
+        X_clean[np.isinf(X_clean)] = np.finfo(float).max / 2
+        Y_clean[np.isinf(Y_clean)] = np.finfo(float).max / 2
+        
+        # 5. 检查负值
+        if np.any(X_clean < 0) or np.any(Y_clean < 0):
+            neg_x_indices = np.where(np.any(X_clean < 0, axis=1))[0]
+            neg_y_indices = np.where(np.any(Y_clean < 0, axis=1))[0]
+            neg_dmus = set(neg_x_indices) | set(neg_y_indices)
+            neg_names = [dmu_names[i] for i in neg_dmus if i < len(dmu_names)]
+            logger.warning(f"DEA数据包含负值，已取绝对值处理，DMU: {neg_names}")
+            X_clean = np.abs(X_clean)
+            Y_clean = np.abs(Y_clean)
+        
+        # 6. 检查每行是否至少有一个非零值 (使用容差避免浮点数精度问题)
+        epsilon = 1e-10
+        x_zero_rows = np.where(np.all(np.abs(X_clean) < epsilon, axis=1))[0]
+        y_zero_rows = np.where(np.all(np.abs(Y_clean) < epsilon, axis=1))[0]
+        
+        if len(x_zero_rows) > 0:
+            zero_names = [dmu_names[i] for i in x_zero_rows if i < len(dmu_names)]
+            logger.warning(f"以下DMU投入全为0，添加极小值: {zero_names}")
+            X_clean[x_zero_rows, :] = 1e-6
+        
+        if len(y_zero_rows) > 0:
+            zero_names = [dmu_names[i] for i in y_zero_rows if i < len(dmu_names)]
+            logger.warning(f"以下DMU产出全为0，添加极小值: {zero_names}")
+            Y_clean[y_zero_rows, :] = 1e-6
+        
+        return True, "数据验证通过", X_clean, Y_clean
+
+    @staticmethod
+    def calculate_dea_efficiency(X: np.ndarray, Y: np.ndarray, 
+                                  dmu_names: Optional[List[str]] = None,
+                                  return_slacks: bool = False) -> Union[np.ndarray, Dict]:
         """
         基于线性规划的 CCR-DEA (数据包络分析) 模型
         用于计算各地区的医疗资源投入产出综合技术效率 (综合效率)
+        
+        算法说明:
+            采用 Charnes-Cooper-Rhodes (CCR) 模型，假设规模报酬不变(CRS)。
+            对于每个 DMU k，求解以下线性规划问题:
+            
+            max  θ = Σ(u_r * y_rk)
+            s.t. Σ(v_i * x_ik) = 1
+                 Σ(u_r * y_rj) - Σ(v_i * x_ij) <= 0  (对所有 j)
+                 u_r, v_i >= 0
+        
+        修正记录 (2026-04-17):
+            - 增加数据合法性校验机制
+            - 优化求解器参数，提高数值稳定性
+            - 添加详细的错误处理和日志记录
 
-        参数:
-            X: 投入矩阵 (n_dmus x m_inputs) - 如医生数、床位数、卫生经费
-            Y: 产出矩阵 (n_dmus x s_outputs) - 如健康寿命、治愈率
-        返回:
-            efficiencies: 包含每个 DMU (决策单元) 效率得分的数组 [0, 1]
+        Args:
+            X: 投入矩阵 (n_dmus x m_inputs) - 如医生数、床位数、人口数(服务基数)
+            Y: 产出矩阵 (n_dmus x s_outputs) - 如诊疗人次、出院人数
+            dmu_names: DMU名称列表，用于错误报告和结果标识
+            return_slacks: 是否返回投入冗余和产出不足信息
+            
+        Returns:
+            如果 return_slacks=False: efficiencies - 效率得分数组 [0, 1]
+            如果 return_slacks=True: Dict 包含 {
+                'efficiencies': 效率得分数组,
+                'input_slacks': 投入冗余矩阵,
+                'output_slacks': 产出不足矩阵,
+                'status': 求解状态列表
+            }
+            
+        Raises:
+            ValueError: 输入数据维度不匹配或验证失败
         """
-        if X.size == 0 or Y.size == 0:
+        # 数据验证
+        is_valid, error_msg, X_clean, Y_clean = HealthMathModels.validate_dea_data(X, Y, dmu_names)
+        
+        if not is_valid:
             from utils.logger import log_missing_data
-            log_missing_data("HealthMathModels", "DEA Efficiency", 2024, "Global", "投入或产出矩阵为空")
+            log_missing_data("HealthMathModels", "DEA Efficiency", 2024, "Global", error_msg)
+            logger.error(f"DEA数据验证失败: {error_msg}")
+            if return_slacks:
+                return {
+                    'efficiencies': np.array([]),
+                    'input_slacks': np.array([]),
+                    'output_slacks': np.array([]),
+                    'status': [error_msg]
+                }
             return np.array([])
-
-        n_dmus, m_inputs = X.shape
-        _, s_outputs = Y.shape
+        
+        n_dmus, m_inputs = X_clean.shape
+        _, s_outputs = Y_clean.shape
         efficiencies = np.zeros(n_dmus)
+        statuses = []
+        
+        input_slacks = np.zeros((n_dmus, m_inputs)) if return_slacks else None
+        output_slacks = np.zeros((n_dmus, s_outputs)) if return_slacks else None
 
         # 遍历每一个 DMU (决策单元，即每一个地区)
         for k in range(n_dmus):
-            # 添加极小值 epsilon (1e-6) 避免 0 值导致的 Unbounded 或无解错误
-            x_k = X[k, :] + 1e-6
-            y_k = Y[k, :] + 1e-6
-            X_smooth = X + 1e-6
-            Y_smooth = Y + 1e-6
+            # 添加极小值 epsilon 避免 0 值导致的 Unbounded 或无解错误
+            epsilon = 1e-6
+            x_k = X_clean[k, :] + epsilon
+            y_k = Y_clean[k, :] + epsilon
+            X_smooth = X_clean + epsilon
+            Y_smooth = Y_clean + epsilon
 
             # 目标函数：最大化第 k 个 DMU 的加权产出
             # 在 scipy.linprog 中求最小值，因此目标系数取负
             c = np.concatenate((np.zeros(m_inputs), -y_k))
 
-            # 约束条件 1: \sum v_i * x_{ik} = 1 (第 k 个 DMU 的加权投入等于 1)
+            # 约束条件 1: Σ(v_i * x_ik) = 1 (第 k 个 DMU 的加权投入等于 1)
             A_eq = np.concatenate((x_k, np.zeros(s_outputs))).reshape(1, -1)
             b_eq = np.array([1.0])
 
-            # 约束条件 2: \sum u_r * y_{rj} - \sum v_i * x_{ij} <= 0 (所有 DMU 的产出不能超过投入)
+            # 约束条件 2: Σ(u_r * y_rj) - Σ(v_i * x_ij) <= 0 (所有 DMU 的产出不能超过投入)
             A_ub = np.hstack((-X_smooth, Y_smooth))
             b_ub = np.zeros(n_dmus)
 
@@ -66,20 +293,57 @@ class HealthMathModels:
             bounds = [(0, None) for _ in range(m_inputs + s_outputs)]
 
             try:
-                # 求解线性规划
-                res = linprog(c, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
+                # 求解线性规划，使用 highs 方法提高数值稳定性
+                res = linprog(
+                    c, 
+                    A_ub=A_ub, 
+                    b_ub=b_ub, 
+                    A_eq=A_eq, 
+                    b_eq=b_eq, 
+                    bounds=bounds, 
+                    method='highs',
+                    options={'maxiter': 10000, 'tol': 1e-9}
+                )
+                
                 if res.success:
                     # 效率值为目标函数的相反数
-                    efficiencies[k] = -res.fun
+                    eff = -res.fun
+                    efficiencies[k] = eff
+                    statuses.append('optimal')
+                    
+                    # 计算松弛变量 (如果需要)
+                    if return_slacks:
+                        weights_v = res.x[:m_inputs]  # 投入权重
+                        weights_u = res.x[m_inputs:]  # 产出权重
+                        
+                        # 投入冗余 = 实际投入 - 目标投入
+                        target_input = np.dot(X_smooth.T, weights_v)
+                        input_slacks[k, :] = X_clean[k, :] - eff * target_input
+                        
+                        # 产出不足 = 目标产出 - 实际产出
+                        target_output = np.dot(Y_smooth.T, weights_u)
+                        output_slacks[k, :] = target_output - Y_clean[k, :]
                 else:
                     efficiencies[k] = np.nan
-                    logger.warning(f"DEA求解失败 DMU {k}: {res.message}")
+                    statuses.append(f'failed: {res.message}')
+                    logger.warning(f"DEA求解失败 DMU {k} ({dmu_names[k] if dmu_names else 'unknown'}): {res.message}")
+                    
             except Exception as e:
                 efficiencies[k] = np.nan
-                logger.error(f"DEA计算异常 DMU {k}: {str(e)}")
+                statuses.append(f'error: {str(e)}')
+                logger.error(f"DEA计算异常 DMU {k} ({dmu_names[k] if dmu_names else 'unknown'}): {str(e)}")
 
-        # 修正可能因为浮点数精度导致的微小越界 (如 1.00000000002)
+        # 修正可能因为浮点数精度导致的微小越界
         efficiencies = np.clip(efficiencies, 0, 1.0)
+        
+        if return_slacks:
+            return {
+                'efficiencies': efficiencies,
+                'input_slacks': input_slacks,
+                'output_slacks': output_slacks,
+                'status': statuses
+            }
+        
         return efficiencies
 
     @staticmethod
@@ -1016,3 +1280,313 @@ class SpatialEngine:
             'layout_optimizations': 0
         }
         self.logger.info("统计信息已重置")
+
+
+class EfficiencyEvaluator:
+    """
+    医疗资源配置效率评估器
+    
+    基于 DEA (数据包络分析) 方法评估医疗资源配置效率，
+    正确区分投入指标和产出指标，避免人口规模导致的效率评估偏差。
+    
+    核心修正 (2026-04-17):
+        - 投入指标: 床位数、卫生技术人员数、总人口(服务基数)
+        - 产出指标: 总诊疗人次、出院人数
+        - 将人口从产出指标移至投入指标，解决人口大地区效率虚高问题
+    
+    使用示例:
+        >>> evaluator = EfficiencyEvaluator()
+        >>> 
+        >>> # 从 DataFrame 计算效率
+        >>> result_df = evaluator.calculate_dea_efficiency_from_df(
+        ...     df,
+        ...     dmu_col='region_name',
+        ...     input_cols=['bed_count', 'physician_count', 'population'],
+        ...     output_cols=['total_outpatient_visits', 'discharged_patients']
+        ... )
+        >>> 
+        >>> # 查看效率结果
+        >>> print(result_df[['region_name', 'dea_efficiency']])
+    """
+    
+    def __init__(self, config: Optional[DEAInputOutputConfig] = None):
+        """
+        初始化效率评估器
+        
+        Args:
+            config: DEA 投入产出配置，使用默认配置如果为 None
+        """
+        self.config = config or DEAInputOutputConfig()
+        self.logger = logging.getLogger("health_system.efficiency_evaluator")
+        
+    def validate_columns(self, df: pd.DataFrame, required_cols: List[str], col_type: str) -> Tuple[bool, List[str]]:
+        """验证数据框中是否包含必需的列
+        
+        Args:
+            df: 输入数据框
+            required_cols: 必需的列名列表
+            col_type: 列类型描述 (用于错误信息)
+            
+        Returns:
+            (is_valid, available_cols): 验证结果和实际存在的列
+        """
+        df_columns_lower = {c.lower(): c for c in df.columns}
+        available_cols = []
+        missing_cols = []
+        
+        for col in required_cols:
+            # 尝试直接匹配
+            if col in df.columns:
+                available_cols.append(col)
+            # 尝试大小写不敏感匹配
+            elif col.lower() in df_columns_lower:
+                available_cols.append(df_columns_lower[col.lower()])
+            else:
+                # 尝试从列名映射中查找
+                found = False
+                for std_col, variants in self.config.column_mappings.items():
+                    if std_col == col:
+                        for variant in variants:
+                            if variant in df.columns:
+                                available_cols.append(variant)
+                                found = True
+                                break
+                            elif variant.lower() in df_columns_lower:
+                                available_cols.append(df_columns_lower[variant.lower()])
+                                found = True
+                                break
+                    if found:
+                        break
+                if not found:
+                    missing_cols.append(col)
+        
+        if missing_cols:
+            self.logger.warning(f"缺少{col_type}列: {missing_cols}")
+            return False, available_cols
+        
+        return True, available_cols
+    
+    def calculate_dea_efficiency_from_df(
+        self,
+        df: pd.DataFrame,
+        dmu_col: str = 'region_name',
+        input_cols: Optional[List[str]] = None,
+        output_cols: Optional[List[str]] = None,
+        return_details: bool = False
+    ) -> pd.DataFrame:
+        """
+        从 DataFrame 计算 DEA 效率
+        
+        这是主要的 DEA 效率计算接口，自动处理数据验证、列名映射和结果整合。
+        
+        修正要点:
+            - 人口(population) 作为投入指标而非产出指标
+            - 投入指标反映资源投入和服务基数
+            - 产出指标反映实际医疗服务产出
+        
+        Args:
+            df: 输入数据框，包含 DMU 标识、投入和产出指标
+            dmu_col: DMU (决策单元) 标识列名，如地区名称
+            input_cols: 投入指标列名列表，默认使用配置中的定义
+            output_cols: 产出指标列名列表，默认使用配置中的定义
+            return_details: 是否返回详细的松弛变量信息
+            
+        Returns:
+            包含效率结果的 DataFrame，新增以下列:
+            - dea_efficiency: DEA 效率得分 [0, 1]
+            - dea_rank: 效率排名
+            - is_efficient: 是否有效 (效率 >= 0.99)
+            - input_slacks_*: 投入冗余 (如果 return_details=True)
+            - output_slacks_*: 产出不足 (如果 return_details=True)
+            
+        Raises:
+            ValueError: 输入数据验证失败或缺少必要列
+        """
+        if df.empty:
+            raise ValueError("输入数据框为空")
+        
+        if dmu_col not in df.columns:
+            raise ValueError(f"缺少DMU标识列: {dmu_col}")
+        
+        # 使用默认配置如果未指定
+        if input_cols is None:
+            input_cols = self.config.input_columns
+        if output_cols is None:
+            output_cols = self.config.output_columns
+        
+        self.logger.info(f"开始DEA效率计算，DMU数量: {len(df)}")
+        self.logger.info(f"投入指标: {input_cols}")
+        self.logger.info(f"产出指标: {output_cols}")
+        
+        # 验证投入列
+        inputs_valid, available_inputs = self.validate_columns(df, input_cols, "投入")
+        if not available_inputs:
+            raise ValueError(f"未找到任何投入指标列，需要的列: {input_cols}")
+        
+        # 验证产出列
+        outputs_valid, available_outputs = self.validate_columns(df, output_cols, "产出")
+        if not available_outputs:
+            raise ValueError(f"未找到任何产出指标列，需要的列: {output_cols}")
+        
+        if not inputs_valid:
+            self.logger.warning(f"部分投入指标缺失，将使用可用指标: {available_inputs}")
+        if not outputs_valid:
+            self.logger.warning(f"部分产出指标缺失，将使用可用指标: {available_outputs}")
+        
+        # 提取投入产出数据
+        X = df[available_inputs].values
+        Y = df[available_outputs].values
+        dmu_names = df[dmu_col].tolist()
+        
+        # 数据预处理: 处理缺失值和零值
+        X_processed = self._preprocess_data(X, available_inputs, "投入")
+        Y_processed = self._preprocess_data(Y, available_outputs, "产出")
+        
+        # 计算 DEA 效率
+        if return_details:
+            result = HealthMathModels.calculate_dea_efficiency(
+                X_processed, Y_processed, 
+                dmu_names=dmu_names,
+                return_slacks=True
+            )
+            efficiencies = result['efficiencies']
+            input_slacks = result['input_slacks']
+            output_slacks = result['output_slacks']
+            statuses = result['status']
+        else:
+            efficiencies = HealthMathModels.calculate_dea_efficiency(
+                X_processed, Y_processed,
+                dmu_names=dmu_names
+            )
+        
+        # 构建结果 DataFrame
+        result_df = df.copy()
+        result_df['dea_efficiency'] = efficiencies
+        result_df['is_efficient'] = efficiencies >= 0.99
+        
+        # 计算排名 (降序，效率高的排名靠前)
+        result_df['dea_rank'] = result_df['dea_efficiency'].rank(ascending=False, method='min')
+        
+        # 添加松弛变量信息 (如果需要)
+        if return_details:
+            for i, col in enumerate(available_inputs):
+                result_df[f'input_slack_{col}'] = input_slacks[:, i]
+            for i, col in enumerate(available_outputs):
+                result_df[f'output_slack_{col}'] = output_slacks[:, i]
+            result_df['dea_status'] = statuses if 'statuses' in locals() else ['unknown'] * len(df)
+        
+        # 记录统计信息
+        efficient_count = result_df['is_efficient'].sum()
+        avg_efficiency = result_df['dea_efficiency'].mean()
+        self.logger.info(f"DEA计算完成: 总DMU={len(df)}, 有效DMU={efficient_count}, 平均效率={avg_efficiency:.3f}")
+        
+        return result_df
+    
+    def _preprocess_data(self, data: np.ndarray, columns: List[str], data_type: str) -> np.ndarray:
+        """预处理 DEA 数据
+        
+        处理步骤:
+        1. 替换 NaN 为列均值
+        2. 替换 0 和负值为极小正值
+        3. 记录处理信息
+        
+        Args:
+            data: 输入数据矩阵
+            columns: 列名列表
+            data_type: 数据类型描述
+            
+        Returns:
+            处理后的数据矩阵
+        """
+        processed = data.copy().astype(float)
+        
+        # 检查并处理 NaN
+        nan_mask = np.isnan(processed)
+        if np.any(nan_mask):
+            nan_count = np.sum(nan_mask)
+            self.logger.warning(f"{data_type}数据包含 {nan_count} 个NaN值，将用列均值替换")
+            
+            for j in range(processed.shape[1]):
+                col_mean = np.nanmean(processed[:, j])
+                if np.isnan(col_mean) or col_mean == 0:
+                    col_mean = 0.1
+                processed[np.isnan(processed[:, j]), j] = col_mean
+        
+        # 检查并处理非正值
+        non_positive_mask = processed <= 0
+        if np.any(non_positive_mask):
+            non_pos_count = np.sum(non_positive_mask)
+            self.logger.warning(f"{data_type}数据包含 {non_pos_count} 个非正值，将替换为极小值")
+            processed[non_positive_mask] = 1e-6
+        
+        # 检查 Infinity
+        inf_mask = np.isinf(processed)
+        if np.any(inf_mask):
+            inf_count = np.sum(inf_mask)
+            self.logger.warning(f"{data_type}数据包含 {inf_count} 个Infinity值，将替换为有限值")
+            processed[inf_mask] = np.finfo(float).max / 2
+        
+        return processed
+    
+    def get_efficiency_benchmarks(self, result_df: pd.DataFrame, dmu_col: str = 'region_name') -> Dict:
+        """获取效率标杆分析结果
+        
+        Args:
+            result_df: calculate_dea_efficiency_from_df 返回的结果 DataFrame
+            dmu_col: DMU 标识列名
+            
+        Returns:
+            标杆分析结果字典
+        """
+        if 'dea_efficiency' not in result_df.columns:
+            raise ValueError("结果DataFrame缺少dea_efficiency列")
+        
+        efficient_df = result_df[result_df['is_efficient'] == True]
+        inefficient_df = result_df[result_df['is_efficient'] == False]
+        
+        return {
+            'total_dmus': len(result_df),
+            'efficient_dmus': len(efficient_df),
+            'inefficient_dmus': len(inefficient_df),
+            'efficiency_rate': len(efficient_df) / len(result_df) if len(result_df) > 0 else 0,
+            'average_efficiency': result_df['dea_efficiency'].mean(),
+            'median_efficiency': result_df['dea_efficiency'].median(),
+            'min_efficiency': result_df['dea_efficiency'].min(),
+            'max_efficiency': result_df['dea_efficiency'].max(),
+            'benchmark_dmus': efficient_df[dmu_col].tolist() if dmu_col in efficient_df.columns else [],
+            'lowest_efficiency_dmus': result_df.nsmallest(5, 'dea_efficiency')[dmu_col].tolist() if dmu_col in result_df.columns else []
+        }
+    
+    def compare_scenarios(
+        self,
+        baseline_df: pd.DataFrame,
+        scenario_df: pd.DataFrame,
+        dmu_col: str = 'region_name'
+    ) -> pd.DataFrame:
+        """比较不同情景下的效率变化
+        
+        Args:
+            baseline_df: 基准情景的效率结果
+            scenario_df: 对比情景的效率结果
+            dmu_col: DMU 标识列名
+            
+        Returns:
+            效率变化对比 DataFrame
+        """
+        if dmu_col not in baseline_df.columns or dmu_col not in scenario_df.columns:
+            raise ValueError(f"缺少DMU标识列: {dmu_col}")
+        
+        comparison = baseline_df[[dmu_col, 'dea_efficiency']].merge(
+            scenario_df[[dmu_col, 'dea_efficiency']],
+            on=dmu_col,
+            suffixes=('_baseline', '_scenario')
+        )
+        
+        comparison['efficiency_change'] = (
+            comparison['dea_efficiency_scenario'] - comparison['dea_efficiency_baseline']
+        )
+        comparison['efficiency_change_pct'] = (
+            comparison['efficiency_change'] / comparison['dea_efficiency_baseline'] * 100
+        )
+        
+        return comparison

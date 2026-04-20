@@ -12,8 +12,15 @@ redis_client = redis.Redis(
     port=REDIS_CONFIG["port"],
     password=REDIS_CONFIG["password"],
     db=REDIS_CONFIG["db"],
-    decode_responses=True
+    decode_responses=True,
+    socket_connect_timeout=2.0
 )
+
+# 测试 Redis 连接
+try:
+    redis_client.ping()
+except redis.ConnectionError as e:
+    logger.warning(f"Redis 连接失败: {e}，将使用本地缓存模式")
 # 初始化日志记录器
 logger = logging.getLogger(__name__)
 
